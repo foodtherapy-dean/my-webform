@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -75,7 +75,7 @@
           body: JSON.stringify(data)
         });
 
-        const result = await response.json();
+        const result = await response.text();
         alert("✅ Google Sheet에 저장 완료!");
       } catch (err) {
         alert("❌ 전송 중 오류 발생: " + err);
