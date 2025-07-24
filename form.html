@@ -7,7 +7,7 @@
   <style>
     body { font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto; }
     label, select, input { display: block; width: 100%; font-size: 16px; margin: 5px 0; padding: 8px; }
-    button { background-color: #4CAF50; color: white; padding: 12px; width: 100%; font-size: 16px; margin-top: 20px; }
+    button { background-color: #4CAF50; color: white; padding: 12px; width: 100%; font-size: 16px; margin-top: 20px; border: none; border-radius: 4px; }
     .entry { border: 1px solid #ccc; padding: 10px; margin-top: 20px; border-radius: 5px; }
   </style>
 </head>
@@ -30,6 +30,7 @@
   </form>
 
   <script>
+    // 해충 분류 구조 정의
     const structure = {
       "포충등": ["파리", "나방", "모기", "하루살이", "기타", "합계"],
       "보행트랩": ["바퀴", "거미", "개미", "기타", "합계"],
@@ -38,6 +39,7 @@
 
     const container = document.getElementById("sections");
 
+    // 카테고리별 입력 필드 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -49,6 +51,7 @@
       container.appendChild(section);
     }
 
+    // 전송 이벤트 처리
     document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -68,17 +71,20 @@
 
       const data = { date, group, entries };
 
+      // ✅ FormData 객체로 변환
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(data));
+
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbw49VRvc6UEJjMVu8rjlPV1aP767wLDBV5jhy16W9aaUQbxGiKOarrpRIu2QWtQbTRrLA/exec", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+          body: formData
         });
 
         const result = await response.text();
-        alert("✅ Google Sheet에 저장 완료!");
+        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
       } catch (err) {
-        alert("❌ 전송 중 오류 발생: " + err);
+        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
       }
     });
   </script>
