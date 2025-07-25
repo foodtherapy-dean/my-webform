@@ -9,6 +9,7 @@
     label, select, input { display: block; width: 100%; font-size: 16px; margin: 5px 0; padding: 8px; }
     button { background-color: #4CAF50; color: white; padding: 12px; width: 100%; font-size: 16px; margin-top: 20px; border: none; border-radius: 4px; }
     .entry { border: 1px solid #ccc; padding: 10px; margin-top: 20px; border-radius: 5px; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -30,17 +31,22 @@
   </form>
 
   <script>
-    // 해충 분류 구조 정의
     const structure = {
       "포충등(입구)": ["파리", "나방", "모기", "하루살이", "기타"],
       "포충등(포장실)": ["파리", "나방", "모기", "하루살이", "기타"],
-      "보행트랩": ["바퀴", "거미", "개미", "기타"],
-      "방서트랩": ["쥐", "기타"]
+      "보행트랩1": ["바퀴", "거미", "개미", "기타"],
+      "보행트랩2": ["바퀴", "거미", "개미", "기타"],
+      "보행트랩3": ["바퀴", "거미", "개미", "기타"],
+      "보행트랩4": ["바퀴", "거미", "개미", "기타"],
+      "방서트랩1": ["쥐", "기타"],
+      "방서트랩2": ["쥐", "기타"],
+      "방서트랩3": ["쥐", "기타"],
+      "방서트랩4": ["쥐", "기타"]
     };
 
     const container = document.getElementById("sections");
 
-    // 카테고리별 입력 필드 생성
+    // 입력 필드 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -52,13 +58,26 @@
       container.appendChild(section);
     }
 
-    // 전송 이벤트 처리
+    // 그룹 선택 시 방서트랩 숨김/표시
+    document.getElementById("group").addEventListener("change", function () {
+      const group = this.value;
+      const allSections = document.querySelectorAll(".entry");
+
+      allSections.forEach(section => {
+        const cat = section.dataset.category;
+        if (cat.startsWith("방서트랩")) {
+          section.classList.toggle("hidden", group === "생면동");
+        }
+      });
+    });
+
+    // 전송 이벤트
     document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
       const date = document.getElementById("date").value;
       const group = document.getElementById("group").value;
-      const sections = document.querySelectorAll(".entry");
+      const sections = document.querySelectorAll(".entry:not(.hidden)");
 
       const entries = [];
       sections.forEach(div => {
@@ -72,7 +91,6 @@
 
       const data = { date, group, entries };
 
-      // ✅ FormData 객체로 변환
       const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
