@@ -5,11 +5,62 @@
   <title>모바일 해충 입력</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto; }
-    label, select, input { display: block; width: 100%; font-size: 16px; margin: 5px 0; padding: 8px; }
-    button { background-color: #4CAF50; color: white; padding: 12px; width: 100%; font-size: 16px; margin-top: 20px; border: none; border-radius: 4px; }
-    .entry { border: 1px solid #ccc; padding: 10px; margin-top: 20px; border-radius: 5px; }
-    .hidden { display: none; }
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    label, select, input {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+
+    input[type="number"], input[type="date"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .entry {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .input-group {
+      flex: 1 1 calc(33.333% - 10px);
+      min-width: 120px;
+    }
+
+    @media (max-width: 500px) {
+      .input-group {
+        flex: 1 1 calc(50% - 10px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -46,15 +97,23 @@
 
     const container = document.getElementById("sections");
 
-    // 입력 필드 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
       section.dataset.category = category;
       section.innerHTML = `<h2>${category}</h2>`;
+
+      const inputRow = document.createElement("div");
+      inputRow.className = "input-row";
+
       subs.forEach(sub => {
-        section.innerHTML += `<label>${sub}: <input type="number" data-sub="${sub}" min="0" value="0"></label>`;
+        const group = document.createElement("div");
+        group.className = "input-group";
+        group.innerHTML = `<label>${sub}<input type="number" data-sub="${sub}" min="0" value="0"></label>`;
+        inputRow.appendChild(group);
       });
+
+      section.appendChild(inputRow);
       container.appendChild(section);
     }
 
