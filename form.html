@@ -54,6 +54,16 @@
     .input-group {
       flex: 1 1 calc(33.333% - 10px);
       min-width: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .input-group div {
+      margin-bottom: 4px;
+      font-weight: bold;
+      line-height: 1.4;
+      word-break: keep-all;
     }
 
     @media (max-width: 500px) {
@@ -106,21 +116,20 @@
       const inputRow = document.createElement("div");
       inputRow.className = "input-row";
 
-subs.forEach(sub => {
-  const group = document.createElement("div");
-  group.className = "input-group";
-  group.innerHTML = `
-    <div style="margin-bottom: 4px; font-weight: bold;">${sub}</div>
-    <input type="number" data-sub="${sub}" min="0" value="0">
-  `;
-  inputRow.appendChild(group);
-});
+      subs.forEach(sub => {
+        const group = document.createElement("div");
+        group.className = "input-group";
+        group.innerHTML = `
+          <div>${sub}</div>
+          <input type="number" data-sub="${sub}" min="0" value="0">
+        `;
+        inputRow.appendChild(group);
+      });
 
       section.appendChild(inputRow);
       container.appendChild(section);
     }
 
-    // 그룹 선택 시 방서트랩 숨김/표시
     document.getElementById("group").addEventListener("change", function () {
       const group = this.value;
       const allSections = document.querySelectorAll(".entry");
@@ -133,7 +142,6 @@ subs.forEach(sub => {
       });
     });
 
-    // 전송 이벤트
     document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -152,13 +160,12 @@ subs.forEach(sub => {
       });
 
       const data = { date, group, entries };
-
       const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbzc6yT0PE3HNDRy9yvs3fM6Ls_Y-eYzgkpaUmtbTqncbtXBgVTa-n5-ek8f5v6KPrk/exec", {
-          method: "POST",  
+          method: "POST",
           body: formData
         });
 
