@@ -2,123 +2,179 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>해충 점검 입력</title>
+  <title>모바일 해충 입력</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto; }
-    label, select, input { display: block; margin: 10px 0; width: 100%; }
-    .category-block { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    label, select, input {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+
+    input[type="number"], input[type="date"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .entry {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .input-group {
+      flex: 1 1 calc(33.333% - 10px);
+      min-width: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .input-group div {
+      margin-bottom: 4px;
+      font-weight: bold;
+      line-height: 1.4;
+      word-break: keep-all;
+    }
+
+    @media (max-width: 500px) {
+      .input-group {
+        flex: 1 1 calc(50% - 10px);
+      }
+    }
   </style>
 </head>
 <body>
+  <h1>모바일 해충 입력</h1>
+  <form id="trapForm">
+    <label>📅 날짜:</label>
+    <input type="date" id="date" required>
 
-  <h2>해충 점검 입력</h2>
+    <label>⚙ 그룹 선택:</label>
+    <select id="group" required>
+      <option value="">선택하세요</option>
+      <option value="건면동">건면동</option>
+      <option value="생면동">생면동</option>
+    </select>
 
-  <label for="date">날짜</label>
-  <input type="date" id="date" required>
+    <div id="sections"></div>
 
-  <label for="group">구역</label>
-  <select id="group" required>
-    <option value="">-- 선택 --</option>
-    <option value="건면동">건면동</option>
-    <option value="생면동">생면동</option>
-  </select>
-
-  <div id="categories">
-    <div class="category-block">
-      <label>카테고리: 포충등(입구)</label>
-      <input type="number" placeholder="파리" data-category="포충등(입구)" data-subcategory="파리">
-      <input type="number" placeholder="나방" data-category="포충등(입구)" data-subcategory="나방">
-    </div>
-    <!-- 필요시 다른 카테고리 블록 추가 -->
-  </div>
-
-  <button id="saveBtn">저장</button>
-
-  <p id="statusMessage"></p>
+    <button type="submit">📥 서버로 전송</button>
+  </form>
 
   <script>
-    const serverUrl = "https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec";
+    const structure = {
+      "포충등(입구)": ["파리", "나방", "모기", "하루살이", "기타"],
+      "포충등(포장실)": ["파리", "나방", "모기", "하루살이", "기타"],
+      "보행트랩1": ["바퀴", "거미", "개미", "기타1"],
+      "보행트랩2": ["바퀴", "거미", "개미", "기타1"],
+      "보행트랩3": ["바퀴", "거미", "개미", "기타1"],
+      "보행트랩4": ["바퀴", "거미", "개미", "기타1"],
+      "방서트랩1": ["쥐", "기타2"],
+      "방서트랩2": ["쥐", "기타2"],
+      "방서트랩3": ["쥐", "기타2"],
+      "방서트랩4": ["쥐", "기타2"]
+    };
 
-    const dateInput = document.getElementById("date");
-    const groupSelect = document.getElementById("group");
-    const statusMessage = document.getElementById("statusMessage");
-    const saveBtn = document.getElementById("saveBtn");
+    const container = document.getElementById("sections");
 
-    const inputs = document.querySelectorAll("input[data-category]");
+    for (const [category, subs] of Object.entries(structure)) {
+      const section = document.createElement("div");
+      section.className = "entry";
+      section.dataset.category = category;
+      section.innerHTML = `<h2>${category}</h2>`;
 
-    function showMessage(msg, isError = false) {
-      statusMessage.textContent = msg;
-      statusMessage.style.color = isError ? "red" : "green";
+      const inputRow = document.createElement("div");
+      inputRow.className = "input-row";
+
+      subs.forEach(sub => {
+        const group = document.createElement("div");
+        group.className = "input-group";
+        group.innerHTML = `
+          <div>${sub}</div>
+          <input type="number" data-sub="${sub}" min="0" value="0">
+        `;
+        inputRow.appendChild(group);
+      });
+
+      section.appendChild(inputRow);
+      container.appendChild(section);
     }
 
-    // ✅ 데이터 불러오기
-    async function loadData() {
-      const date = dateInput.value;
-      const group = groupSelect.value;
-      if (!date || !group) return;
+    document.getElementById("group").addEventListener("change", function () {
+      const group = this.value;
+      const allSections = document.querySelectorAll(".entry");
 
-      showMessage("📦 데이터 불러오는 중...");
-
-      try {
-        const response = await fetch(`${serverUrl}?action=load&date=${encodeURIComponent(date)}&group_name=${encodeURIComponent(group)}`);
-        const result = await response.json();
-
-        if (Array.isArray(result.rows)) {
-          inputs.forEach(input => {
-            const cat = input.dataset.category;
-            const sub = input.dataset.subcategory;
-            const row = result.rows.find(r => r.category === cat && r.subcategory === sub);
-            input.value = row ? row.value : "";
-          });
-          showMessage("✅ 데이터 불러오기 완료");
-        } else {
-          showMessage("📭 데이터 없음");
-          inputs.forEach(input => input.value = "");
+      allSections.forEach(section => {
+        const cat = section.dataset.category;
+        if (cat.startsWith("방서트랩")) {
+          section.classList.toggle("hidden", group === "생면동");
         }
-      } catch (err) {
-        showMessage("❌ 데이터 로드 실패: " + err.message, true);
-      }
-    }
+      });
+    });
 
-    // ✅ 저장
-    async function saveData() {
-      const date = dateInput.value;
-      const group = groupSelect.value;
-      if (!date || !group) {
-        showMessage("❗ 날짜와 구역을 선택해주세요", true);
-        return;
-      }
+    document.getElementById("trapForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-      const data = Array.from(inputs).map(input => ({
-        date,
-        group_name: group,
-        category: input.dataset.category,
-        subcategory: input.dataset.subcategory,
-        value: input.value || "0"
-      }));
+      const date = document.getElementById("date").value;
+      const group = document.getElementById("group").value;
+      const sections = document.querySelectorAll(".entry:not(.hidden)");
 
-      showMessage("📤 저장 중...");
+      const entries = [];
+      sections.forEach(div => {
+        const category = div.dataset.category;
+        div.querySelectorAll("input").forEach(input => {
+          const subcategory = input.dataset.sub;
+          const value = parseInt(input.value) || 0;
+          entries.push({ category, subcategory, value });
+        });
+      });
+
+      const data = { date, group, entries };
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(data));
 
       try {
-        const response = await fetch(serverUrl, {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data })
+          body: formData
         });
 
         const result = await response.text();
-        showMessage("✅ 저장 완료: " + result);
+        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
       } catch (err) {
-        showMessage("❌ 저장 실패: " + err.message, true);
+        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
       }
-    }
-
-    // 이벤트 바인딩
-    dateInput.addEventListener("change", loadData);
-    groupSelect.addEventListener("change", loadData);
-    saveBtn.addEventListener("click", saveData);
+    });
   </script>
-
 </body>
 </html>
