@@ -1,231 +1,87 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<title>건조공정_모니터링</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  body {
-    font-family: sans-serif;
-    padding: 10px;
-    max-width: 600px;
-    margin: auto;
-  }
-  label, select, input, button {
-    font-size: 16px;
-    margin: 5px 0;
-  }
-  input[type="number"], input[type="date"], select {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px;
-  }
-  button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    margin-top: 20px;
-    border: none;
-    border-radius: 4px;
-  }
-  .hidden { display: none; }
-  .form-section {
-    border: 1px solid #ccc;
-    padding: 12px;
-    margin-top: 20px;
-    border-radius: 5px;
-  }
-  .input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .input-group {
-    flex: 1;
-  }
-  .input-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  .temp-humidity-row {
-    display: flex;
-    gap: 10px;
-  }
-  .temp-humidity-row .input-group {
-    flex: 1;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>건조공정 모니터링</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    label, select, input, button { display: block; width: 100%; margin: 10px 0; padding: 8px; font-size: 16px; }
+    .section { display: none; margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+    .visible { display: block; }
+  </style>
 </head>
 <body>
-  <h1>건조공정_모니터링</h1>
-  <form id="trapForm">
-    <label for="date">📅 날짜:</label>
-    <input type="date" id="date" name="date" required />
+  <h2>건조공정 점검 입력</h2>
 
-    <label for="group">⚙ 점검옵션 선택:</label>
+  <form id="trapForm">
+    <label for="date">점검일자</label>
+    <input type="date" id="date" name="date" required>
+
+    <label for="group">점검옵션</label>
     <select id="group" name="group" required>
-      <option value="">선택하세요</option>
-      <option value="systemOn">시스템ON</option>
-      <option value="firstCheck">1차점검</option>
-      <option value="secondCheck">2차점검</option>
-      <option value="systemOff">시스템OFF</option>
+      <option value="">-- 점검항목 선택 --</option>
+      <option value="건조기1">건조기1</option>
+      <option value="건조기2">건조기2</option>
+      <option value="선별기">선별기</option>
     </select>
 
-    <!-- 시스템ON -->
-    <div id="section-systemOn" class="form-section hidden">
-      <h2>시스템ON 점검</h2>
-      <div class="input-row">
-        <div class="input-group">
-          <label for="sysOnHour">점검시간 (시)</label>
-          <select id="sysOnHour" name="sysOnHour">
-            <option value="">--</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="sysOnMinute">점검시간 (분)</label>
-          <select id="sysOnMinute" name="sysOnMinute">
-            <option value="">--</option>
-          </select>
-        </div>
-      </div>
+    <!-- 건조기1 입력 항목 -->
+    <div class="section" id="section-건조기1">
+      <label>건조기1 점검내용</label>
+      <select name="category">
+        <option value="이상 없음">이상 없음</option>
+        <option value="청소 필요">청소 필요</option>
+        <option value="이상 있음">이상 있음</option>
+      </select>
+      <input type="text" name="subcategory" placeholder="비고 (선택)">
+      <input type="number" name="value" placeholder="수치 (선택)">
     </div>
 
-    <!-- 1차점검 -->
-    <div id="section-firstCheck" class="form-section hidden">
-      <h2>1차점검</h2>
-      <div class="input-row">
-        <div class="input-group">
-          <label for="firstCheckHour">시간 (시)</label>
-          <select id="firstCheckHour" name="firstCheckHour">
-            <option value="">--</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="firstCheckMinute">시간 (분)</label>
-          <select id="firstCheckMinute" name="firstCheckMinute">
-            <option value="">--</option>
-          </select>
-        </div>
-      </div>
-      <div class="temp-humidity-row" style="margin-top:10px;">
-        <div class="input-group">
-          <label for="firstCheckTemp">온도 (℃)</label>
-          <input type="number" id="firstCheckTemp" name="firstCheckTemp" min="0" max="100" step="0.1" />
-        </div>
-        <div class="input-group">
-          <label for="firstCheckHumidity">습도 (%)</label>
-          <input type="number" id="firstCheckHumidity" name="firstCheckHumidity" min="0" max="100" step="0.1" />
-        </div>
-      </div>
+    <!-- 건조기2 입력 항목 -->
+    <div class="section" id="section-건조기2">
+      <label>건조기2 점검내용</label>
+      <select name="category">
+        <option value="정상">정상</option>
+        <option value="필터 이상">필터 이상</option>
+        <option value="온도 이상">온도 이상</option>
+      </select>
+      <input type="text" name="subcategory" placeholder="비고 (선택)">
+      <input type="number" name="value" placeholder="수치 (선택)">
     </div>
 
-    <!-- 2차점검 -->
-    <div id="section-secondCheck" class="form-section hidden">
-      <h2>2차점검</h2>
-      <div class="input-row">
-        <div class="input-group">
-          <label for="secondCheckHour">시간 (시)</label>
-          <select id="secondCheckHour" name="secondCheckHour">
-            <option value="">--</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="secondCheckMinute">시간 (분)</label>
-          <select id="secondCheckMinute" name="secondCheckMinute">
-            <option value="">--</option>
-          </select>
-        </div>
-      </div>
-      <div class="temp-humidity-row" style="margin-top:10px;">
-        <div class="input-group">
-          <label for="secondCheckTemp">온도 (℃)</label>
-          <input type="number" id="secondCheckTemp" name="secondCheckTemp" min="0" max="100" step="0.1" />
-        </div>
-        <div class="input-group">
-          <label for="secondCheckHumidity">습도 (%)</label>
-          <input type="number" id="secondCheckHumidity" name="secondCheckHumidity" min="0" max="100" step="0.1" />
-        </div>
-      </div>
+    <!-- 선별기 입력 항목 -->
+    <div class="section" id="section-선별기">
+      <label>선별기 점검내용</label>
+      <select name="category">
+        <option value="양호">양호</option>
+        <option value="이물 혼입">이물 혼입</option>
+        <option value="파손">파손</option>
+      </select>
+      <input type="text" name="subcategory" placeholder="비고 (선택)">
+      <input type="number" name="value" placeholder="수치 (선택)">
     </div>
 
-    <!-- 시스템OFF -->
-    <div id="section-systemOff" class="form-section hidden">
-      <h2>시스템OFF 점검</h2>
-      <div class="input-row">
-        <div class="input-group">
-          <label for="sysOffHour">점검시간 (시)</label>
-          <select id="sysOffHour" name="sysOffHour">
-            <option value="">--</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="sysOffMinute">점검시간 (분)</label>
-          <select id="sysOffMinute" name="sysOffMinute">
-            <option value="">--</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <button type="submit">📥 서버로 전송</button>
+    <button type="submit">✅ 서버로 전송</button>
   </form>
 
   <script>
-    function fillTimeOptions() {
-      const hours = [...Array(24).keys()];
-      const minutes = [...Array(60).keys()];
-      const hourSelects = document.querySelectorAll('select[id$="Hour"]');
-      const minuteSelects = document.querySelectorAll('select[id$="Minute"]');
-
-      hourSelects.forEach(sel => {
-        hours.forEach(h => {
-          const option = document.createElement('option');
-          option.value = h.toString().padStart(2, '0');
-          option.textContent = option.value;
-          sel.appendChild(option);
-        });
-      });
-
-      minuteSelects.forEach(sel => {
-        minutes.forEach(m => {
-          const option = document.createElement('option');
-          option.value = m.toString().padStart(2, '0');
-          option.textContent = option.value;
-          sel.appendChild(option);
-        });
-      });
-    }
-
-    fillTimeOptions();
-
     const groupSelect = document.getElementById("group");
     const sections = {
-      systemOn: document.getElementById("section-systemOn"),
-      firstCheck: document.getElementById("section-firstCheck"),
-      secondCheck: document.getElementById("section-secondCheck"),
-      systemOff: document.getElementById("section-systemOff")
+      "건조기1": document.getElementById("section-건조기1"),
+      "건조기2": document.getElementById("section-건조기2"),
+      "선별기": document.getElementById("section-선별기")
     };
 
     function hideAllSections() {
-      Object.values(sections).forEach(section => {
-        section.classList.add("hidden");
-        section.querySelectorAll("select, input").forEach(el => {
-          el.required = false;
-        });
-      });
+      Object.values(sections).forEach(section => section.classList.remove("visible"));
     }
 
     groupSelect.addEventListener("change", () => {
       hideAllSections();
       const selected = groupSelect.value;
       if (sections[selected]) {
-        sections[selected].classList.remove("hidden");
-        sections[selected].querySelectorAll("select, input").forEach(el => {
-          el.required = true;
-        });
+        sections[selected].classList.add("visible");
       }
     });
 
@@ -234,36 +90,42 @@
 
       const date = document.getElementById("date").value;
       const group = groupSelect.value;
-
       if (!date || !group) {
         alert("날짜와 점검옵션을 선택해주세요.");
         return;
       }
 
-      const data = { date, group };
-      const inputs = sections[group].querySelectorAll("select, input");
+      const section = sections[group];
+      if (!section) {
+        alert("해당 점검 섹션이 없습니다.");
+        return;
+      }
+
+      const inputs = section.querySelectorAll("select, input");
+      const entries = {};
       inputs.forEach(input => {
-        data[input.name] = input.value;
+        entries[input.name] = input.value;
       });
+
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ date, group, ...entries }));
 
       const scriptUrl = "https://script.google.com/macros/s/AKfycbwd9w4SCRYZAKPugiBTy5ede00RFprNBez0In8kb1roiPNkejo1z4zMPDcEQd3khWY1eg/exec";
 
       fetch(scriptUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ data: JSON.stringify(data) }),
+        body: formData
       })
-        .then(res => res.text())
-        .then(result => {
-          alert("✅ 저장 완료: " + result);
-          document.getElementById("trapForm").reset();
-          hideAllSections();
-        })
-        .catch(err => {
-          alert("❌ 에러: " + err.message);
-        });
+      .then(response => response.text())
+      .then(result => {
+        alert("✅ Google Sheet 저장 완료!\n\n" + result);
+        document.getElementById("trapForm").reset();
+        hideAllSections();
+        groupSelect.dispatchEvent(new Event("change")); // reset 이후 섹션 표시
+      })
+      .catch(err => {
+        alert("❌ 저장 중 오류 발생:\n\n" + err.message);
+      });
     });
   </script>
 </body>
