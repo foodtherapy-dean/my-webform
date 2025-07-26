@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>모바일 해충 입력</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: sans-serif;
@@ -11,21 +11,20 @@
       max-width: 600px;
       margin: auto;
     }
-    label,
-    select,
-    input {
+
+    label, select, input {
       font-size: 16px;
       margin: 5px 0;
     }
-    input[type="number"],
-    input[type="date"],
-    select {
+
+    input[type="number"], input[type="date"], select {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
     }
+
     button {
-      background-color: #4caf50;
+      background-color: #4CAF50;
       color: white;
       padding: 12px;
       width: 100%;
@@ -33,22 +32,25 @@
       margin-top: 20px;
       border: none;
       border-radius: 4px;
-      cursor: pointer;
     }
+
     .entry {
       border: 1px solid #ccc;
       padding: 10px;
       margin-top: 20px;
       border-radius: 5px;
     }
+
     .hidden {
       display: none;
     }
+
     .input-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
+
     .input-group {
       flex: 1 1 calc(33.333% - 10px);
       min-width: 120px;
@@ -56,12 +58,14 @@
       flex-direction: column;
       justify-content: flex-start;
     }
+
     .input-group div {
       margin-bottom: 4px;
       font-weight: bold;
       line-height: 1.4;
       word-break: keep-all;
     }
+
     @media (max-width: 500px) {
       .input-group {
         flex: 1 1 calc(50% - 10px);
@@ -73,7 +77,7 @@
   <h1>모바일 해충 입력</h1>
   <form id="trapForm">
     <label>📅 날짜:</label>
-    <input type="date" id="date" required />
+    <input type="date" id="date" required>
 
     <label>⚙ 그룹 선택:</label>
     <select id="group" required>
@@ -82,11 +86,9 @@
       <option value="생면동">생면동</option>
     </select>
 
-    <button type="button" id="loadBtn">📥 기존 데이터 불러오기</button>
-
     <div id="sections"></div>
 
-    <button type="submit">📤 서버로 저장</button>
+    <button type="submit">📥 서버로 전송</button>
   </form>
 
   <script>
@@ -105,7 +107,6 @@
 
     const container = document.getElementById("sections");
 
-    // 입력 필드 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -120,8 +121,7 @@
         group.className = "input-group";
         group.innerHTML = `
           <div>${sub}</div>
-          <input type="number" data-category="${category}" data-sub="${sub}" min="0" value="0" />
-
+          <input type="number" data-sub="${sub}" min="0" value="0">
         `;
         inputRow.appendChild(group);
       });
@@ -130,7 +130,6 @@
       container.appendChild(section);
     }
 
-    // 그룹 선택에 따른 방서트랩 숨기기 처리
     document.getElementById("group").addEventListener("change", function () {
       const group = this.value;
       const allSections = document.querySelectorAll(".entry");
@@ -143,17 +142,11 @@
       });
     });
 
-    // 서버로 저장
-    document.getElementById("trapForm").addEventListener("submit", async function (e) {
+    document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
       const date = document.getElementById("date").value;
       const group = document.getElementById("group").value;
-      if (!date || !group) {
-        alert("날짜와 그룹을 선택하세요.");
-        return;
-      }
-
       const sections = document.querySelectorAll(".entry:not(.hidden)");
 
       const entries = [];
@@ -162,60 +155,26 @@
         div.querySelectorAll("input").forEach(input => {
           const subcategory = input.dataset.sub;
           const value = parseInt(input.value) || 0;
-          entries.push([date, group, category, subcategory, value]);
+          entries.push({ category, subcategory, value });
         });
       });
 
+      const data = { date, group, entries };
       const formData = new FormData();
-      formData.append("data", JSON.stringify(entries));
+      formData.append("data", JSON.stringify(data));
 
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbxe0lxkArRoKloOC7mPwUN6H_KywX29nzVYGQFafP7eD1s5NvwezfHBg-q6wl8E4vafKg/exec", {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbwd9w4SCRYZAKPugiBTy5ede00RFprNBez0In8kb1roiPNkejo1z4zMPDcEQd3khWY1eg/exec", {
           method: "POST",
           body: formData
         });
+
         const result = await response.text();
-        alert("✅ 저장 완료!\n\n" + result);
+        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
       } catch (err) {
-        alert("❌ 저장 중 오류 발생:\n" + err.message);
+        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
       }
     });
-
-    // 기존 데이터 불러오기
-    async function loadExistingData() {
-      const date = document.getElementById("date").value;
-      const group = document.getElementById("group").value;
-      if (!date || !group) {
-        alert("날짜와 그룹을 선택하세요.");
-        return;
-      }
-
-      try {
-        const url = `https://script.google.com/macros/s/AKfycbxe0lxkArRoKloOC7mPwUN6H_KywX29nzVYGQFafP7eD1s5NvwezfHBg-q6wl8E4vafKg/exec?date=${encodeURIComponent(date)}&group=${encodeURIComponent(group)}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("응답 오류");
-        const data = await response.json();
-
-        // 모든 입력값 초기화 (0으로)
-        document.querySelectorAll(".entry input[type=number]").forEach(input => {
-          input.value = 0;
-        });
-
-        // 불러온 값으로 폼 채우기
-        data.forEach(item => {
-          const input = document.querySelector(`.entry[data-category="${item.category}"] input[data-sub="${item.subcategory}"]`);
-          if (input) {
-            input.value = item.value;
-          }
-        });
-
-        alert("✅ 기존 데이터 불러오기 완료");
-      } catch (err) {
-        alert("❌ 불러오기 실패: " + err.message);
-      }
-    }
-
-    document.getElementById("loadBtn").addEventListener("click", loadExistingData);
   </script>
 </body>
 </html>
