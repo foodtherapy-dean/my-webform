@@ -106,12 +106,15 @@
       const inputRow = document.createElement("div");
       inputRow.className = "input-row";
 
-      subs.forEach(sub => {
-        const group = document.createElement("div");
-        group.className = "input-group";
-        group.innerHTML = `<label>${sub}<input type="number" data-sub="${sub}" min="0" value="0"></label>`;
-        inputRow.appendChild(group);
-      });
+subs.forEach(sub => {
+  const group = document.createElement("div");
+  group.className = "input-group";
+  group.innerHTML = `
+    <div style="margin-bottom: 4px; font-weight: bold;">${sub}</div>
+    <input type="number" data-sub="${sub}" min="0" value="0">
+  `;
+  inputRow.appendChild(group);
+});
 
       section.appendChild(inputRow);
       container.appendChild(section);
