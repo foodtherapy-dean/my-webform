@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h1>지하수검침</h1>
+  <h1>지하수 검침</h1>
   <form id="trapForm">
     <label>📅 날짜:</label>
     <input type="date" id="date" required>
@@ -24,14 +24,14 @@
   </form>
 
   <script>
-    // 올바른 구조로 변경
+    // 구성 정의
     const structure = {
       "검침기수치": ["1호기", "2호기", "3호기"]
     };
 
     const container = document.getElementById("sections");
 
-    // 입력 필드 생성
+    // UI 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -43,7 +43,7 @@
       container.appendChild(section);
     }
 
-    // 전송 이벤트
+    // 폼 전송 처리
     document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -55,21 +55,21 @@
         const category = div.dataset.category;
         div.querySelectorAll("input").forEach(input => {
           const subcategory = input.dataset.sub;
-          const value = parseInt(input.value) || 0;
+          const value = parseFloat(input.value) || 0;
           entries.push({ category, subcategory, value });
         });
       });
 
-      // group 값은 필요시 사용자 정의, 임시로 비워둠
-      const group = "";
+      const group = ""; // 비워둠
 
       const data = { date, group, entries };
 
       const formData = new FormData();
+      formData.append("sheet", "지하수"); // 지하수 시트 지정
       formData.append("data", JSON.stringify(data));
 
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbwX0kZA3NAUl8p9fy9pOSqcfvMq8Z9VAf0dVE_4v1MXkwnreqQKiCldTgVgLAXpdP8Agg/exec", {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbxE5tSdTEJpwwhTrrpRSFxpwAiU1K-Qx2u1yhXV7dnO4Fu0AFblDJE904MactdySkGdHQ/exec", {
           method: "POST",
           body: formData
         });
