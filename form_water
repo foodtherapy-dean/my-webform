@@ -34,7 +34,7 @@
       formData.append("water", JSON.stringify(data));
 
       try {
-        const response = await fetch("<<YOUR_SCRIPT_URL_HERE>>", {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbycla5Zn7ELyMF0g-tbyh4H-SuZZBSX4cQ-LTakqCd3y68Fzm2zTaKYDb0T6hoodfc7DQ/exec", {
           method: "POST",
           body: formData
         });
