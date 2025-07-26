@@ -234,50 +234,42 @@
       }
     });
 
-    // 폼 제출 이벤트 (실제 구글시트 전송 로직 넣으시면 됩니다)
-document.getElementById("trapForm").addEventListener("submit", (e) => {
-  e.preventDefault();
+    document.getElementById("trapForm").addEventListener("submit", (e) => {
+      e.preventDefault();
 
-  const date = document.getElementById("date").value;
-  const group = groupSelect.value;
-  if(!date || !group) {
-    alert("날짜와 점검옵션을 선택해주세요.");
-    return;
-  }
+      const date = document.getElementById("date").value;
+      const group = groupSelect.value;
+      if(!date || !group) {
+        alert("날짜와 점검옵션을 선택해주세요.");
+        return;
+      }
 
-  // 선택된 섹션 내 입력값 수집
-  const data = { date, group };
-  const inputs = sections[group].querySelectorAll("select, input");
-  inputs.forEach(input => {
-    data[input.name] = input.value;
-  });
+      // 선택된 섹션 내 입력값 수집
+      const data = { date, group };
+      const inputs = sections[group].querySelectorAll("select, input");
+      inputs.forEach(input => {
+        data[input.name] = input.value;
+      });
 
-  // 구글 앱스 스크립트 웹앱 URL - 본인 URL로 꼭 바꿔주세요!
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbwd9w4SCRYZAKPugiBTy5ede00RFprNBez0In8kb1roiPNkejo1z4zMPDcEQd3khWY1eg/exec";
+      // 본인 구글 앱스 스크립트 웹앱 URL로 변경하세요
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwd9w4SCRYZAKPugiBTy5ede00RFprNBez0In8kb1roiPNkejo1z4zMPDcEQd3khWY1eg/exec";
 
-  // FormData 생성 (JSON 문자열로 담기)
-  const formData = new FormData();
-  formData.append("data", JSON.stringify(data));
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(data));
 
-  fetch(scriptUrl, {
-    method: "POST",
-    body: formData
-  })
-  .then(response => response.text())
-  .then(result => {
-    alert("✅ Google Sheet에 저장 완료!\n\n" + result);
-    document.getElementById("trapForm").reset();
-    hideAllSections();
-  })
-  .catch(err => {
-    alert("❌ 전송 중 오류 발생:\n\n" + err.message);
-  });
-});
-
-      // 예시: 데이터 JSON 출력
-      alert("입력 데이터:\n" + JSON.stringify(data, null, 2));
-
-      // 여기서 fetch 등으로 구글앱스스크립트에 전송하세요
+      fetch(scriptUrl, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.text())
+      .then(result => {
+        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
+        document.getElementById("trapForm").reset();
+        hideAllSections();
+      })
+      .catch(err => {
+        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
+      });
     });
   </script>
 </body>
