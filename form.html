@@ -120,7 +120,8 @@
         group.className = "input-group";
         group.innerHTML = `
           <div>${sub}</div>
-          <input type="number" data-sub="${sub}" min="0" value="0" />
+          <input type="number" data-category="${category}" data-sub="${sub}" min="0" value="0" />
+
         `;
         inputRow.appendChild(group);
       });
