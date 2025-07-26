@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>모바일 해충 입력</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: sans-serif;
@@ -11,20 +11,21 @@
       max-width: 600px;
       margin: auto;
     }
-
-    label, select, input {
+    label,
+    select,
+    input {
       font-size: 16px;
       margin: 5px 0;
     }
-
-    input[type="number"], input[type="date"], select {
+    input[type='number'],
+    input[type='date'],
+    select {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
     }
-
     button {
-      background-color: #4CAF50;
+      background-color: #4caf50;
       color: white;
       padding: 12px;
       width: 100%;
@@ -33,24 +34,20 @@
       border: none;
       border-radius: 4px;
     }
-
     .entry {
       border: 1px solid #ccc;
       padding: 10px;
       margin-top: 20px;
       border-radius: 5px;
     }
-
     .hidden {
       display: none;
     }
-
     .input-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
-
     .input-group {
       flex: 1 1 calc(33.333% - 10px);
       min-width: 120px;
@@ -58,14 +55,12 @@
       flex-direction: column;
       justify-content: flex-start;
     }
-
     .input-group div {
       margin-bottom: 4px;
       font-weight: bold;
       line-height: 1.4;
       word-break: keep-all;
     }
-
     @media (max-width: 500px) {
       .input-group {
         flex: 1 1 calc(50% - 10px);
@@ -77,7 +72,7 @@
   <h1>모바일 해충 입력</h1>
   <form id="trapForm">
     <label>📅 날짜:</label>
-    <input type="date" id="date" required>
+    <input type="date" id="date" required />
 
     <label>⚙ 그룹 선택:</label>
     <select id="group" required>
@@ -102,11 +97,12 @@
       "방서트랩1": ["쥐", "기타2"],
       "방서트랩2": ["쥐", "기타2"],
       "방서트랩3": ["쥐", "기타2"],
-      "방서트랩4": ["쥐", "기타2"]
+      "방서트랩4": ["쥐", "기타2"],
     };
 
     const container = document.getElementById("sections");
 
+    // 입력칸 자동 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -116,12 +112,12 @@
       const inputRow = document.createElement("div");
       inputRow.className = "input-row";
 
-      subs.forEach(sub => {
+      subs.forEach((sub) => {
         const group = document.createElement("div");
         group.className = "input-group";
         group.innerHTML = `
           <div>${sub}</div>
-          <input type="number" data-sub="${sub}" min="0" value="0">
+          <input type="number" data-sub="${sub}" min="0" value="0" />
         `;
         inputRow.appendChild(group);
       });
@@ -130,19 +126,62 @@
       container.appendChild(section);
     }
 
+    // 그룹 선택 시 보임/숨김 토글 및 데이터 로드 호출
     document.getElementById("group").addEventListener("change", function () {
       const group = this.value;
       const allSections = document.querySelectorAll(".entry");
 
-      allSections.forEach(section => {
+      allSections.forEach((section) => {
         const cat = section.dataset.category;
         if (cat.startsWith("방서트랩")) {
           section.classList.toggle("hidden", group === "생면동");
         }
       });
+
+      const date = document.getElementById("date").value;
+      loadData(date, group);
     });
 
-    document.getElementById("trapForm").addEventListener("submit", async function(e) {
+    // 날짜 변경 시 데이터 로드
+    document.getElementById("date").addEventListener("change", () => {
+      const date = document.getElementById("date").value;
+      const group = document.getElementById("group").value;
+      loadData(date, group);
+    });
+
+    // 데이터 불러오기 함수
+    async function loadData(date, group) {
+      if (!date || !group) return;
+
+      try {
+        const url = `https://script.google.com/macros/s/AKfycbzc6yT0PE3HNDRy9yvs3fM6Ls_Y-eYzgkpaUmtbTqncbtXBgVTa-n5-ek8f5v6KPrk/exec?action=load&date=${encodeURIComponent(
+          date
+        )}&zone=${encodeURIComponent(group)}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("서버 응답 오류");
+        const data = await response.json();
+
+        // 모든 입력란 0 초기화
+        document
+          .querySelectorAll(".entry:not(.hidden) input[type=number]")
+          .forEach((input) => (input.value = 0));
+
+        // 서버 데이터로 입력란 채우기
+        data.forEach((item) => {
+          const section = document.querySelector(`.entry[data-category="${item.category}"]`);
+          if (!section) return;
+          const input = section.querySelector(`input[data-sub="${item.subcategory}"]`);
+          if (input) {
+            input.value = item.value;
+          }
+        });
+      } catch (err) {
+        alert("❌ 데이터 로드 오류:\n" + err.message);
+      }
+    }
+
+    // 폼 제출 이벤트
+    document.getElementById("trapForm").addEventListener("submit", async function (e) {
       e.preventDefault();
 
       const date = document.getElementById("date").value;
@@ -150,24 +189,28 @@
       const sections = document.querySelectorAll(".entry:not(.hidden)");
 
       const entries = [];
-      sections.forEach(div => {
+      sections.forEach((div) => {
         const category = div.dataset.category;
-        div.querySelectorAll("input").forEach(input => {
+        div.querySelectorAll("input").forEach((input) => {
           const subcategory = input.dataset.sub;
           const value = parseInt(input.value) || 0;
           entries.push({ category, subcategory, value });
         });
       });
 
+      // 서버로 보낼 구조
       const data = { date, group, entries };
       const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbzc6yT0PE3HNDRy9yvs3fM6Ls_Y-eYzgkpaUmtbTqncbtXBgVTa-n5-ek8f5v6KPrk/exec", {
-          method: "POST",
-          body: formData
-        });
+        const response = await fetch(
+          "https://script.google.com/macros/s/AKfycbzc6yT0PE3HNDRy9yvs3fM6Ls_Y-eYzgkpaUmtbTqncbtXBgVTa-n5-ek8f5v6KPrk/exec",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
         const result = await response.text();
         alert("✅ Google Sheet에 저장 완료!\n\n" + result);
