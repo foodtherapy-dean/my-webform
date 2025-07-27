@@ -111,7 +111,7 @@
       const section = document.createElement("div");
       section.className = "entry";
       section.dataset.category = category;
-      section.innerHTML = <h2>${category}</h2>;
+      section.innerHTML = `<h2>${category}</h2>`;
 
       const inputRow = document.createElement("div");
       inputRow.className = "input-row";
@@ -119,10 +119,10 @@
       subs.forEach(sub => {
         const group = document.createElement("div");
         group.className = "input-group";
-        group.innerHTML = 
+        group.innerHTML = `
           <div>${sub}</div>
           <input type="number" data-sub="${sub}" min="0" value="0">
-        ;
+        `;
         inputRow.appendChild(group);
       });
 
@@ -178,5 +178,3 @@
   </script>
 </body>
 </html>
-
-
