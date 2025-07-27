@@ -2,51 +2,66 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>금속검출 점검</title>
   <style>
     body {
       font-family: sans-serif;
-      padding: 10px;
       max-width: 600px;
       margin: auto;
+      padding: 20px;
     }
 
-    .form-section {
-      margin-bottom: 20px;
+    h2 {
+      text-align: center;
     }
 
     label {
       font-weight: bold;
       display: block;
-      margin-bottom: 6px;
+      margin-top: 20px;
     }
 
-    input[type="number"],
-    select {
+    select, input[type="number"], button {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       font-size: 16px;
+      margin-top: 5px;
+      box-sizing: border-box;
       text-align: center;
     }
 
     .inline-row {
       display: flex;
       gap: 10px;
+      margin-top: 5px;
     }
 
-    .inline-row > div {
+    .inline-row select, .inline-row input {
       flex: 1;
     }
 
+    .hidden {
+      display: none;
+    }
+
     .ox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-top: 10px;
+      justify-content: space-between;
+    }
+
+    .ox-item {
+      flex: 1 1 45%;
+      text-align: center;
     }
 
     .ox-label {
-      text-align: center;
-      margin-bottom: 4px;
-      font-size: 14px;
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
 
     .ox-buttons {
@@ -55,83 +70,67 @@
       gap: 10px;
     }
 
-    .ox-button {
+    .ox-buttons button {
       flex: 1;
-      padding: 8px;
-      font-size: 16px;
-      border: 1px solid #aaa;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #f1f1f1;
-    }
-
-    .ox-button.active {
-      background: #007bff;
-      color: white;
+      padding: 10px 0;
+      font-size: 18px;
       font-weight: bold;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
+    .ox-buttons button.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .row-inline {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .row-inline input {
+      flex: 1;
+    }
+
+    button[type="submit"] {
+      margin-top: 30px;
+      background-color: #ccc;
       border: none;
-      border-radius: 6px;
-      background-color: #ddd;
-      cursor: pointer;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .center {
-      text-align: center;
-    }
-
-    .input-center {
-      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h2>금속검출 점검</h2>
-
-  <div class="form-section">
+  <form id="magnetForm">
     <label for="date">날짜</label>
-    <input type="date" id="date" />
-  </div>
+    <input type="date" id="date" name="date" required />
 
-  <div class="form-section">
-    <label for="inspection">점검 옵션</label>
-    <select id="inspection">
+    <label for="option">점검 옵션</label>
+    <select id="option" name="option" required>
       <option value="">선택하세요</option>
       <option value="1차점검">1차점검</option>
       <option value="2차점검">2차점검</option>
       <option value="3차점검">3차점검</option>
       <option value="최종취합">최종취합</option>
     </select>
-  </div>
 
-  <div id="details" class="hidden">
-    <div class="form-section inline-row">
-      <div>
-        <label>시</label>
+    <div id="timeRow" class="hidden">
+      <label>시간</label>
+      <div class="inline-row">
         <select id="hour">
-          ${[...Array(24).keys()].map(i => `<option value="${i}">${i}</option>`).join("")}
+          ${[...Array(24).keys()].map(h => `<option value="${h}">${h}시</option>`).join('')}
         </select>
-      </div>
-      <div>
-        <label>분</label>
         <select id="minute">
-          ${[0,10,20,30,40,50].map(i => `<option value="${i}">${i}</option>`).join("")}
+          ${[0, 10, 20, 30, 40, 50].map(m => `<option value="${m}">${m}분</option>`).join('')}
         </select>
       </div>
     </div>
 
-    <div class="form-section">
+    <div id="productRow" class="hidden">
       <label for="product">제품명</label>
-      <select id="product">
+      <select id="product" name="product" required>
         <option value="">선택하세요</option>
         <option>제품A</option>
         <option>제품B</option>
@@ -142,84 +141,98 @@
       </select>
     </div>
 
-    <div id="oxSection" class="form-section">
-      ${["자석검출", "금속검출", "테스트완료", "작업자확인", "기기정상"]
-        .map((label, i) => `
-        <div class="ox-group">
-          <div class="ox-label">${label}</div>
-          <div class="ox-buttons" data-label="${label}">
-            <button type="button" class="ox-button" data-value="O">O</button>
-            <button type="button" class="ox-button" data-value="X">X</button>
+    <div id="oxGroup" class="ox-group hidden">
+      ${["자석검출", "금속검출", "테스트완료", "작업자확인", "기기정상"].map((label, i) => `
+        <div class="ox-item">
+          <span class="ox-label">${label}</span>
+          <div class="ox-buttons">
+            <button type="button" data-label="${label}" data-value="O">O</button>
+            <button type="button" data-label="${label}" data-value="X">X</button>
           </div>
         </div>
-      `).join("")}
+      `).join('')}
     </div>
 
-    <div id="finalSection" class="form-section hidden">
-      <div class="inline-row">
-        <div>
-          <label>검출 수량</label>
-          <input type="number" id="failCount" class="input-center" />
-        </div>
-        <div>
-          <label>통과 수량</label>
-          <input type="number" id="passCount" class="input-center" />
-        </div>
+    <div id="resultRow" class="hidden">
+      <label>최종취합 결과</label>
+      <div class="row-inline">
+        <input type="number" id="passCount" placeholder="통과 수량" />
+        <input type="number" id="failCount" placeholder="검출 수량" />
       </div>
     </div>
-  </div>
 
-  <button onclick="submitForm()">저장</button>
+    <button type="submit">저장</button>
+  </form>
 
   <script>
-    const inspection = document.getElementById("inspection");
-    const details = document.getElementById("details");
-    const finalSection = document.getElementById("finalSection");
+    // 오늘 날짜 자동 설정
+    document.getElementById('date').valueAsDate = new Date();
 
-    inspection.addEventListener("change", () => {
-      const show = inspection.value !== "";
-      details.classList.toggle("hidden", !show);
-      finalSection.classList.toggle("hidden", inspection.value !== "최종취합");
+    // 점검 옵션에 따라 입력창 표시
+    const optionEl = document.getElementById('option');
+    optionEl.addEventListener('change', () => {
+      const val = optionEl.value;
+      const showInputs = val && val !== '최종취합';
+
+      document.getElementById('timeRow').classList.toggle('hidden', !showInputs);
+      document.getElementById('productRow').classList.toggle('hidden', !showInputs);
+      document.getElementById('oxGroup').classList.toggle('hidden', !showInputs);
+      document.getElementById('resultRow').classList.toggle('hidden', val !== '최종취합');
     });
 
-    document.querySelectorAll(".ox-buttons").forEach(group => {
-      const buttons = group.querySelectorAll(".ox-button");
-      buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          buttons.forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-        });
+    // O/X 버튼 토글
+    document.querySelectorAll('.ox-buttons button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const siblings = btn.parentElement.querySelectorAll('button');
+        siblings.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
       });
     });
 
-    function submitForm() {
+    // 저장 로직
+    document.getElementById('magnetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const date = document.getElementById('date').value;
+      const option = optionEl.value;
+      const hour = document.getElementById('hour')?.value || '';
+      const minute = document.getElementById('minute')?.value || '';
+      const product = document.getElementById('product')?.value || '';
+      const passCount = document.getElementById('passCount')?.value || '';
+      const failCount = document.getElementById('failCount')?.value || '';
+
+      const status = {};
+      document.querySelectorAll('.ox-item').forEach(item => {
+        const label = item.querySelector('button')?.dataset.label;
+        const selected = item.querySelector('button.active');
+        if (label && selected) status[label] = selected.dataset.value;
+      });
+
       const data = {
         type: "magnet",
-        date: document.getElementById("date").value,
-        option: inspection.value,
-        hour: document.getElementById("hour").value,
-        minute: document.getElementById("minute").value,
-        product: document.getElementById("product").value,
-        ox: {},
-        passCount: document.getElementById("passCount").value,
-        failCount: document.getElementById("failCount").value
+        date,
+        option,
+        hour,
+        minute,
+        product,
+        passCount,
+        failCount,
+        status
       };
 
-      document.querySelectorAll(".ox-buttons").forEach(group => {
-        const label = group.dataset.label;
-        const selected = group.querySelector(".active");
-        data.ox[label] = selected ? selected.textContent : "";
-      });
+      try {
+        const res = await fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "data=" + encodeURIComponent(JSON.stringify(data))
+        });
 
-      fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "data=" + encodeURIComponent(JSON.stringify(data))
-      })
-      .then(res => res.text())
-      .then(msg => alert(msg))
-      .catch(err => alert("에러 발생: " + err));
-    }
+        const text = await res.text();
+        alert("저장 완료: " + text);
+      } catch (err) {
+        alert("오류 발생: " + err.message);
+      }
+    });
   </script>
 </body>
 </html>
