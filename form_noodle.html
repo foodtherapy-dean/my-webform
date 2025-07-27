@@ -1,28 +1,35 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>건면공정 모니터링</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-    }
-    input, select, button {
-      display: block;
-      width: 100%;
-      margin-bottom: 15px;
-      padding: 8px;
-      font-size: 16px;
-    }
-    label {
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>건면공정 모니터링</title>
+<style>
+  body {
+    font-family: sans-serif;
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+  }
+  label {
+    font-weight: bold;
+    margin-top: 10px;
+    display: block;
+  }
+  select, input, button {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    margin-top: 5px;
+  }
+  .inline-row {
+    display: flex;
+    gap: 10px;
+  }
+  .inline-row > * {
+    flex: 1;
+  }
+</style>
 </head>
 <body>
   <h2>건면공정 점검 입력</h2>
@@ -32,58 +39,153 @@
 
   <label for="group">점검 옵션</label>
   <select id="group" required>
+    <option value="">선택하세요</option>
     <option value="시스템ON">시스템ON</option>
     <option value="1차점검">1차점검</option>
     <option value="2차점검">2차점검</option>
     <option value="시스템OFF">시스템OFF</option>
   </select>
 
-  <label for="hour">시간 (시)</label>
-  <input type="number" id="hour" min="0" max="23" required />
-
-  <label for="minute">시간 (분)</label>
-  <input type="number" id="minute" min="0" max="59" required />
+  <div class="inline-row" style="margin-top:10px;">
+    <div>
+      <label for="hour">시간 (시)</label>
+      <select id="hour" required></select>
+    </div>
+    <div>
+      <label for="minute">시간 (분)</label>
+      <select id="minute" required></select>
+    </div>
+  </div>
 
   <label for="temp">온도 (℃)</label>
-  <input type="number" id="temp" step="0.1" required />
+  <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
 
   <label for="humidity">습도 (%)</label>
-  <input type="number" id="humidity" step="0.1" required />
+  <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
 
-  <button onclick="submitForm()">저장</button>
+  <button id="submitBtn" style="margin-top: 20px;">저장</button>
 
-  <p id="result"></p>
+<script>
+  const groupSelect = document.getElementById("group");
+  const hourSelect = document.getElementById("hour");
+  const minuteSelect = document.getElementById("minute");
+  const tempInput = document.getElementById("temp");
+  const humidityInput = document.getElementById("humidity");
+  const submitBtn = document.getElementById("submitBtn");
 
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec"; // 여러분의 실제 URL로 교체
-
-    function submitForm() {
-      const data = {
-        date: document.getElementById("date").value,
-        group: document.getElementById("group").value,
-        entries: {
-          hour: document.getElementById("hour").value,
-          minute: document.getElementById("minute").value,
-          temp: document.getElementById("temp").value,
-          humidity: document.getElementById("humidity").value
-        }
-      };
-
-      console.log("📤 전송 데이터:", data);
-
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-      })
-      .then(response => response.text())
-      .then(text => {
-        document.getElementById("result").innerText = text;
-      })
-      .catch(error => {
-        document.getElementById("result").innerText = "❌ 전송 에러: " + error;
-      });
+  // 시(0~23) / 분(0~59) select 옵션 생성
+  function fillTimeOptions() {
+    for(let h=0; h<24; h++) {
+      const option = document.createElement("option");
+      option.value = h.toString().padStart(2,"0");
+      option.textContent = h.toString().padStart(2,"0");
+      hourSelect.appendChild(option);
     }
-  </script>
+    for(let m=0; m<60; m++) {
+      const option = document.createElement("option");
+      option.value = m.toString().padStart(2,"0");
+      option.textContent = m.toString().padStart(2,"0");
+      minuteSelect.appendChild(option);
+    }
+  }
+  fillTimeOptions();
+
+  // 옵션별 입력 필드 활성/비활성 및 required 제어 함수
+  function updateInputFields() {
+    const group = groupSelect.value;
+
+    if(group === "시스템ON" || group === "시스템OFF") {
+      // 시, 분 필수 / 온도, 습도 비활성화, 필수 해제
+      hourSelect.disabled = false; hourSelect.required = true;
+      minuteSelect.disabled = false; minuteSelect.required = true;
+
+      tempInput.disabled = true; tempInput.required = false; tempInput.value = "";
+      humidityInput.disabled = true; humidityInput.required = false; humidityInput.value = "";
+    } 
+    else if(group === "1차점검" || group === "2차점검") {
+      // 시, 분, 온도, 습도 모두 활성화, 모두 필수
+      hourSelect.disabled = false; hourSelect.required = true;
+      minuteSelect.disabled = false; minuteSelect.required = true;
+
+      tempInput.disabled = false; tempInput.required = true;
+      humidityInput.disabled = false; humidityInput.required = true;
+    } else {
+      // 선택없음 상태 - 모두 비활성화 필수 해제
+      hourSelect.disabled = true; hourSelect.required = false;
+      minuteSelect.disabled = true; minuteSelect.required = false;
+      tempInput.disabled = true; tempInput.required = false;
+      humidityInput.disabled = true; humidityInput.required = false;
+    }
+  }
+
+  groupSelect.addEventListener("change", () => {
+    updateInputFields();
+  });
+
+  // 폼 제출 시 유효성 검사 및 전송
+  submitBtn.addEventListener("click", () => {
+    if (!groupSelect.value) {
+      alert("점검 옵션을 선택하세요.");
+      groupSelect.focus();
+      return;
+    }
+    if (!document.getElementById("date").value) {
+      alert("날짜를 선택하세요.");
+      document.getElementById("date").focus();
+      return;
+    }
+    if (hourSelect.disabled === false && !hourSelect.value) {
+      alert("시간(시)을 선택하세요.");
+      hourSelect.focus();
+      return;
+    }
+    if (minuteSelect.disabled === false && !minuteSelect.value) {
+      alert("시간(분)을 선택하세요.");
+      minuteSelect.focus();
+      return;
+    }
+    if (!tempInput.disabled && !tempInput.value) {
+      alert("온도를 입력하세요.");
+      tempInput.focus();
+      return;
+    }
+    if (!humidityInput.disabled && !humidityInput.value) {
+      alert("습도를 입력하세요.");
+      humidityInput.focus();
+      return;
+    }
+
+    // 전송 데이터 구성
+    const data = {
+      date: document.getElementById("date").value,
+      group: groupSelect.value,
+      entries: {
+        hour: hourSelect.value,
+        minute: minuteSelect.value,
+        temp: tempInput.value,
+        humidity: humidityInput.value
+      }
+    };
+
+    console.log("전송 데이터:", data);
+
+    // 구글 앱스 스크립트 URL (실제 URL로 교체)
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec";
+
+    fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
+    })
+    .then(res => res.text())
+    .then(text => alert("서버 응답: " + text))
+    .catch(err => alert("에러 발생: " + err.message));
+  });
+
+  // 초기 상태 필드 비활성화
+  updateInputFields();
+
+</script>
+
 </body>
 </html>
