@@ -57,11 +57,17 @@
     </div>
   </div>
 
-  <label for="temp">온도 (℃)</label>
-  <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
-
-  <label for="humidity">습도 (%)</label>
-  <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
+<!-- 온도/습도 입력 그룹 : 시/분과 같은 행에 배치 -->
+<div class="inline-row" style="margin-top:10px;">
+  <div>
+    <label for="temp">온도 (℃)</label>
+    <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
+  </div>
+  <div>
+    <label for="humidity">습도 (%)</label>
+    <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
+  </div>
+</div>
 
   <button id="submitBtn" style="margin-top: 20px;">저장</button>
 
