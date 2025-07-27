@@ -1,4 +1,3 @@
-최근에 올릴 코드는 아래와 같습니다.
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -240,41 +239,61 @@
 
       const date = document.getElementById("date").value;
       const group = groupSelect.value;
-      if(!date || !group) {
+      if (!date || !group) {
         alert("날짜와 점검옵션을 선택해주세요.");
         return;
       }
 
-      // 선택된 섹션 내 입력값 수집
-      const data = { 
-  type: "process", // 꼭 추가
-  date, 
-  group 
-};
-      const inputs = sections[group].querySelectorAll("select, input");
-      inputs.forEach(input => {
-        data[input.name] = input.value;
-      });
+      let hour = "", minute = "", temp = "", humi = "";
 
-      // 본인 구글 앱스 스크립트 웹앱 URL로 변경하세요
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbwQGwU5u7EmIA_P7nMaKV5YpgUp3nDjfmcwISBo6GiAp6DtDh2SHXGRrUe-oe7zIJVFBw/exec";
+      switch (group) {
+        case "systemOn":
+          hour = document.getElementById("sysOnHour").value;
+          minute = document.getElementById("sysOnMinute").value;
+          break;
+        case "systemOff":
+          hour = document.getElementById("sysOffHour").value;
+          minute = document.getElementById("sysOffMinute").value;
+          break;
+        case "firstCheck":
+          hour = document.getElementById("firstCheckHour").value;
+          minute = document.getElementById("firstCheckMinute").value;
+          temp = document.getElementById("firstCheckTemp").value;
+          humi = document.getElementById("firstCheckHumidity").value;
+          break;
+        case "secondCheck":
+          hour = document.getElementById("secondCheckHour").value;
+          minute = document.getElementById("secondCheckMinute").value;
+          temp = document.getElementById("secondCheckTemp").value;
+          humi = document.getElementById("secondCheckHumidity").value;
+          break;
+      }
+
+      // entries 배열 항상 4개 요소로 구성 (시, 분, 온도, 습도)
+      const data = {
+        date,
+        group,
+        entries: [[hour, minute, temp, humi]]
+      };
 
       const formData = new FormData();
-      formData.append("data", JSON.stringify(data));
+      formData.append("process", JSON.stringify(data));
+
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwQGwU5u7EmIA_P7nMaKV5YpgUp3nDjfmcwISBo6GiAp6DtDh2SHXGRrUe-oe7zIJVFBw/exec";
 
       fetch(scriptUrl, {
         method: "POST",
         body: formData
       })
-      .then(response => response.text())
-      .then(result => {
-        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
-        document.getElementById("trapForm").reset();
-        hideAllSections();
-      })
-      .catch(err => {
-        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
-      });
+        .then(response => response.text())
+        .then(result => {
+          alert("✅ Google Sheet에 저장 완료!\n\n" + result);
+          document.getElementById("trapForm").reset();
+          hideAllSections();
+        })
+        .catch(err => {
+          alert("❌ 전송 중 오류 발생:\n\n" + err.message);
+        });
     });
   </script>
 </body>
