@@ -12,7 +12,7 @@
 </head>
 <body>
   <h1>건면공정</h1>
-  <form id="waterForm">
+  <form id="noodleForm">
     <label for="date">📅 날짜</label>
     <input type="date" id="date" required>
 
@@ -23,7 +23,7 @@
   </form>
 
   <script>
-    document.getElementById("waterForm").addEventListener("submit", async function(e) {
+    document.getElementById("noodleForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
       const date = document.getElementById("date").value;
