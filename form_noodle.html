@@ -246,7 +246,11 @@
       }
 
       // 선택된 섹션 내 입력값 수집
-      const data = { date, group };
+      const data = { 
+  type: "process", // 꼭 추가
+  date, 
+  group 
+};
       const inputs = sections[group].querySelectorAll("select, input");
       inputs.forEach(input => {
         data[input.name] = input.value;
