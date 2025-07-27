@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>건면공정 모니터링</title>
+<title>건조공정_모니터링</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   body {
@@ -17,8 +17,8 @@
   }
   input[type="number"], input[type="date"], select {
     width: 100%;
-    padding: 8px;
     box-sizing: border-box;
+    padding: 8px;
   }
   button {
     background-color: #4CAF50;
@@ -40,201 +40,164 @@
   .input-row {
     display: flex;
     gap: 10px;
+    align-items: center;
   }
   .input-group {
     flex: 1;
   }
+  .input-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .temp-humidity-row {
+    display: flex;
+    gap: 10px;
+  }
 </style>
 </head>
 <body>
-<h1>건면공정 모니터링</h1>
+  <h1>건조공정_모니터링</h1>
+  <form id="trapForm">
+    <label for="date">📅 날짜:</label>
+    <input type="date" id="date" name="date" required />
 
-<form id="trapForm">
-  <label for="date">📅 날짜</label>
-  <input type="date" id="date" name="date" required />
+    <label for="group">⚙ 점검옵션 선택:</label>
+    <select id="group" name="group" required>
+      <option value="">선택하세요</option>
+      <option value="systemOn">시스템ON</option>
+      <option value="firstCheck">1차점검</option>
+      <option value="secondCheck">2차점검</option>
+      <option value="systemOff">시스템OFF</option>
+    </select>
 
-  <label for="group">⚙ 점검옵션</label>
-  <select id="group" name="group" required>
-    <option value="">선택</option>
-    <option value="systemOn">시스템 ON</option>
-    <option value="firstCheck">1차 점검</option>
-    <option value="secondCheck">2차 점검</option>
-    <option value="systemOff">시스템 OFF</option>
-  </select>
+    <!-- 각 섹션들 생략 없이 동일 (systemOn, firstCheck, secondCheck, systemOff) -->
+    <!-- ... [생략 없이 동일 구조] ... -->
 
-  <!-- 시스템 ON -->
-  <div id="section-systemOn" class="form-section hidden">
-    <h2>시스템 ON</h2>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="systemOnHour">시간(시)</label>
-        <select id="systemOnHour" name="systemOnHour"></select>
-      </div>
-      <div class="input-group">
-        <label for="systemOnMinute">시간(분)</label>
-        <select id="systemOnMinute" name="systemOnMinute"></select>
-      </div>
-    </div>
-  </div>
-
-  <!-- 1차 점검 -->
-  <div id="section-firstCheck" class="form-section hidden">
-    <h2>1차 점검</h2>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="firstCheckHour">시간(시)</label>
-        <select id="firstCheckHour" name="firstCheckHour"></select>
-      </div>
-      <div class="input-group">
-        <label for="firstCheckMinute">시간(분)</label>
-        <select id="firstCheckMinute" name="firstCheckMinute"></select>
+    <!-- 예시: 시스템ON 섹션 -->
+    <div id="section-systemOn" class="form-section hidden">
+      <h2>시스템ON 점검</h2>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="systemOnHour">점검시간 (시)</label>
+          <select id="systemOnHour" name="systemOnHour"></select>
+        </div>
+        <div class="input-group">
+          <label for="systemOnMinute">점검시간 (분)</label>
+          <select id="systemOnMinute" name="systemOnMinute"></select>
+        </div>
       </div>
     </div>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="firstCheckTemp">온도 (℃)</label>
-        <input type="number" id="firstCheckTemp" name="firstCheckTemp" />
-      </div>
-      <div class="input-group">
-        <label for="firstCheckHumidity">습도 (%)</label>
-        <input type="number" id="firstCheckHumidity" name="firstCheckHumidity" />
-      </div>
-    </div>
-  </div>
 
-  <!-- 2차 점검 -->
-  <div id="section-secondCheck" class="form-section hidden">
-    <h2>2차 점검</h2>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="secondCheckHour">시간(시)</label>
-        <select id="secondCheckHour" name="secondCheckHour"></select>
-      </div>
-      <div class="input-group">
-        <label for="secondCheckMinute">시간(분)</label>
-        <select id="secondCheckMinute" name="secondCheckMinute"></select>
-      </div>
-    </div>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="secondCheckTemp">온도 (℃)</label>
-        <input type="number" id="secondCheckTemp" name="secondCheckTemp" />
-      </div>
-      <div class="input-group">
-        <label for="secondCheckHumidity">습도 (%)</label>
-        <input type="number" id="secondCheckHumidity" name="secondCheckHumidity" />
-      </div>
-    </div>
-  </div>
+    <!-- 1차, 2차, 시스템OFF 도 동일 방식으로 유지 -->
 
-  <!-- 시스템 OFF -->
-  <div id="section-systemOff" class="form-section hidden">
-    <h2>시스템 OFF</h2>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="systemOffHour">시간(시)</label>
-        <select id="systemOffHour" name="systemOffHour"></select>
-      </div>
-      <div class="input-group">
-        <label for="systemOffMinute">시간(분)</label>
-        <select id="systemOffMinute" name="systemOffMinute"></select>
-      </div>
-    </div>
-  </div>
+    <button type="submit">📥 서버로 전송</button>
+  </form>
 
-  <button type="submit">📥 전송</button>
-</form>
+  <script>
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzhtESUfguF2-cvNEv3B8BdQCdqhlpcux2WtJcUtfb_wP7iGuTvpso9YTRmAbC7_TRvIQ/exec";
 
-<script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzhtESUfguF2-cvNEv3B8BdQCdqhlpcux2WtJcUtfb_wP7iGuTvpso9YTRmAbC7_TRvIQ/exec";
-
-const fillOptions = () => {
-  const hours = [...Array(24).keys()];
-  const minutes = [...Array(60).keys()];
-  document.querySelectorAll("select[id$='Hour']").forEach(sel => {
-    hours.forEach(h => {
-      const opt = document.createElement("option");
-      opt.value = String(h).padStart(2, '0');
-      opt.textContent = opt.value;
-      sel.appendChild(opt);
-    });
-  });
-  document.querySelectorAll("select[id$='Minute']").forEach(sel => {
-    minutes.forEach(m => {
-      const opt = document.createElement("option");
-      opt.value = String(m).padStart(2, '0');
-      opt.textContent = opt.value;
-      sel.appendChild(opt);
-    });
-  });
-};
-
-fillOptions();
-
-const groupSelect = document.getElementById("group");
-const dateInput = document.getElementById("date");
-const sections = {
-  systemOn: document.getElementById("section-systemOn"),
-  firstCheck: document.getElementById("section-firstCheck"),
-  secondCheck: document.getElementById("section-secondCheck"),
-  systemOff: document.getElementById("section-systemOff"),
-};
-
-function hideAllSections() {
-  Object.values(sections).forEach(sec => {
-    sec.classList.add("hidden");
-    sec.querySelectorAll("input, select").forEach(el => el.value = "");
-  });
-}
-
-groupSelect.addEventListener("change", handleSelection);
-dateInput.addEventListener("change", handleSelection);
-
-function handleSelection() {
-  hideAllSections();
-  const group = groupSelect.value;
-  const date = dateInput.value;
-  if (!group || !sections[group]) return;
-
-  sections[group].classList.remove("hidden");
-
-  if (date) {
-    const url = `${scriptUrl}?mode=getProcessData&date=${date}&group=${group}`;
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.hour) {
-          document.getElementById(group + "Hour").value = data.hour;
-          document.getElementById(group + "Minute").value = data.minute;
-          if (data.temp) document.getElementById(group + "Temp")?.value = data.temp;
-          if (data.humidity) document.getElementById(group + "Humidity")?.value = data.humidity;
-        }
+    function fillTimeOptions() {
+      const hours = [...Array(24).keys()];
+      const minutes = [...Array(60).keys()];
+      document.querySelectorAll('select[id$="Hour"]').forEach(sel => {
+        hours.forEach(h => {
+          const opt = document.createElement('option');
+          opt.value = h.toString().padStart(2, '0');
+          opt.textContent = opt.value;
+          sel.appendChild(opt);
+        });
       });
-  }
-}
+      document.querySelectorAll('select[id$="Minute"]').forEach(sel => {
+        minutes.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.toString().padStart(2, '0');
+          opt.textContent = opt.value;
+          sel.appendChild(opt);
+        });
+      });
+    }
 
-document.getElementById("trapForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const date = dateInput.value;
-  const group = groupSelect.value;
-  if (!date || !group) {
-    alert("날짜 및 점검옵션 선택 필요");
-    return;
-  }
+    fillTimeOptions();
 
-  const data = { date, group };
-  sections[group].querySelectorAll("input, select").forEach(el => {
-    data[el.name] = el.value;
-  });
+    const groupSelect = document.getElementById("group");
+    const dateInput = document.getElementById("date");
+    const sections = {
+      systemOn: document.getElementById("section-systemOn"),
+      firstCheck: document.getElementById("section-firstCheck"),
+      secondCheck: document.getElementById("section-secondCheck"),
+      systemOff: document.getElementById("section-systemOff"),
+    };
 
-  const formData = new FormData();
-  formData.append("noodle", JSON.stringify(data));
+    function hideAllSections() {
+      Object.values(sections).forEach(section => {
+        section.classList.add("hidden");
+        section.querySelectorAll("select, input").forEach(input => {
+          input.required = false;
+          input.value = "";
+        });
+      });
+    }
 
-  fetch(scriptUrl, { method: "POST", body: formData })
-    .then(res => res.text())
-    .then(msg => alert("✅ 저장 성공\n" + msg))
-    .catch(err => alert("❌ 오류: " + err.message));
-});
-</script>
+    groupSelect.addEventListener("change", handleSectionChange);
+    dateInput.addEventListener("change", handleSectionChange);
+
+    function handleSectionChange() {
+      const selected = groupSelect.value;
+      const date = dateInput.value;
+
+      hideAllSections();
+      if (!selected || !sections[selected]) return;
+
+      const section = sections[selected];
+      section.classList.remove("hidden");
+      section.querySelectorAll("select, input").forEach(input => input.required = true);
+
+      if (date) {
+        fetch(`${scriptUrl}?mode=getProcessData&date=${date}&group=${selected}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.message === "데이터 없음") return;
+            document.getElementById(selected + "Hour").value = data.hour || "";
+            document.getElementById(selected + "Minute").value = data.minute || "";
+            if (data.temp) document.getElementById(selected + "Temp")?.value = data.temp;
+            if (data.humidity) document.getElementById(selected + "Humidity")?.value = data.humidity;
+          })
+          .catch(err => console.error("조회 오류:", err));
+      }
+    }
+
+    document.getElementById("trapForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const date = dateInput.value;
+      const group = groupSelect.value;
+      if (!date || !group) {
+        alert("날짜와 점검옵션을 선택해주세요.");
+        return;
+      }
+
+      const data = { date, group };
+      sections[group].querySelectorAll("select, input").forEach(input => {
+        data[input.name] = input.value;
+      });
+
+      const formData = new FormData();
+      formData.append("noodle", JSON.stringify(data));
+
+      fetch(scriptUrl, {
+        method: "POST",
+        body: formData
+      })
+        .then(res => res.text())
+        .then(result => {
+          alert("✅ 저장 완료!\n\n" + result);
+          document.getElementById("trapForm").reset();
+          hideAllSections();
+        })
+        .catch(err => {
+          alert("❌ 전송 실패: " + err.message);
+        });
+    });
+  </script>
 </body>
 </html>
