@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <title>금속검출 점검</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>자석 점검폼</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,223 +11,240 @@
       max-width: 600px;
       margin: auto;
     }
-
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    select, input[type="number"], input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
     .inline-row {
       display: flex;
       gap: 10px;
-      margin-bottom: 10px;
     }
-
     .inline-row > * {
       flex: 1;
     }
-
+    .ox-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
     .hidden {
       display: none;
     }
-
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: bold;
+    button {
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      background-color: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
+  <h2>금속검출 점검폼</h2>
 
-  <h2>자석 점검 기록</h2>
-
-  <!-- 날짜 입력 -->
-  <label for="date">날짜</label>
-  <input type="date" id="date" name="date" />
-
-  <!-- 옵션 선택 -->
-<label for="option">점검 옵션</label>
-<select id="option" name="option" onchange="handleOptionChange()">
-  <option value="">선택하세요</option>
-  <option value="1차점검">1차점검</option>
-  <option value="2차점검">2차점검</option>
-  <option value="3차점검">3차점검</option>
-  <option value="4차점검">4차점검</option>
-  <option value="최종취합">최종취합</option>
-</select>
-
-<div id="timeSection" class="hidden inline-row">
-  <div>
-    <label for="hour">시</label>
-    <select id="hour" name="hour">
-      <option value="">--</option>
-      <option value="0">0시</option>
-      <option value="1">1시</option>
-      <option value="2">2시</option>
-      <option value="3">3시</option>
-      <option value="4">4시</option>
-      <option value="5">5시</option>
-      <option value="6">6시</option>
-      <option value="7">7시</option>
-      <option value="8">8시</option>
-      <option value="9">9시</option>
-      <option value="10">10시</option>
-      <option value="11">11시</option>
-      <option value="12">12시</option>
-      <option value="13">13시</option>
-      <option value="14">14시</option>
-      <option value="15">15시</option>
-      <option value="16">16시</option>
-      <option value="17">17시</option>
-      <option value="18">18시</option>
-      <option value="19">19시</option>
-      <option value="20">20시</option>
-      <option value="21">21시</option>
-      <option value="22">22시</option>
-      <option value="23">23시</option>
-    </select>
-  </div>
-  <div>
-    <label for="minute">분</label>
-    <select id="minute" name="minute">
-      <option value="">--</option>
-      <option value="0">0분</option>
-      <option value="10">10분</option>
-      <option value="20">20분</option>
-      <option value="30">30분</option>
-      <option value="40">40분</option>
-      <option value="50">50분</option>
-    </select>
-  </div>
-</div>
-  <!-- 제품 선택 -->
-  <div id="productSection" class="hidden">
-    <label for="product">제품 선택</label>
-    <select id="product" name="product">
-      <option value="">제품 선택</option>
-      <option value="A상품">A상품</option>
-      <option value="B상품">B상품</option>
-      <option value="C상품">C상품</option>
-      <option value="D상품">D상품</option>
-      <option value="E상품">E상품</option>
-      <option value="G상품">G상품</option>
-    </select>
-  </div>
-  <!-- OX 체크박스 5세트 -->
-  <div id="oxSection" class="hidden">
-    <label>점검 결과 (O/X)</label>
-    <div class="inline-row">Fe
-      <label><input type="radio" name="fe" value="O" />O</label>
-      <label><input type="radio" name="fe" value="X" />X</label>
+  <form id="magnetForm">
+    <div class="form-group">
+      <label for="date">날짜</label>
+      <input type="date" id="date" name="date" required />
     </div>
-    <div class="inline-row">Sus
-      <label><input type="radio" name="sus" value="O" />O</label>
-      <label><input type="radio" name="sus" value="X" />X</label>
+
+    <div class="form-group">
+      <label for="time">시간</label>
+      <div class="inline-row">
+        <input type="number" id="hour" min="0" max="23" placeholder="시" required />
+        <input type="number" id="minute" min="0" max="59" placeholder="분" required />
+      </div>
     </div>
-    <div class="inline-row">제품
-      <label><input type="radio" name="prod" value="O" />O</label>
-      <label><input type="radio" name="prod" value="X" />X</label>
+
+    <div class="form-group">
+      <label for="step">점검옵션</label>
+      <select id="step" name="step" required>
+        <option value="">선택하세요</option>
+        <option value="1차점검">1차점검</option>
+        <option value="2차점검">2차점검</option>
+        <option value="3차점검">3차점검</option>
+        <option value="4차점검">4차점검</option>
+        <option value="최종취합">최종취합</option>
+      </select>
     </div>
-    <div class="inline-row">제품+Fe
-      <label><input type="radio" name="prodfe" value="O" />O</label>
-      <label><input type="radio" name="prodfe" value="X" />X</label>
+
+    <div id="productGroup" class="form-group hidden">
+      <label for="product">제품선택</label>
+      <select id="product" name="product">
+        <option value="">선택하세요</option>
+        <option value="A상품">A상품</option>
+        <option value="B상품">B상품</option>
+        <option value="C상품">C상품</option>
+        <option value="D상품">D상품</option>
+        <option value="E상품">E상품</option>
+        <option value="G상품">G상품</option>
+      </select>
     </div>
-    <div class="inline-row">제품+Sus
-      <label><input type="radio" name="prodsus" value="O" />O</label>
-      <label><input type="radio" name="prodsus" value="X" />X</label>
+
+    <div id="oxOptions" class="form-group hidden">
+      <label>O/X 선택</label>
+      <div class="ox-group">
+        <label>Fe:
+          <select id="fe" required>
+            <option value="">선택</option>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+        <label>Sus:
+          <select id="sus" required>
+            <option value="">선택</option>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+      </div>
+      <div class="ox-group">
+        <label>제품:
+          <select id="productOnly" required>
+            <option value="">선택</option>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+        <label>제품+Fe:
+          <select id="productFe" required>
+            <option value="">선택</option>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+        <label>제품+Sus:
+          <select id="productSus" required>
+            <option value="">선택</option>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+      </div>
     </div>
-  </div>
 
-  <!-- 최종취합일 때만 -->
-  <div id="finalSection" class="hidden">
-    <label for="pass">통과 수량</label>
-    <input type="number" id="pass" name="pass" min="0" />
-    
-    <label for="fail">검출 수량</label>
-    <input type="number" id="fail" name="fail" min="0" />
-  </div>
+    <div id="finalInputs" class="hidden">
+      <div class="form-group">
+        <label for="passCount">통과수량</label>
+        <input type="number" id="passCount" min="0" />
+      </div>
+      <div class="form-group">
+        <label for="failCount">검출수량</label>
+        <input type="number" id="failCount" min="0" />
+      </div>
+    </div>
 
-  <br />
-  <button onclick="handleSubmit()">저장</button>
+    <button type="submit">저장</button>
+  </form>
 
- <script>
-  document.getElementById("date").valueAsDate = new Date();
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 날짜 자동 설정
+      const today = new Date().toISOString().substr(0, 10);
+      document.getElementById("date").value = today;
 
-  function handleOptionChange() {
-    const option = document.getElementById("option").value;
-    const productSection = document.getElementById("productSection");
-    const oxSection = document.getElementById("oxSection");
-    const finalSection = document.getElementById("finalSection");
+      const stepSelect = document.getElementById("step");
+      const productGroup = document.getElementById("productGroup");
+      const oxOptions = document.getElementById("oxOptions");
+      const finalInputs = document.getElementById("finalInputs");
 
-    if (option === "최종취합") {
-      productSection.classList.remove("hidden");
-      oxSection.classList.add("hidden");
-      finalSection.classList.remove("hidden");
-    } else if (["1차점검", "2차점검", "3차점검", "4차점검"].includes(option)) {
-      productSection.classList.remove("hidden");
-      oxSection.classList.remove("hidden");
-      finalSection.classList.add("hidden");
-    } else {
-      productSection.classList.add("hidden");
-      oxSection.classList.add("hidden");
-      finalSection.classList.add("hidden");
-    }
-  }
+      stepSelect.addEventListener("change", () => {
+        const val = stepSelect.value;
+        const isFinal = val === "최종취합";
 
-  function handleSubmit() {
-    const date = document.getElementById("date").value;
-    const option = document.getElementById("option").value;
-    const product = document.getElementById("product").value;
-    const pass = document.getElementById("pass").value;
-    const fail = document.getElementById("fail").value;
+        productGroup.classList.remove("hidden");
+        oxOptions.classList.toggle("hidden", isFinal);
+        finalInputs.classList.toggle("hidden", !isFinal);
+      });
 
-    const fe = document.querySelector('input[name="fe"]:checked')?.value || "";
-    const sus = document.querySelector('input[name="sus"]:checked')?.value || "";
-    const prod = document.querySelector('input[name="prod"]:checked')?.value || "";
-    const prodfe = document.querySelector('input[name="prodfe"]:checked')?.value || "";
-    const prodsus = document.querySelector('input[name="prodsus"]:checked')?.value || "";
+      document.getElementById("magnetForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    // 필수항목 검증
-    if (!option) return alert("점검 옵션을 선택해주세요.");
-    if (!product) return alert("제품을 선택해주세요.");
+        const data = {
+          type: "magnet",
+          date: document.getElementById("date").value,
+          hour: document.getElementById("hour").value,
+          minute: document.getElementById("minute").value,
+          step: stepSelect.value,
+          product: document.getElementById("product").value,
+          fe: document.getElementById("fe").value,
+          sus: document.getElementById("sus").value,
+          productOnly: document.getElementById("productOnly").value,
+          productFe: document.getElementById("productFe").value,
+          productSus: document.getElementById("productSus").value,
+          passCount: document.getElementById("passCount").value,
+          failCount: document.getElementById("failCount").value,
+        };
 
-    if (option === "최종취합") {
-      if (!pass || !fail) return alert("통과수량과 검출수량을 모두 입력해주세요.");
-    } else {
-      if (!fe || !sus || !prod || !prodfe || !prodsus) {
-        return alert("모든 O/X 항목을 선택해주세요.");
-      }
-    }
+        // 유효성 검사
+        if (!data.date || !data.hour || !data.minute || !data.step) {
+          alert("모든 항목을 입력해주세요.");
+          return;
+        }
 
-    const data = {
-      date, option, product, fe, sus, prod, prodfe, prodsus, pass, fail
-    };
+        const isFinal = data.step === "최종취합";
+        if (!data.product) {
+          alert("제품을 선택해주세요.");
+          return;
+        }
 
-    const url = "https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec";
+        if (isFinal) {
+          if (!data.passCount || !data.failCount) {
+            alert("통과/검출 수량을 입력해주세요.");
+            return;
+          }
+        } else {
+          if (!data.fe || !data.sus || !data.productOnly || !data.productFe || !data.productSus) {
+            alert("O/X 항목을 모두 선택해주세요.");
+            return;
+          }
+        }
 
-    fetch(url, {
-      method: "POST",
-      body: new URLSearchParams({ magnet: JSON.stringify(data) })
-    })
-      .then(res => res.text())
-      .then(result => {
-        alert("✅ 저장되었습니다");
-        resetInputs();  // 입력값 리셋
-      })
-      .catch(err => alert("⚠️ 저장 오류: " + err));
-  }
+        // 전송
+        try {
+          const url = "https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec"; // 🔁 본인의 Apps Script URL로 변경
+          const res = await fetch(url, {
+            method: "POST",
+            body: new URLSearchParams({ data: JSON.stringify(data) })
+          });
 
-  function resetInputs() {
-    document.getElementById("option").value = "";
-    document.getElementById("product").value = "";
-    document.getElementById("pass").value = "";
-    document.getElementById("fail").value = "";
+          const result = await res.text();
+          alert(result);
 
-    document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+          // 입력 리셋
+          document.getElementById("hour").value = "";
+          document.getElementById("minute").value = "";
+          stepSelect.value = "";
+          document.getElementById("product").value = "";
+          document.getElementById("fe").value = "";
+          document.getElementById("sus").value = "";
+          document.getElementById("productOnly").value = "";
+          document.getElementById("productFe").value = "";
+          document.getElementById("productSus").value = "";
+          document.getElementById("passCount").value = "";
+          document.getElementById("failCount").value = "";
 
-    // 숨김 상태 초기화
-    document.getElementById("productSection").classList.add("hidden");
-    document.getElementById("oxSection").classList.add("hidden");
-    document.getElementById("finalSection").classList.add("hidden");
-  }
-</script>
-
-
+          oxOptions.classList.add("hidden");
+          finalInputs.classList.add("hidden");
+          productGroup.classList.add("hidden");
+        } catch (error) {
+          alert("저장 실패: " + error);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
