@@ -2,162 +2,142 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>금속검출 점검</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: sans-serif;
+      padding: 10px;
       max-width: 600px;
       margin: auto;
-      padding: 20px;
     }
-
-    h2 {
-      text-align: center;
-    }
-
     label {
-      font-weight: bold;
       display: block;
-      margin-top: 20px;
+      margin-top: 12px;
+      font-weight: bold;
     }
-
-    select, input[type="number"], button {
+    input, select {
       width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 5px;
+      padding: 8px;
+      margin-top: 4px;
       box-sizing: border-box;
       text-align: center;
     }
-
     .inline-row {
       display: flex;
       gap: 10px;
-      margin-top: 5px;
     }
-
-    .inline-row select, .inline-row input {
+    .inline-row > div {
       flex: 1;
     }
-
-    .hidden {
-      display: none;
-    }
-
     .ox-group {
       display: flex;
+      justify-content: space-between;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 10px;
-      justify-content: space-between;
     }
-
-    .ox-item {
+    .ox-set {
       flex: 1 1 45%;
       text-align: center;
     }
-
-    .ox-label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-
     .ox-buttons {
       display: flex;
       justify-content: center;
       gap: 10px;
-    }
-
-    .ox-buttons button {
-      flex: 1;
-      padding: 10px 0;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .ox-buttons button.active {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .row-inline {
-      display: flex;
-      gap: 10px;
       margin-top: 5px;
     }
-
-    .row-inline input {
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
+    .number-row > div {
       flex: 1;
     }
-
+    .centered {
+      text-align: center;
+    }
     button[type="submit"] {
-      margin-top: 30px;
-      background-color: #ccc;
-      border: none;
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
       font-size: 16px;
-      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h2>금속검출 점검</h2>
   <form id="magnetForm">
-    <label for="date">날짜</label>
-    <input type="date" id="date" name="date" required />
+    <label>날짜
+      <input type="date" id="date" name="date" />
+    </label>
 
-    <label for="option">점검 옵션</label>
-    <select id="option" name="option" required>
-      <option value="">선택하세요</option>
-      <option value="1차점검">1차점검</option>
-      <option value="2차점검">2차점검</option>
-      <option value="3차점검">3차점검</option>
-      <option value="최종취합">최종취합</option>
-    </select>
+    <label>점검 옵션
+      <select id="option" name="option" required>
+        <option value="">선택하세요</option>
+        <option value="1차점검">1차점검</option>
+        <option value="2차점검">2차점검</option>
+        <option value="최종취합">최종취합</option>
+      </select>
+    </label>
 
-    <div id="timeRow" class="hidden">
-      <label>시간</label>
-      <div class="inline-row">
-        <select id="hour">
-          ${[...Array(24).keys()].map(h => `<option value="${h}">${h}시</option>`).join('')}
+    <div id="subInputs" style="display:none;">
+      <label>시간
+        <div class="inline-row">
+          <div>
+            <select id="hour" name="hour">
+              <option value="">시</option>
+              ${[...Array(24).keys()].map(h => `<option value="${h}">${h}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <select id="minute" name="minute">
+              <option value="">분</option>
+              ${[0, 10, 20, 30, 40, 50].map(m => `<option value="${m}">${m}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </label>
+
+      <label>제품명
+        <select id="product" name="product">
+          <option value="">선택하세요</option>
+          <option>제품A</option>
+          <option>제품B</option>
+          <option>제품C</option>
+          <option>제품D</option>
+          <option>제품E</option>
+          <option>제품F</option>
         </select>
-        <select id="minute">
-          ${[0, 10, 20, 30, 40, 50].map(m => `<option value="${m}">${m}분</option>`).join('')}
-        </select>
+      </label>
+
+      <label>검출 상태</label>
+      <div class="ox-group">
+        ${["자석검출", "금속검출", "테스트완료", "작업자확인", "기기정상"].map((label, i) => `
+          <div class="ox-set">
+            <div>${label}</div>
+            <div class="ox-buttons">
+              <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+              <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
 
-    <div id="productRow" class="hidden">
-      <label for="product">제품명</label>
-      <select id="product" name="product" required>
-        <option value="">선택하세요</option>
-        <option>제품A</option>
-        <option>제품B</option>
-        <option>제품C</option>
-        <option>제품D</option>
-        <option>제품E</option>
-        <option>제품F</option>
-      </select>
-    </div>
-
-    <div id="oxGroup" class="ox-group hidden">
-      ${["자석검출", "금속검출", "테스트완료", "작업자확인", "기기정상"].map((label, i) => `
-        <div class="ox-item">
-          <span class="ox-label">${label}</span>
-          <div class="ox-buttons">
-            <button type="button" data-label="${label}" data-value="O">O</button>
-            <button type="button" data-label="${label}" data-value="X">X</button>
-          </div>
+    <div id="summaryInputs" style="display:none;">
+      <label>통과/검출 수량</label>
+      <div class="number-row">
+        <div>
+          <input type="number" name="passCount" placeholder="통과 수량" />
         </div>
-      `).join('')}
-    </div>
-
-    <div id="resultRow" class="hidden">
-      <label>최종취합 결과</label>
-      <div class="row-inline">
-        <input type="number" id="passCount" placeholder="통과 수량" />
-        <input type="number" id="failCount" placeholder="검출 수량" />
+        <div>
+          <input type="number" name="detectCount" placeholder="검출 수량" />
+        </div>
       </div>
     </div>
 
@@ -165,72 +145,59 @@
   </form>
 
   <script>
-    // 오늘 날짜 자동 설정
-    document.getElementById('date').valueAsDate = new Date();
+    // 오늘 날짜 자동 지정
+    document.getElementById("date").valueAsDate = new Date();
 
-    // 점검 옵션에 따라 입력창 표시
-    const optionEl = document.getElementById('option');
-    optionEl.addEventListener('change', () => {
-      const val = optionEl.value;
-      const showInputs = val && val !== '최종취합';
-
-      document.getElementById('timeRow').classList.toggle('hidden', !showInputs);
-      document.getElementById('productRow').classList.toggle('hidden', !showInputs);
-      document.getElementById('oxGroup').classList.toggle('hidden', !showInputs);
-      document.getElementById('resultRow').classList.toggle('hidden', val !== '최종취합');
+    // 점검 옵션에 따라 입력 필드 표시 제어
+    document.getElementById("option").addEventListener("change", e => {
+      const opt = e.target.value;
+      const show = opt === "1차점검" || opt === "2차점검" || opt === "최종취합";
+      document.getElementById("subInputs").style.display = show ? "block" : "none";
+      document.getElementById("summaryInputs").style.display = (opt === "최종취합") ? "block" : "none";
     });
 
     // O/X 버튼 토글
-    document.querySelectorAll('.ox-buttons button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const siblings = btn.parentElement.querySelectorAll('button');
-        siblings.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    const oxValues = {};
+    document.querySelectorAll(".ox").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const label = btn.dataset.label;
+        oxValues[label] = btn.dataset.value;
+
+        document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+          b.style.backgroundColor = (b === btn) ? "#ddd" : "";
+        });
       });
     });
 
-    // 저장 로직
-    document.getElementById('magnetForm').addEventListener('submit', async (e) => {
+    // 전송 처리
+    document.getElementById("magnetForm").addEventListener("submit", async e => {
       e.preventDefault();
-
-      const date = document.getElementById('date').value;
-      const option = optionEl.value;
-      const hour = document.getElementById('hour')?.value || '';
-      const minute = document.getElementById('minute')?.value || '';
-      const product = document.getElementById('product')?.value || '';
-      const passCount = document.getElementById('passCount')?.value || '';
-      const failCount = document.getElementById('failCount')?.value || '';
-
-      const status = {};
-      document.querySelectorAll('.ox-item').forEach(item => {
-        const label = item.querySelector('button')?.dataset.label;
-        const selected = item.querySelector('button.active');
-        if (label && selected) status[label] = selected.dataset.value;
-      });
+      const form = e.target;
 
       const data = {
         type: "magnet",
-        date,
-        option,
-        hour,
-        minute,
-        product,
-        passCount,
-        failCount,
-        status
+        date: form.date.value,
+        option: form.option.value,
+        hour: form.hour.value,
+        minute: form.minute.value,
+        product: form.product.value,
+        passCount: form.passCount?.value || "",
+        detectCount: form.detectCount?.value || "",
+        states: oxValues
       };
 
       try {
         const res = await fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "data=" + encodeURIComponent(JSON.stringify(data))
+          body: JSON.stringify({ data }),
+          headers: { "Content-Type": "application/json" }
         });
-
-        const text = await res.text();
-        alert("저장 완료: " + text);
+        alert("저장되었습니다!");
+        form.reset();
+        document.getElementById("date").valueAsDate = new Date(); // 리셋 후 다시 날짜
       } catch (err) {
-        alert("오류 발생: " + err.message);
+        alert("저장 중 오류 발생");
+        console.error(err);
       }
     });
   </script>
