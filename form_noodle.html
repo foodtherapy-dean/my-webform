@@ -5,35 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>건면공정 모니터링</title>
 <style>
-  body {
-    font-family: sans-serif;
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-  }
-  label {
-    font-weight: bold;
-    margin-top: 10px;
-    display: block;
-  }
-  select, input, button {
-    width: 100%;
-    padding: 8px;
-    font-size: 16px;
-    margin-top: 5px;
-  }
-  .inline-row {
-    display: flex;
-    gap: 20px;
-  }
+body {
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 0 auto;
+  max-width: 600px;
+  font-family: sans-serif;
+}
+
+.inline-row {
+  display: flex;
+  gap: 20px;
+}
+
 .inline-row > * {
   flex: 1;
-  padding: 0 5px;     /* 좌우 패딩 추가 */
+  padding: 0 5px;
   box-sizing: border-box;
 }
-  .inline-row label {
+
+.inline-row label {
   display: block;
-  margin-bottom: 6px; /* 라벨과 입력창 간격 */
+  margin-bottom: 6px;
+}
+
+/* input, select 전체 스타일 통일 */
+input[type="number"], select, input[type="date"] {
+  width: 100%;
+  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+  font-size: 16px;
+  box-sizing: border-box;
+  height: 40px;               /* 높이 맞추기 */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline-offset: 0;
 }
 </style>
 </head>
