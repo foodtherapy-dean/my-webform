@@ -39,10 +39,11 @@
   <label>점검옵션:
     <select id="group" onchange="showSection()" required>
       <option value="">선택하세요</option>
-      <option value="시스템ON">시스템 ON</option>
-<option value="1차점검">1차 점검</option>
-<option value="2차점검">2차 점검</option>
-<option value="시스템OFF">시스템 OFF</option>
+      <option value="systemOn">시스템 ON</option>
+      <option value="systemOff">시스템 OFF</option>
+      <option value="check1">1차건면기</option>
+      <option value="check2">2차건면기</option>
+      <option value="tunnel">건조터널</option>
     </select>
   </label>
 
@@ -63,6 +64,7 @@
     <label>분:
       <input type="number" id="systemOffMinute" min="0" max="59" />
     </label>
+  </div>
   </div>
 
   <div id="check1" class="section hidden">
