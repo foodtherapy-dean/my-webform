@@ -7,30 +7,66 @@
   <style>
     body {
       font-family: sans-serif;
+      padding: 10px;
       max-width: 600px;
       margin: auto;
-      padding: 16px;
     }
-    .hidden { display: none; }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+
     .inline-row {
       display: flex;
       gap: 10px;
-      margin-bottom: 12px;
     }
+
     .inline-row > * {
       flex: 1;
     }
+
     .ox-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       margin-top: 10px;
     }
+
     .ox-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       flex: 1 1 45%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    button {
+      margin-top: 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
@@ -38,138 +74,197 @@
   <h2>금속검출 점검</h2>
 
   <form id="magnetForm">
-    <!-- 날짜 -->
-    <label>날짜:
-      <input type="date" name="date" id="date" required />
-    </label>
+    <label>날짜</label>
+    <input type="date" id="date" name="date" required />
 
-    <!-- 점검옵션 -->
-    <label>점검옵션:
-      <select name="option" id="option" required>
-        <option value="">-- 선택 --</option>
-        <option value="1차점검">1차점검</option>
-        <option value="2차점검">2차점검</option>
-        <option value="3차점검">3차점검</option>
-        <option value="4차점검">4차점검</option>
-        <option value="최종취합">최종취합</option>
-      </select>
-    </label>
+    <label>점검옵션</label>
+    <select id="option" name="option" required>
+      <option value="">선택하세요</option>
+      <option value="1차점검">1차점검</option>
+      <option value="2차점검">2차점검</option>
+      <option value="3차점검">3차점검</option>
+      <option value="4차점검">4차점검</option>
+      <option value="최종취합">최종취합</option>
+    </select>
 
-    <!-- 시간 -->
-    <div class="inline-row hidden" id="timeRow">
-      <label>시:
-        <select name="hour" id="hour" required>
-          <option value="">시</option>
-          ${[...Array(24).keys()].map(h => `<option value="${h}">${h}</option>`).join('')}
-        </select>
-      </label>
-      <label>분:
-        <select name="minute" id="minute" required>
-          <option value="">분</option>
-          ${[0,10,20,30,40,50].map(m => `<option value="${m}">${m}</option>`).join('')}
-        </select>
-      </label>
+    <div id="timeRow" class="inline-row hidden">
+      <div>
+        <label>시간(시)</label>
+        <input type="range" id="hour" min="0" max="23" step="1" value="12" />
+        <span id="hourVal">12</span>시
+      </div>
+      <div>
+        <label>시간(분)</label>
+        <input type="range" id="minute" min="0" max="50" step="10" value="0" />
+        <span id="minuteVal">00</span>분
+      </div>
     </div>
 
-    <!-- 제품선택 -->
-    <label id="productRow" class="hidden">제품:
-      <select name="product" required>
-        <option value="">-- 선택 --</option>
-        <option>A상품</option>
-        <option>B상품</option>
-        <option>C상품</option>
-        <option>D상품</option>
-        <option>E상품</option>
-        <option>G상품</option>
+    <div id="productRow" class="hidden">
+      <label>제품선택</label>
+      <select id="product" name="product">
+        <option value="">선택하세요</option>
+        <option value="A상품">A상품</option>
+        <option value="B상품">B상품</option>
+        <option value="C상품">C상품</option>
+        <option value="D상품">D상품</option>
+        <option value="E상품">E상품</option>
+        <option value="G상품">G상품</option>
       </select>
-    </label>
-
-    <!-- OX선택 -->
-    <div class="ox-group hidden" id="oxRow">
-      ${["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].map(label => `
-        <div class="ox-item">
-          <span>${label}</span>
-          <label><input type="radio" name="${label}" value="O" required /> O</label>
-          <label><input type="radio" name="${label}" value="X" /> X</label>
-        </div>`).join('')}
     </div>
 
-    <!-- 최종취합 전용 -->
-    <div class="inline-row hidden" id="finalRow">
-      <label>통과수량:
-        <input type="number" name="passCount" min="0" />
-      </label>
-      <label>검출수량:
-        <input type="number" name="failCount" min="0" />
-      </label>
+    <div id="oxGroup" class="ox-group hidden">
+      <div class="ox-item">
+        <label>Fe</label>
+        <select name="Fe" required>
+          <option value="">선택</option>
+          <option value="O">O</option>
+          <option value="X">X</option>
+        </select>
+      </div>
+      <div class="ox-item">
+        <label>Sus</label>
+        <select name="Sus" required>
+          <option value="">선택</option>
+          <option value="O">O</option>
+          <option value="X">X</option>
+        </select>
+      </div>
+      <div class="ox-item">
+        <label>제품</label>
+        <select name="제품" required>
+          <option value="">선택</option>
+          <option value="O">O</option>
+          <option value="X">X</option>
+        </select>
+      </div>
+      <div class="ox-item">
+        <label>제품+Fe</label>
+        <select name="제품Fe" required>
+          <option value="">선택</option>
+          <option value="O">O</option>
+          <option value="X">X</option>
+        </select>
+      </div>
+      <div class="ox-item">
+        <label>제품+Sus</label>
+        <select name="제품Sus" required>
+          <option value="">선택</option>
+          <option value="O">O</option>
+          <option value="X">X</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="finalRow" class="hidden">
+      <label>통과수량</label>
+      <input type="number" name="passCount" min="0" />
+
+      <label>검출수량</label>
+      <input type="number" name="detectCount" min="0" />
     </div>
 
     <button type="submit">저장</button>
   </form>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // 오늘 날짜 자동입력
-      document.getElementById("date").valueAsDate = new Date();
+    // 날짜 자동 입력
+    document.getElementById("date").valueAsDate = new Date();
 
-      const option = document.getElementById("option");
-      const productRow = document.getElementById("productRow");
-      const oxRow = document.getElementById("oxRow");
-      const finalRow = document.getElementById("finalRow");
-      const timeRow = document.getElementById("timeRow");
+    const form = document.getElementById("magnetForm");
+    const optionSelect = document.getElementById("option");
+    const timeRow = document.getElementById("timeRow");
+    const productRow = document.getElementById("productRow");
+    const oxGroup = document.getElementById("oxGroup");
+    const finalRow = document.getElementById("finalRow");
 
-      option.addEventListener("change", () => {
-        const isRegular = option.value.startsWith("1차") || option.value.startsWith("2차") ||
-                          option.value.startsWith("3차") || option.value.startsWith("4차");
+    optionSelect.addEventListener("change", () => {
+      const selected = optionSelect.value;
 
-        timeRow.classList.toggle("hidden", !isRegular);
-        productRow.classList.toggle("hidden", option.value === "");
-        oxRow.classList.toggle("hidden", !isRegular);
-        finalRow.classList.toggle("hidden", option.value !== "최종취합");
-      });
+      const isCheck = ["1차점검", "2차점검", "3차점검", "4차점검"].includes(selected);
 
-      document.getElementById("magnetForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+      timeRow.classList.toggle("hidden", !isCheck);
+      productRow.classList.toggle("hidden", !isCheck);
+      oxGroup.classList.toggle("hidden", !isCheck);
+      finalRow.classList.toggle("hidden", selected !== "최종취합");
+    });
 
-        const form = e.target;
-        const data = new FormData(form);
+    // 시간 드래그 표시
+    const hourInput = document.getElementById("hour");
+    const minuteInput = document.getElementById("minute");
+    const hourVal = document.getElementById("hourVal");
+    const minuteVal = document.getElementById("minuteVal");
 
-        // 필수 체크
-        const requiredFields = ["date", "option", "hour", "minute", "product"];
-        for (let field of requiredFields) {
-          if (!data.get(field)) return alert("모든 필수 항목을 입력해주세요.");
+    hourInput.addEventListener("input", () => {
+      hourVal.textContent = hourInput.value;
+    });
+
+    minuteInput.addEventListener("input", () => {
+      minuteVal.textContent = minuteInput.value.padStart(2, '0');
+    });
+
+    // 저장 처리
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        type: "magnet",
+        date: form.date.value,
+        option: form.option.value,
+      };
+
+      const selected = data.option;
+      if (["1차점검", "2차점검", "3차점검", "4차점검"].includes(selected)) {
+        data.hour = hourInput.value;
+        data.minute = minuteInput.value;
+        data.product = form.product.value;
+        data.Fe = form.Fe.value;
+        data.Sus = form.Sus.value;
+        data.제품 = form.제품.value;
+        data.제품Fe = form.제품Fe.value;
+        data.제품Sus = form.제품Sus.value;
+
+        if (!data.product || !data.Fe || !data.Sus || !data.제품 || !data.제품Fe || !data.제품Sus) {
+          alert("모든 항목을 입력해주세요.");
+          return;
         }
 
-        // OX 체크 확인 (1~4차 점검 시)
-        if (["1차점검", "2차점검", "3차점검", "4차점검"].includes(data.get("option"))) {
-          const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-          for (let item of oxItems) {
-            if (!data.get(item)) return alert(`${item} 항목을 O 또는 X로 선택해주세요.`);
-          }
+      } else if (selected === "최종취합") {
+        data.passCount = form.passCount.value;
+        data.detectCount = form.detectCount.value;
+
+        if (!data.passCount || !data.detectCount) {
+          alert("통과수량과 검출수량을 입력해주세요.");
+          return;
         }
+      }
 
-        // 전송
-        const payload = {};
-        data.forEach((val, key) => payload[key] = val);
-        payload.type = "magnet";
+      // POST 전송
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "data=" + encodeURIComponent(JSON.stringify(data))
+        });
 
-        try {
-          const res = await fetch("https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-          });
+        const result = await response.text();
+        alert("저장 완료: " + result);
 
-          const text = await res.text();
-          alert("저장 완료: " + text);
+        // 날짜 제외 리셋
+        form.reset();
+        document.getElementById("date").valueAsDate = new Date();
+        timeRow.classList.add("hidden");
+        productRow.classList.add("hidden");
+        oxGroup.classList.add("hidden");
+        finalRow.classList.add("hidden");
+        hourVal.textContent = "12";
+        minuteVal.textContent = "00";
+        hourInput.value = 12;
+        minuteInput.value = 0;
 
-          // 초기화
-          form.reset();
-          document.getElementById("date").valueAsDate = new Date(); // 날짜는 유지
-        } catch (err) {
-          alert("저장 실패: " + err);
-        }
-      });
+      } catch (err) {
+        alert("저장 실패: " + err);
+      }
     });
   </script>
 </body>
