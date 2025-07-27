@@ -42,7 +42,7 @@
   <input type="date" id="date" name="date" />
 
   <!-- 옵션 선택 -->
-  <label for="option">점검 옵션</label>
+<label for="option">점검 옵션</label>
 <select id="option" name="option" onchange="handleOptionChange()">
   <option value="">선택하세요</option>
   <option value="1차점검">1차점검</option>
@@ -52,20 +52,47 @@
   <option value="최종취합">최종취합</option>
 </select>
 
-<!-- ✅ 시간 선택: 시/분 -->
 <div id="timeSection" class="hidden inline-row">
   <div>
     <label for="hour">시</label>
     <select id="hour" name="hour">
       <option value="">--</option>
-      ${[...Array(24).keys()].map(h => `<option value="${h}">${h}시</option>`).join("")}
+      <option value="0">0시</option>
+      <option value="1">1시</option>
+      <option value="2">2시</option>
+      <option value="3">3시</option>
+      <option value="4">4시</option>
+      <option value="5">5시</option>
+      <option value="6">6시</option>
+      <option value="7">7시</option>
+      <option value="8">8시</option>
+      <option value="9">9시</option>
+      <option value="10">10시</option>
+      <option value="11">11시</option>
+      <option value="12">12시</option>
+      <option value="13">13시</option>
+      <option value="14">14시</option>
+      <option value="15">15시</option>
+      <option value="16">16시</option>
+      <option value="17">17시</option>
+      <option value="18">18시</option>
+      <option value="19">19시</option>
+      <option value="20">20시</option>
+      <option value="21">21시</option>
+      <option value="22">22시</option>
+      <option value="23">23시</option>
     </select>
   </div>
   <div>
     <label for="minute">분</label>
     <select id="minute" name="minute">
       <option value="">--</option>
-      ${[0,10,20,30,40,50].map(m => `<option value="${m}">${m}분</option>`).join("")}
+      <option value="0">0분</option>
+      <option value="10">10분</option>
+      <option value="20">20분</option>
+      <option value="30">30분</option>
+      <option value="40">40분</option>
+      <option value="50">50분</option>
     </select>
   </div>
 </div>
