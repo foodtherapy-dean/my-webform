@@ -43,28 +43,32 @@
 
   <!-- 옵션 선택 -->
   <label for="option">점검 옵션</label>
-  <select id="option" name="option" onchange="handleOptionChange()">
-    <option value="">선택하세요</option>
-    <option value="1차점검">1차점검</option>
-    <option value="2차점검">2차점검</option>
-    <option value="3차점검">3차점검</option>
-    <option value="4차점검">4차점검</option>
-    <option value="최종취합">최종취합</option>
-  </select>
+<select id="option" name="option" onchange="handleOptionChange()">
+  <option value="">선택하세요</option>
+  <option value="1차점검">1차점검</option>
+  <option value="2차점검">2차점검</option>
+  <option value="3차점검">3차점검</option>
+  <option value="4차점검">4차점검</option>
+  <option value="최종취합">최종취합</option>
+</select>
 
-  <!-- 제품 선택 -->
-  <div id="productSection" class="hidden">
-    <label for="product">제품 선택</label>
-    <select id="product" name="product">
-      <option value="">제품 선택</option>
-      <option value="A상품">A상품</option>
-      <option value="B상품">B상품</option>
-      <option value="C상품">C상품</option>
-      <option value="D상품">D상품</option>
-      <option value="E상품">E상품</option>
-      <option value="G상품">G상품</option>
+<!-- ✅ 시간 선택: 시/분 -->
+<div id="timeSection" class="hidden inline-row">
+  <div>
+    <label for="hour">시</label>
+    <select id="hour" name="hour">
+      <option value="">--</option>
+      ${[...Array(24).keys()].map(h => `<option value="${h}">${h}시</option>`).join("")}
     </select>
   </div>
+  <div>
+    <label for="minute">분</label>
+    <select id="minute" name="minute">
+      <option value="">--</option>
+      ${[0,10,20,30,40,50].map(m => `<option value="${m}">${m}분</option>`).join("")}
+    </select>
+  </div>
+</div>
 
   <!-- OX 체크박스 5세트 -->
   <div id="oxSection" class="hidden">
