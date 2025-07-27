@@ -158,8 +158,13 @@
           entries.push({ category, subcategory, value });
         });
       });
-
-      const data = { date, group, entries };
+ 
+const data = { 
+  type: "pest",  
+  date, 
+  group, 
+  entries 
+};
       const formData = new FormData();
       formData.append("data", JSON.stringify(data));
 
