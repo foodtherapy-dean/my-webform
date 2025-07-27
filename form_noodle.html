@@ -1,203 +1,169 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<title>건조공정_모니터링</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  body {
-    font-family: sans-serif;
-    padding: 10px;
-    max-width: 600px;
-    margin: auto;
-  }
-  label, select, input, button {
-    font-size: 16px;
-    margin: 5px 0;
-  }
-  input[type="number"], input[type="date"], select {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px;
-  }
-  button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    margin-top: 20px;
-    border: none;
-    border-radius: 4px;
-  }
-  .hidden { display: none; }
-  .form-section {
-    border: 1px solid #ccc;
-    padding: 12px;
-    margin-top: 20px;
-    border-radius: 5px;
-  }
-  .input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .input-group {
-    flex: 1;
-  }
-  .input-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  .temp-humidity-row {
-    display: flex;
-    gap: 10px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>건면공정 모니터링</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .hidden {
+      display: none;
+    }
+    .section {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    label {
+      display: block;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>건조공정_모니터링</h1>
-  <form id="trapForm">
-    <label for="date">📅 날짜:</label>
-    <input type="date" id="date" name="date" required />
+  <h2>건면공정 점검</h2>
 
-    <label for="group">⚙ 점검옵션 선택:</label>
-    <select id="group" name="group" required>
+  <label>날짜:
+    <input type="date" id="date" required />
+  </label>
+
+  <label>점검옵션:
+    <select id="group" onchange="showSection()" required>
       <option value="">선택하세요</option>
-      <option value="systemOn">시스템ON</option>
-      <option value="firstCheck">1차점검</option>
-      <option value="secondCheck">2차점검</option>
-      <option value="systemOff">시스템OFF</option>
+      <option value="systemOn">시스템 ON</option>
+      <option value="systemOff">시스템 OFF</option>
+      <option value="check1">1차건면기</option>
+      <option value="check2">2차건면기</option>
+      <option value="tunnel">건조터널</option>
     </select>
+  </label>
 
-    <!-- 각 섹션들 생략 없이 동일 (systemOn, firstCheck, secondCheck, systemOff) -->
-    <!-- ... [생략 없이 동일 구조] ... -->
+  <!-- 모든 섹션 -->
+  <div id="systemOn" class="section hidden">
+    <label>시:
+      <input type="number" id="systemOnHour" min="0" max="23" />
+    </label>
+    <label>분:
+      <input type="number" id="systemOnMinute" min="0" max="59" />
+    </label>
+  </div>
 
-    <!-- 예시: 시스템ON 섹션 -->
-    <div id="section-systemOn" class="form-section hidden">
-      <h2>시스템ON 점검</h2>
-      <div class="input-row">
-        <div class="input-group">
-          <label for="systemOnHour">점검시간 (시)</label>
-          <select id="systemOnHour" name="systemOnHour"></select>
-        </div>
-        <div class="input-group">
-          <label for="systemOnMinute">점검시간 (분)</label>
-          <select id="systemOnMinute" name="systemOnMinute"></select>
-        </div>
-      </div>
-    </div>
+  <div id="systemOff" class="section hidden">
+    <label>시:
+      <input type="number" id="systemOffHour" min="0" max="23" />
+    </label>
+    <label>분:
+      <input type="number" id="systemOffMinute" min="0" max="59" />
+    </label>
+  </div>
 
-    <!-- 1차, 2차, 시스템OFF 도 동일 방식으로 유지 -->
+  <div id="check1" class="section hidden">
+    <label>시:
+      <input type="number" id="check1Hour" />
+    </label>
+    <label>분:
+      <input type="number" id="check1Minute" />
+    </label>
+    <label>온도(℃):
+      <input type="number" id="check1Temp" />
+    </label>
+    <label>습도(%):
+      <input type="number" id="check1Humidity" />
+    </label>
+  </div>
 
-    <button type="submit">📥 서버로 전송</button>
-  </form>
+  <div id="check2" class="section hidden">
+    <label>시:
+      <input type="number" id="check2Hour" />
+    </label>
+    <label>분:
+      <input type="number" id="check2Minute" />
+    </label>
+    <label>온도(℃):
+      <input type="number" id="check2Temp" />
+    </label>
+    <label>습도(%):
+      <input type="number" id="check2Humidity" />
+    </label>
+  </div>
+
+  <div id="tunnel" class="section hidden">
+    <label>시:
+      <input type="number" id="tunnelHour" />
+    </label>
+    <label>분:
+      <input type="number" id="tunnelMinute" />
+    </label>
+    <label>온도(℃):
+      <input type="number" id="tunnelTemp" />
+    </label>
+    <label>습도(%):
+      <input type="number" id="tunnelHumidity" />
+    </label>
+  </div>
+
+  <button onclick="submitForm()">제출</button>
+
+  <div id="result"></div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycby_U1kyypPPmz-kh2FJAlYhmP-2yZVE02jkN-vPL1y47CwefW7TAEAD36ov1b1dRjy0bw/exec";
-
-    function fillTimeOptions() {
-      const hours = [...Array(24).keys()];
-      const minutes = [...Array(60).keys()];
-      document.querySelectorAll('select[id$="Hour"]').forEach(sel => {
-        hours.forEach(h => {
-          const opt = document.createElement('option');
-          opt.value = h.toString().padStart(2, '0');
-          opt.textContent = opt.value;
-          sel.appendChild(opt);
-        });
-      });
-      document.querySelectorAll('select[id$="Minute"]').forEach(sel => {
-        minutes.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.toString().padStart(2, '0');
-          opt.textContent = opt.value;
-          sel.appendChild(opt);
-        });
-      });
-    }
-
-    fillTimeOptions();
-
-    const groupSelect = document.getElementById("group");
-    const dateInput = document.getElementById("date");
-    const sections = {
-      systemOn: document.getElementById("section-systemOn"),
-      firstCheck: document.getElementById("section-firstCheck"),
-      secondCheck: document.getElementById("section-secondCheck"),
-      systemOff: document.getElementById("section-systemOff"),
-    };
-
-    function hideAllSections() {
-      Object.values(sections).forEach(section => {
-        section.classList.add("hidden");
-        section.querySelectorAll("select, input").forEach(input => {
-          input.required = false;
-          input.value = "";
-        });
-      });
-    }
-
-    groupSelect.addEventListener("change", handleSectionChange);
-    dateInput.addEventListener("change", handleSectionChange);
-
-    function handleSectionChange() {
-      const selected = groupSelect.value;
-      const date = dateInput.value;
-
-      hideAllSections();
-      if (!selected || !sections[selected]) return;
-
-      const section = sections[selected];
-      section.classList.remove("hidden");
-      section.querySelectorAll("select, input").forEach(input => input.required = true);
-
-      if (date) {
-        fetch(`${scriptUrl}?mode=getProcessData&date=${date}&group=${selected}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.message === "데이터 없음") return;
-            document.getElementById(selected + "Hour").value = data.hour || "";
-            document.getElementById(selected + "Minute").value = data.minute || "";
-            if (data.temp) document.getElementById(selected + "Temp")?.value = data.temp;
-            if (data.humidity) document.getElementById(selected + "Humidity")?.value = data.humidity;
-          })
-          .catch(err => console.error("조회 오류:", err));
+    function showSection() {
+      const selected = document.getElementById("group").value;
+      document.querySelectorAll(".section").forEach(sec => sec.classList.add("hidden"));
+      if (selected) {
+        document.getElementById(selected).classList.remove("hidden");
       }
     }
 
-    document.getElementById("trapForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const date = dateInput.value;
-      const group = groupSelect.value;
+    async function submitForm() {
+      const date = document.getElementById("date").value;
+      const group = document.getElementById("group").value;
+
       if (!date || !group) {
-        alert("날짜와 점검옵션을 선택해주세요.");
+        alert("날짜와 점검옵션은 필수입니다.");
         return;
       }
 
-      const data = { date, group };
-      sections[group].querySelectorAll("select, input").forEach(input => {
-        data[input.name] = input.value;
-      });
+      const data = {
+        type: "process",
+        date,
+        group
+      };
 
-      const formData = new FormData();
-      formData.append("noodle", JSON.stringify(data));
+      // 공통 항목
+      data[group + "Hour"] = document.getElementById(group + "Hour").value || "";
+      data[group + "Minute"] = document.getElementById(group + "Minute").value || "";
 
-      fetch(scriptUrl, {
-        method: "POST",
-        body: formData
-      })
-        .then(res => res.text())
-        .then(result => {
-          alert("✅ 저장 완료!\n\n" + result);
-          document.getElementById("trapForm").reset();
-          hideAllSections();
-        })
-        .catch(err => {
-          alert("❌ 전송 실패: " + err.message);
+      // 온도/습도 옵션만 해당 입력값 추가
+      if (!["systemOn", "systemOff"].includes(group)) {
+        data[group + "Temp"] = document.getElementById(group + "Temp").value || "";
+        data[group + "Humidity"] = document.getElementById(group + "Humidity").value || "";
+      }
+
+      const resultBox = document.getElementById("result");
+      resultBox.innerText = "⏳ 저장 중...";
+
+      try {
+        const res = await fetch("https://script.google.com/macros/s/AKfycby_U1kyypPPmz-kh2FJAlYhmP-2yZVE02jkN-vPL1y47CwefW7TAEAD36ov1b1dRjy0bw/exec", {
+          method: "POST",
+          body: new URLSearchParams({ noodle: JSON.stringify(data) }),
         });
-    });
+
+        const text = await res.text();
+        resultBox.innerText = text;
+      } catch (err) {
+        resultBox.innerText = "❌ 전송 실패: " + err.message;
+      }
+    }
   </script>
 </body>
 </html>
