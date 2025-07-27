@@ -1,159 +1,81 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>금속검출 모니터링</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-      max-width: 600px;
-      margin: auto;
+<script>
+  document.getElementById("date").valueAsDate = new Date();
+
+  function handleOptionChange() {
+    const option = document.getElementById("option").value;
+    const productSection = document.getElementById("productSection");
+    const oxSection = document.getElementById("oxSection");
+    const finalSection = document.getElementById("finalSection");
+
+    if (option === "최종취합") {
+      productSection.classList.remove("hidden");
+      oxSection.classList.add("hidden");
+      finalSection.classList.remove("hidden");
+    } else if (["1차점검", "2차점검", "3차점검", "4차점검"].includes(option)) {
+      productSection.classList.remove("hidden");
+      oxSection.classList.remove("hidden");
+      finalSection.classList.add("hidden");
+    } else {
+      productSection.classList.add("hidden");
+      oxSection.classList.add("hidden");
+      finalSection.classList.add("hidden");
     }
+  }
 
-    .inline-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+  function handleSubmit() {
+    const date = document.getElementById("date").value;
+    const option = document.getElementById("option").value;
+    const product = document.getElementById("product").value;
+    const pass = document.getElementById("pass").value;
+    const fail = document.getElementById("fail").value;
 
-    .inline-row > * {
-      flex: 1;
-    }
+    const fe = document.querySelector('input[name="fe"]:checked')?.value || "";
+    const sus = document.querySelector('input[name="sus"]:checked')?.value || "";
+    const prod = document.querySelector('input[name="prod"]:checked')?.value || "";
+    const prodfe = document.querySelector('input[name="prodfe"]:checked')?.value || "";
+    const prodsus = document.querySelector('input[name="prodsus"]:checked')?.value || "";
 
-    .hidden {
-      display: none;
-    }
+    // 필수항목 검증
+    if (!option) return alert("점검 옵션을 선택해주세요.");
+    if (!product) return alert("제품을 선택해주세요.");
 
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-
-  <h2>금속검출 모니터링</h2>
-
-  <!-- 날짜 입력 -->
-  <label for="date">날짜</label>
-  <input type="date" id="date" name="date" />
-
-  <!-- 옵션 선택 -->
-  <label for="option">점검 옵션</label>
-  <select id="option" name="option" onchange="handleOptionChange()">
-    <option value="">선택하세요</option>
-    <option value="1차점검">1차점검</option>
-    <option value="2차점검">2차점검</option>
-    <option value="3차점검">3차점검</option>
-    <option value="4차점검">4차점검</option>
-    <option value="최종취합">최종취합</option>
-  </select>
-
-  <!-- 제품 선택 -->
-  <div id="productSection" class="hidden">
-    <label for="product">제품 선택</label>
-    <select id="product" name="product">
-      <option value="">제품 선택</option>
-      <option value="A상품">A상품</option>
-      <option value="B상품">B상품</option>
-      <option value="C상품">C상품</option>
-      <option value="D상품">D상품</option>
-      <option value="E상품">E상품</option>
-      <option value="G상품">G상품</option>
-    </select>
-  </div>
-
-  <!-- OX 체크박스 5세트 -->
-  <div id="oxSection" class="hidden">
-    <label>점검 결과 (O/X)</label>
-    <div class="inline-row">Fe
-      <label><input type="radio" name="fe" value="O" />O</label>
-      <label><input type="radio" name="fe" value="X" />X</label>
-    </div>
-    <div class="inline-row">Sus
-      <label><input type="radio" name="sus" value="O" />O</label>
-      <label><input type="radio" name="sus" value="X" />X</label>
-    </div>
-    <div class="inline-row">제품
-      <label><input type="radio" name="prod" value="O" />O</label>
-      <label><input type="radio" name="prod" value="X" />X</label>
-    </div>
-    <div class="inline-row">제품+Fe
-      <label><input type="radio" name="prodfe" value="O" />O</label>
-      <label><input type="radio" name="prodfe" value="X" />X</label>
-    </div>
-    <div class="inline-row">제품+Sus
-      <label><input type="radio" name="prodsus" value="O" />O</label>
-      <label><input type="radio" name="prodsus" value="X" />X</label>
-    </div>
-  </div>
-
-  <!-- 최종취합일 때만 -->
-  <div id="finalSection" class="hidden">
-    <label for="pass">통과 수량</label>
-    <input type="number" id="pass" name="pass" min="0" />
-    
-    <label for="fail">검출 수량</label>
-    <input type="number" id="fail" name="fail" min="0" />
-  </div>
-
-  <br />
-  <button onclick="handleSubmit()">저장</button>
-
-  <script>
-    // 오늘 날짜 자동입력
-    document.getElementById("date").valueAsDate = new Date();
-
-    function handleOptionChange() {
-      const option = document.getElementById("option").value;
-      const productSection = document.getElementById("productSection");
-      const oxSection = document.getElementById("oxSection");
-      const finalSection = document.getElementById("finalSection");
-
-      if (option === "최종취합") {
-        productSection.classList.remove("hidden");
-        oxSection.classList.add("hidden");
-        finalSection.classList.remove("hidden");
-      } else if (["1차점검", "2차점검", "3차점검", "4차점검"].includes(option)) {
-        productSection.classList.remove("hidden");
-        oxSection.classList.remove("hidden");
-        finalSection.classList.add("hidden");
-      } else {
-        productSection.classList.add("hidden");
-        oxSection.classList.add("hidden");
-        finalSection.classList.add("hidden");
+    if (option === "최종취합") {
+      if (!pass || !fail) return alert("통과수량과 검출수량을 모두 입력해주세요.");
+    } else {
+      if (!fe || !sus || !prod || !prodfe || !prodsus) {
+        return alert("모든 O/X 항목을 선택해주세요.");
       }
     }
 
-    function handleSubmit() {
-      const data = {
-        date: document.getElementById("date").value,
-        option: document.getElementById("option").value,
-        product: document.getElementById("product").value,
-        fe: document.querySelector('input[name="fe"]:checked')?.value || "",
-        sus: document.querySelector('input[name="sus"]:checked')?.value || "",
-        prod: document.querySelector('input[name="prod"]:checked')?.value || "",
-        prodfe: document.querySelector('input[name="prodfe"]:checked')?.value || "",
-        prodsus: document.querySelector('input[name="prodsus"]:checked')?.value || "",
-        pass: document.getElementById("pass").value || "",
-        fail: document.getElementById("fail").value || ""
-      };
+    const data = {
+      date, option, product, fe, sus, prod, prodfe, prodsus, pass, fail
+    };
 
-      // 여기에 본인의 Google Apps Script 웹앱 URL 입력
-      const url = "https://script.google.com/macros/s/AKfycbxxxxx/exec";
+    const url = "https://script.google.com/macros/s/AKfycbxxxxx/exec";
 
-      fetch(url, {
-        method: "POST",
-        body: new URLSearchParams({ magnet: JSON.stringify(data) })
+    fetch(url, {
+      method: "POST",
+      body: new URLSearchParams({ magnet: JSON.stringify(data) })
+    })
+      .then(res => res.text())
+      .then(result => {
+        alert("✅ 저장되었습니다");
+        resetInputs();  // 입력값 리셋
       })
-        .then(res => res.text())
-        .then(result => alert("✅ 저장되었습니다"))
-        .catch(err => alert("⚠️ 저장 오류: " + err));
-    }
-  </script>
+      .catch(err => alert("⚠️ 저장 오류: " + err));
+  }
 
-</body>
-</html>
+  function resetInputs() {
+    document.getElementById("option").value = "";
+    document.getElementById("product").value = "";
+    document.getElementById("pass").value = "";
+    document.getElementById("fail").value = "";
+
+    document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+
+    // 숨김 상태 초기화
+    document.getElementById("productSection").classList.add("hidden");
+    document.getElementById("oxSection").classList.add("hidden");
+    document.getElementById("finalSection").classList.add("hidden");
+  }
+</script>
