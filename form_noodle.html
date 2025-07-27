@@ -161,7 +161,7 @@
 
       const data = { date, group, entries };
       const formData = new FormData();
-      formData.append("data", JSON.stringify(data));
+      formData.append("noodle", JSON.stringify(data));
 
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbwQGwU5u7EmIA_P7nMaKV5YpgUp3nDjfmcwISBo6GiAp6DtDh2SHXGRrUe-oe7zIJVFBw/exec", {
