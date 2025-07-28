@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>금속검출 점검</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: sans-serif;
@@ -12,214 +12,359 @@
       margin: auto;
     }
 
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    select option:first-child {
+      color: #aaa;
+      font-style: italic;
+    }
+
     .inline-row {
       display: flex;
       gap: 10px;
     }
 
-    .inline-row > * {
+    .inline-row > div {
       flex: 1;
     }
 
-    label {
-      font-weight: bold;
-    }
-
-    .ox-button-group {
+    .ox-group {
       display: flex;
-      gap: 5px;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    .ox-button {
-      flex: 1;
-      padding: 8px;
+    .ox-set {
+      flex: 1 1 48%;
       text-align: center;
       border: 1px solid #ccc;
       border-radius: 8px;
-      background: #f9f9f9;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .ox-button.selected {
-      background: #4CAF50;
-      color: white;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 6px;
-      box-sizing: border-box;
-      margin-bottom: 10px;
-    }
-
-    button {
-      width: 100%;
       padding: 10px;
-      background: #2196F3;
+    }
+
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      border-radius: 4px;
+    }
+
+    .ox-buttons button.selected {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
+
+    /* 🔧 선택된 select/input 요소 강조 */
+    select.selected,
+    input.selected {
+      border: 2px solid #007bff;
+      background-color: #e8f0fe;
+      font-weight: bold;
+    }
+
+    /* 🔧 날짜 입력창 텍스트 확대 */
+    input[type="date"] {
+      font-size: 18px;
+    }
+
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .number-row > div {
+      flex: 1;
+    }
+
+    button[type="submit"] {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      background-color: #28a745;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #218838;
     }
   </style>
 </head>
 <body>
   <h2>금속검출 점검</h2>
   <form id="magnetForm">
-    <label>날짜</label>
-    <input type="date" id="date" name="date" />
+    <label>날짜
+      <input type="date" id="date" name="date" />
+    </label>
 
-    <label>점검옵션</label>
-    <select id="option" name="option">
-      <option value="">선택</option>
-      <option value="1차">1차</option>
-      <option value="2차">2차</option>
-      <option value="최종취합">최종취합</option>
-    </select>
-
-    <div id="details" class="hidden">
-      <div class="inline-row">
-        <div>
-          <label>시</label>
-          <select id="hour"></select>
-        </div>
-        <div>
-          <label>분</label>
-          <select id="minute"></select>
-        </div>
-      </div>
-
-      <label>제품명</label>
-      <select id="product">
-        <option value="">선택</option>
-        <option>제품A</option>
-        <option>제품B</option>
-        <option>제품C</option>
-        <option>제품D</option>
-        <option>제품E</option>
-        <option>제품F</option>
+    <label>점검 옵션
+      <select id="option" name="option" required>
+        <option value="">선택하세요</option>
+        <option value="1차점검">1차점검</option>
+        <option value="2차점검">2차점검</option>
+        <option value="3차점검">3차점검</option>
+        <option value="4차점검">4차점검</option>
+        <option value="최종취합">최종취합</option>
       </select>
+    </label>
 
-      <label>Fe 검출</label>
-      <div class="ox-button-group" data-index="0">
-        <div class="ox-button">O</div>
-        <div class="ox-button">X</div>
-      </div>
+    <div id="subInputs" style="display:none;">
+      <label>시간
+        <input type="time" id="time" name="time" />
+      </label>
 
-      <label>Sus 검출</label>
-      <div class="ox-button-group" data-index="1">
-        <div class="ox-button">O</div>
-        <div class="ox-button">X</div>
-      </div>
+      <label>제품명
+        <select id="product" name="product">
+          <option value="">선택하세요</option>
+          <option>제품A</option>
+          <option>제품B</option>
+          <option>제품C</option>
+          <option>제품D</option>
+          <option>제품E</option>
+          <option>제품F</option>
+        </select>
+      </label>
 
-      <label>제품 내 금속</label>
-      <div class="ox-button-group" data-index="2">
-        <div class="ox-button">O</div>
-        <div class="ox-button">X</div>
-      </div>
-
-      <label>제품+Fe</label>
-      <div class="ox-button-group" data-index="3">
-        <div class="ox-button">O</div>
-        <div class="ox-button">X</div>
-      </div>
-
-      <label>제품+Sus</label>
-      <div class="ox-button-group" data-index="4">
-        <div class="ox-button">O</div>
-        <div class="ox-button">X</div>
+      <label>검출 상태</label>
+      <div class="ox-group" id="oxContainer">
+        <!-- JS에서 자동 생성 -->
       </div>
     </div>
 
-    <div id="summarySection" class="hidden">
-      <label>통과 수량 / 검출 수량</label>
-      <div class="inline-row">
-        <input type="number" id="passQty" placeholder="통과" />
-        <input type="number" id="defectQty" placeholder="검출" />
+    <div id="summaryInputs" style="display:none;">
+      <label>통과/검출 수량</label>
+      <div class="number-row">
+        <div>
+          <input type="number" name="passCount" placeholder="통과 수량" />
+        </div>
+        <div>
+          <input type="number" name="detectCount" placeholder="검출 수량" />
+        </div>
       </div>
     </div>
 
     <button type="submit">저장</button>
   </form>
 
-  <p id="status"></p>
+ <script>
+  // 날짜 기본값 설정 및 selected 적용
+  const dateInput = document.getElementById("date");
+  dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
 
-  <script>
-    const form = document.getElementById("magnetForm");
-    const option = document.getElementById("option");
-    const details = document.getElementById("details");
-    const summary = document.getElementById("summarySection");
-    const dateInput = document.getElementById("date");
-
-    // 기본 날짜 지정
-    dateInput.valueAsDate = new Date();
-
-    // 시간, 분 선택
-    const hour = document.getElementById("hour");
-    const minute = document.getElementById("minute");
-
-    for (let i = 0; i < 24; i++) {
-      hour.innerHTML += `<option>${String(i).padStart(2, '0')}</option>`;
-    }
-    for (let i = 0; i < 60; i += 10) {
-      minute.innerHTML += `<option>${String(i).padStart(2, '0')}</option>`;
-    }
-
-    // 옵션 선택 시 상세 입력창 표시
-    option.addEventListener("change", () => {
-      const val = option.value;
-      details.classList.toggle("hidden", !val);
-      summary.classList.toggle("hidden", val !== "최종취합");
-    });
-
-    // OX 버튼 토글
-    document.querySelectorAll(".ox-button-group").forEach(group => {
-      group.querySelectorAll(".ox-button").forEach(btn => {
-        btn.addEventListener("click", () => {
-          group.querySelectorAll(".ox-button").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-        });
-      });
-    });
-
-    // 전송 처리
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const oxList = [];
-
-      document.querySelectorAll(".ox-button-group").forEach(group => {
-        const selected = group.querySelector(".selected");
-        oxList.push(selected ? selected.textContent : "");
-      });
-
-      const payload = {
-        date: dateInput.value,
-        group: "금속검출",
-        entries: {
-          option: option.value,
-          time: `${hour.value}:${minute.value}`,
-          product: document.getElementById("product").value,
-          oxList,
-          passQty: document.getElementById("passQty").value,
-          defectQty: document.getElementById("defectQty").value
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
         }
-      };
-
-      const url = "https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec";
-      const res = await fetch(url, {
-        method: "POST",
-        body: new URLSearchParams({ magnet: JSON.stringify(payload) })
       });
-
-      const msg = await res.text();
-      document.getElementById("status").textContent = msg;
     });
-  </script>
+  }
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
+
+  // 점검 옵션에 따라 입력 필드 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
+
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+  });
+
+  // OX 항목 자동 생성
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxContainer = document.getElementById("oxContainer");
+
+  oxItems.forEach(label => {
+    const oxSet = document.createElement("div");
+    oxSet.className = "ox-set";
+    oxSet.innerHTML = 
+      <div>${label}</div>
+      <div class="ox-buttons">
+        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+      </div>
+    ;
+    oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  const oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
+    }
+  });
+
+  // 폼 전송 처리
+document.getElementById("magnetForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const form = e.target;
+  const [hour, minute] = form.time.value.split(':') || ["", ""];
+
+  const isSummary = form.option.value === "최종취합";
+  const states = {};
+
+  if (!isSummary) {
+    oxItems.forEach(label => {
+      states[label] = oxValues[label] || "";
+    });
+  }
+
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour,
+    minute,
+    product: form.product.value,
+    passCount: form.passCount?.value || "",
+    detectCount: form.detectCount?.value || "",
+    states
+  };
+
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
+      method: "POST",
+      body: new URLSearchParams({ magnet: JSON.stringify(data) }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
+
+    const text = await res.text();
+    alert("서버 응답: " + text);
+
+    form.reset();
+    dateInput.valueAsDate = new Date();
+    dateInput.classList.add("selected");
+  } catch (err) {
+    alert("저장 중 오류 발생");
+    console.error(err);
+  }
+});
+
+</script>
+
 </body>
 </html>
+
+
+
+
+function handleMagnetData(e) {
+  try {
+    const jsonString = e.parameter.magnet;
+    const data = JSON.parse(jsonString);
+    const { date, group, entries } = data;
+
+    if (!entries || typeof entries !== "object") {
+      throw new Error("❌ entries 객체가 비어있거나 잘못됨: " + JSON.stringify(entries));
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("금속검출");
+    if (!sheet) throw new Error("❌ '금속검출' 시트를 찾을 수 없습니다.");
+
+    const norm = (v) => String(v || "").trim();
+    const normDate = (d) =>
+      Utilities.formatDate(new Date(d), Session.getScriptTimeZone(), "yyyy-MM-dd");
+
+    // time (HH:mm) 분리 -> hour, minute 할당
+    if (entries.time && typeof entries.time === "string" && entries.time.includes(":")) {
+      const [h, m] = entries.time.split(":");
+      entries.hour = h;
+      entries.minute = m;
+    }
+
+    // 기존 시트 데이터 읽기
+    const values = sheet.getDataRange().getValues();
+    const keyToRowIndex = new Map();
+
+    // 중복키: 날짜|옵션 기준 (A열|B열)
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      const key = ${normDate(row[0])}|${norm(row[1])};
+      keyToRowIndex.set(key, i + 1);
+    }
+
+    const currentKey = ${normDate(date)}|${norm(entries.option)};
+
+    // 시트에 쓸 행 데이터 배열 생성
+    const row = [
+      normDate(date),          // A - 날짜
+      norm(entries.option),    // B - 옵션
+      norm(entries.hour),      // C - 시
+      norm(entries.minute),    // D - 분
+      norm(entries.product)    // E - 제품명
+    ];
+
+    // OX 5개 항목 (F~J열: fe, sus, 제품, 제품+fe, 제품+sus)
+    if (Array.isArray(entries.oxList)) {
+      for (let i = 0; i < 5; i++) {
+        row.push(norm(entries.oxList[i]));
+      }
+    } else {
+      row.push("", "", "", "", "");
+    }
+
+    // 최종취합 시 통과수량, 검출수량 (K, L열)
+    if (entries.option === "최종취합") {
+      row.push(norm(entries.passQty));
+      row.push(norm(entries.defectQty));
+    } else {
+      row.push("", "");
+    }
+
+    if (keyToRowIndex.has(currentKey)) {
+      const rowNum = keyToRowIndex.get(currentKey);
+      sheet.getRange(rowNum, 1, 1, row.length).setValues([row]);
+      return ContentService.createTextOutput("✅ 덮어쓰기 완료");
+    } else {
+      sheet.appendRow(row);
+      return ContentService.createTextOutput("🆕 신규 추가 완료");
+    }
+
+  } catch (error) {
+    return ContentService.createTextOutput("❌ 에러 발생: " + error.message);
+  }
