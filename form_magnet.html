@@ -240,18 +240,18 @@
   });
 
   // 폼 전송 처리
-// 폼 전송 처리
+<script>
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
 
+  const option = form.option.value;
+
   // 1) 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
-    // display:none 이거나 비활성화된 input은 체크 안 함
-    if (input.offsetParent === null) continue;  // 부모가 display:none 인 경우 skip
+    if (input.offsetParent === null || input.disabled) continue; // 숨겨진 항목은 skip
 
-    // required 처리
     if (!input.value) {
       alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
       input.focus();
@@ -259,35 +259,36 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // 2) O/X 버튼 필수 선택 체크
-  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  for (const label of oxItems) {
-    if (!(label in oxValues)) {
-      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-      // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
-      const btn = document.querySelector(`.ox[data-label="${label}"]`);
-      if (btn) btn.focus();
-      return;
+  // 2) O/X 버튼 필수 선택 체크 - "최종취합" 선택 시에만 체크
+  if (option === "최종취합") {
+    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+    for (const label of oxItems) {
+      if (!(label in oxValues)) {
+        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+        const btn = document.querySelector(`.ox[data-label="${label}"]`);
+        if (btn) btn.focus();
+        return;
+      }
     }
   }
 
   // 3) 시간 시/분 분리
   let hour = "";
   let minute = "";
-  if (form.time.value) {
-    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
-    hour = timeParts[0] || "";
-    minute = timeParts[1] || "";
+  if (form.time?.value) {
+    const [h, m] = form.time.value.split(":");
+    hour = h || "";
+    minute = m || "";
   }
 
-  // 4) 데이터 객체 생성
+  // 4) 데이터 객체 구성
   const data = {
     type: "magnet",
     date: form.date.value,
-    option: form.option.value,
+    option: option,
     hour: hour,
     minute: minute,
-    product: form.product.value,
+    product: form.product?.value || "",
     passCount: form.querySelector('input[name="passCount"]')?.value || "",
     detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
     states: oxValues
@@ -308,7 +309,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
       form.reset();
       dateInput.valueAsDate = new Date();
       dateInput.classList.add("selected");
-      // 선택된 OX 버튼 초기화
       oxValues = {};
       document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
     } else {
@@ -320,6 +320,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 });
 </script>
+
 
 
 </body>
