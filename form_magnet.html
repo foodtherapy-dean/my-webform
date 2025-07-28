@@ -263,18 +263,17 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 
   // 2) O/X 버튼 필수 선택 체크 (보이는 항목만 확인)
-  const visibleOxItems = document.querySelectorAll(".ox-set");
-  for (const container of visibleOxItems) {
-    const label = container.getAttribute("data-label");
-    if (!label) continue;
-    if (!(label in oxValues)) {
-      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-      const btn = container.querySelector(".ox");
-      if (btn) btn.focus();
-      return;
-    }
+const visibleOxItems = document.querySelectorAll(".ox-set");
+for (const container of visibleOxItems) {
+  if (container.offsetParent === null) continue;  // 숨겨진 항목 제외
+  const label = container.getAttribute("data-label");
+  if (!label || !(label in oxValues)) {
+    alert(`검출 상태 '${label}'의 O 또는 X를 선택해 주세요.`);
+    const firstBtn = container.querySelector(".ox");
+    if (firstBtn) firstBtn.focus();
+    return;
   }
-
+}
   // 3) 시간 시/분 분리
   let hour = "";
   let minute = "";
