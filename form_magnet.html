@@ -254,19 +254,20 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     minute = timeParts[1] || "";
   }
 
-  const data = {
-    date: form.date.value,
-    option: form.option.value,
-    hour: hour,
-    minute: minute,
-    product: form.product.value,
-    passCount: form.passCount?.value || "",
-    detectCount: form.detectCount?.value || "",
-    states: oxValues
-  };
+ const data = {
+  type: "magnet",    // ⭐️ 이 부분 꼭 넣어야 doPost()가 올바르게 처리합니다
+  date: form.date.value,
+  option: form.option.value,
+  hour: hour,
+  minute: minute,
+  product: form.product.value,
+  passCount: form.passCount?.value || "",
+  detectCount: form.detectCount?.value || "",
+  states: oxValues
+};
 
-  const formData = new FormData();
-  formData.append("magnet", JSON.stringify(data));  // ⬅️ 키 이름 magnet 사용
+const formData = new FormData();
+formData.append("data", JSON.stringify(data)); 
 
   try {
     const response = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
