@@ -240,56 +240,46 @@
   });
 
   // 폼 전송 처리
-// 폼 전송 처리
-document.getElementById("magnetForm").addEventListener("submit", async function(e) {
+ document.getElementById("magnetForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const form = e.target;
+  const [hour, minute] = form.time.value.split(':') || ["", ""];
 
-  // 시/분 분리
-  let hour = "";
-  let minute = "";
-  if (form.time.value) {
-    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
-    hour = timeParts[0] || "";
-    minute = timeParts[1] || "";
-  }
-
- const data = {
-  type: "magnet",    // ⭐️ 이 부분 꼭 넣어야 doPost()가 올바르게 처리합니다
-  date: form.date.value,
-  option: form.option.value,
-  hour: hour,
-  minute: minute,
-  product: form.product.value,
-  passCount: form.passCount?.value || "",
-  detectCount: form.detectCount?.value || "",
-  states: oxValues
-};
-
-const formData = new FormData();
-formData.append("data", JSON.stringify(data)); 
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour: hour,
+    minute: minute,
+    product: form.product.value,
+    passCount: form.passCount?.value || "",
+    detectCount: form.detectCount?.value || "",
+    states: oxValues
+  };
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxt6L_blR-_xQ201LeCSgTvwtbI79gG5JwfM1owgcDGwkgO1dTHlphy_HwOdYOY1KvJxg/exec", {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
       method: "POST",
-      body: formData
+      body: JSON.stringify({ data }),
+      headers: { "Content-Type": "application/json" }
     });
 
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
+    const resText = await res.text();
+    console.log("📡 서버 응답:", resText);
+
+    if (res.ok) {
+      alert("✅ 저장 완료: " + resText);
       form.reset();
       dateInput.valueAsDate = new Date();
       dateInput.classList.add("selected");
     } else {
-      alert("❌ 서버 오류:\n" + result);
+      alert("❌ 서버 오류: " + resText);
     }
   } catch (err) {
-    alert("❌ 저장 중 오류 발생:\n" + err.message);
+    alert("❌ 저장 중 오류 발생 (네트워크 또는 파싱 오류)");
     console.error("❌ 예외:", err);
   }
 });
-
 </script>
 
 
