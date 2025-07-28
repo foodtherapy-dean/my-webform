@@ -4,81 +4,121 @@
   <meta charset="UTF-8" />
   <title>금속검출 점검</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-      max-width: 600px;
-      margin: auto;
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      box-sizing: border-box;
-      text-align: center;
-    }
-    .inline-row {
-      display: flex;
-      gap: 10px;
-    }
-    .inline-row > div {
-      flex: 1;
-    }
-    .ox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .ox-set {
-      flex: 1 1 48%;
-      text-align: center;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .ox-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 5px;
-    }
-    .ox-buttons button {
-  flex: 1;
-  padding: 10px;
-  font-size: 16px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  color: #333;
-  cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
-  border-radius: 4px;
-}
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 10px;
+    max-width: 600px;
+    margin: auto;
+  }
 
-.ox-buttons button.selected {
-  background-color: #007bff;
-  color: white;
-  border-color: #0056b3;
-}
-    .number-row {
-      display: flex;
-      gap: 10px;
-    }
-    .number-row > div {
-      flex: 1;
-    }
-    button[type="submit"] {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      font-size: 16px;
-    }
-  </style>
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  select option:first-child {
+    color: #aaa;
+    font-style: italic;
+  }
+
+  .inline-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .inline-row > div {
+    flex: 1;
+  }
+
+  .ox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ox-set {
+    flex: 1 1 48%;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .ox-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 5px;
+  }
+
+  .ox-buttons button {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    border-radius: 4px;
+  }
+
+  .ox-buttons button.selected {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+  }
+
+  /* ✅ 선택된 select/input 요소에도 강조 색상 적용 */
+  select.selected,
+  input.selected {
+    border: 2px solid #007bff;
+    background-color: #e8f0fe;
+    font-weight: bold;
+  }
+
+  /* ✅ 날짜 입력창 텍스트 확대 */
+  input[type="date"] {
+    font-size: 18px;
+  }
+
+  .number-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .number-row > div {
+    flex: 1;
+  }
+
+  button[type="submit"] {
+    margin-top: 20px;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button[type="submit"]:hover {
+    background-color: #218838;
+  }
+</style>
 </head>
 <body>
   <h2>금속검출 점검</h2>
