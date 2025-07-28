@@ -258,7 +258,7 @@ document.getElementById("magnetForm").addEventListener("submit", async e => {
   };
 
   try {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec", {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
       method: "POST",
       body: new URLSearchParams({ magnet: JSON.stringify(data) }),
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
