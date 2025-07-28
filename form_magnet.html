@@ -244,7 +244,15 @@
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
-  const [hour, minute] = form.time.value.split(':') || ["", ""];
+
+  // 시/분 분리
+  let hour = "";
+  let minute = "";
+  if (form.time.value) {
+    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
+    hour = timeParts[0] || "";
+    minute = timeParts[1] || "";
+  }
 
   const data = {
     date: form.date.value,
@@ -258,7 +266,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   };
 
   const formData = new FormData();
-  formData.append("magnet", JSON.stringify(data));  // ✅ magnet 키 사용
+  formData.append("magnet", JSON.stringify(data));  // ⬅️ 키 이름 magnet 사용
 
   try {
     const response = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
