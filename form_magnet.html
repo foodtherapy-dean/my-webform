@@ -104,16 +104,8 @@
       </label>
 
       <label>검출 상태</label>
-      <div class="ox-group">
-        ${["자석검출", "금속검출", "테스트완료", "작업자확인", "기기정상"].map(label => `
-          <div class="ox-set">
-            <div>${label}</div>
-            <div class="ox-buttons">
-              <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-              <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-            </div>
-          </div>
-        `).join('')}
+      <div class="ox-group" id="oxContainer">
+        <!-- JS에서 자동 생성 -->
       </div>
     </div>
 
@@ -144,17 +136,35 @@
       document.getElementById("summaryInputs").style.display = (opt === "최종취합") ? "block" : "none";
     });
 
-    // O/X 버튼 토글
+    // OX 항목 자동 생성
+    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+    const oxContainer = document.getElementById("oxContainer");
+
+    oxItems.forEach(label => {
+      const oxSet = document.createElement("div");
+      oxSet.className = "ox-set";
+      oxSet.innerHTML = `
+        <div>${label}</div>
+        <div class="ox-buttons">
+          <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+          <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+        </div>
+      `;
+      oxContainer.appendChild(oxSet);
+    });
+
+    // O/X 버튼 토글 저장
     const oxValues = {};
-    document.querySelectorAll(".ox").forEach(btn => {
-      btn.addEventListener("click", () => {
+    document.addEventListener("click", e => {
+      if (e.target.classList.contains("ox")) {
+        const btn = e.target;
         const label = btn.dataset.label;
         oxValues[label] = btn.dataset.value;
 
         document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
           b.style.backgroundColor = (b === btn) ? "#ddd" : "";
         });
-      });
+      }
     });
 
     // 전송 처리
