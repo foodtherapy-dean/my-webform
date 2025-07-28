@@ -263,7 +263,14 @@
         body: JSON.stringify({ data }),
         headers: { "Content-Type": "application/json" }
       });
-      alert("저장되었습니다!");
+      const resText = await res.text();
+console.log("서버 응답:", resText);
+
+if (res.ok) {
+  alert("✅ 저장 완료: " + resText);
+} else {
+  alert("❌ 서버 오류: " + resText);
+}
       form.reset();
       dateInput.valueAsDate = new Date();
       dateInput.classList.add("selected");
