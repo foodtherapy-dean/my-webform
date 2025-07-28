@@ -240,38 +240,42 @@
   });
 
   // 폼 전송 처리
-  document.getElementById("magnetForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const form = e.target;
-    const [hour, minute] = form.time.value.split(':') || ["", ""];
+document.getElementById("magnetForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const form = e.target;
+  const [hour, minute] = form.time.value.split(':') || ["", ""];
 
-    const data = {
-      type: "magnet",
-      date: form.date.value,
-      option: form.option.value,
-      hour: hour,
-      minute: minute,
-      product: form.product.value,
-      passCount: form.passCount?.value || "",
-      detectCount: form.detectCount?.value || "",
-      states: oxValues
-    };
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour: hour,
+    minute: minute,
+    product: form.product.value,
+    passCount: form.passCount?.value || "",
+    detectCount: form.detectCount?.value || "",
+    states: oxValues
+  };
 
-    try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
-  method: "POST",
-  body: new URLSearchParams({ magnet: JSON.stringify(data) }),
-  headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbzu8cE1fqQUvYpF3P4ImOLT2ngWcVPivWgXyfoQ7fpvnqMDgs3nTL5_zB7PSWZuSqFgKw/exec", {
+      method: "POST",
+      body: new URLSearchParams({ magnet: JSON.stringify(data) }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
+
+    const text = await res.text();
+    alert("서버 응답: " + text);
+
+    form.reset();
+    dateInput.valueAsDate = new Date();
+    dateInput.classList.add("selected");
+  } catch (err) {
+    alert("저장 중 오류 발생");
+    console.error(err);
+  }
 });
-      alert("저장되었습니다!");
-      form.reset();
-      dateInput.valueAsDate = new Date();
-      dateInput.classList.add("selected");
-    } catch (err) {
-      alert("저장 중 오류 발생");
-      console.error(err);
-    }
-  });
+
 </script>
 
 </body>
