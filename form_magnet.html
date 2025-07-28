@@ -244,15 +244,17 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   e.preventDefault();
   const form = e.target;
 
-  const option = form.option.value;
-  const isFinal = option === "최종취합";  // 최종취합 여부
+  // 0) 옵션 필수 선택 확인
+  if (!form.option.value) {
+    alert("점검 옵션을 선택해 주세요.");
+    form.option.focus();
+    return;
+  }
 
   // 1) 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
-    // display:none 이거나 비활성화된 input은 체크 안 함
-    if (input.offsetParent === null || input.disabled) continue;
-
+    if (input.offsetParent === null) continue;  // display:none인 항목은 무시
     if (!input.value) {
       alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
       input.focus();
@@ -260,19 +262,16 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // 2) O/X 버튼 필수 선택 체크 (단, 최종취합은 제외)
-  if (!isFinal) {
-    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-    for (const label of oxItems) {
-      const oxSection = document.querySelector(`.ox-set[data-label="${label}"]`);
-      if (oxSection && oxSection.offsetParent !== null) {
-        if (!(label in oxValues)) {
-          alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-          const btn = document.querySelector(`.ox[data-label="${label}"]`);
-          if (btn) btn.focus();
-          return;
-        }
-      }
+  // 2) O/X 버튼 필수 선택 체크 (보이는 항목만 확인)
+  const visibleOxItems = document.querySelectorAll(".ox-set");
+  for (const container of visibleOxItems) {
+    const label = container.getAttribute("data-label");
+    if (!label) continue;
+    if (!(label in oxValues)) {
+      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+      const btn = container.querySelector(".ox");
+      if (btn) btn.focus();
+      return;
     }
   }
 
@@ -289,9 +288,9 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   const data = {
     type: "magnet",
     date: form.date.value,
-    option: option,
-    hour: hour,
-    minute: minute,
+    option: form.option.value,
+    hour,
+    minute,
     product: form.product.value,
     passCount: form.querySelector('input[name="passCount"]')?.value || "",
     detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
@@ -323,6 +322,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     console.error("❌ 예외:", err);
   }
 });
+
 </script>
 
 
