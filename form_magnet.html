@@ -176,7 +176,7 @@
     <button type="submit">저장</button>
   </form>
 
- <script>
+<script>
   // 날짜 기본값 설정 및 selected 적용
   const dateInput = document.getElementById("date");
   dateInput.valueAsDate = new Date();
@@ -215,13 +215,13 @@
   oxItems.forEach(label => {
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
-    oxSet.innerHTML = 
+    oxSet.innerHTML = `
       <div>${label}</div>
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
       </div>
-    ;
+    `;
     oxContainer.appendChild(oxSet);
   });
 
@@ -233,7 +233,7 @@
       const label = btn.dataset.label;
       oxValues[label] = btn.dataset.value;
 
-      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
         b.classList.toggle("selected", b === btn);
       });
     }
