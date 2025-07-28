@@ -4,121 +4,121 @@
   <meta charset="UTF-8" />
   <title>금속검출 점검</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  body {
-    font-family: sans-serif;
-    padding: 10px;
-    max-width: 600px;
-    margin: auto;
-  }
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
 
-  label {
-    display: block;
-    margin-top: 12px;
-    font-weight: bold;
-    font-size: 16px;
-  }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 16px;
+    }
 
-  input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-    box-sizing: border-box;
-    text-align: center;
-    font-size: 16px;
-  }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 16px;
+    }
 
-  select option:first-child {
-    color: #aaa;
-    font-style: italic;
-  }
+    select option:first-child {
+      color: #aaa;
+      font-style: italic;
+    }
 
-  .inline-row {
-    display: flex;
-    gap: 10px;
-  }
+    .inline-row {
+      display: flex;
+      gap: 10px;
+    }
 
-  .inline-row > div {
-    flex: 1;
-  }
+    .inline-row > div {
+      flex: 1;
+    }
 
-  .ox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+    .ox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
 
-  .ox-set {
-    flex: 1 1 48%;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 10px;
-  }
+    .ox-set {
+      flex: 1 1 48%;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
 
-  .ox-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 5px;
-  }
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
 
-  .ox-buttons button {
-    flex: 1;
-    padding: 10px;
-    font-size: 16px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    color: #333;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-    border-radius: 4px;
-  }
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      border-radius: 4px;
+    }
 
-  .ox-buttons button.selected {
-    background-color: #007bff;
-    color: white;
-    border-color: #0056b3;
-  }
+    .ox-buttons button.selected {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
 
-  /* ✅ 선택된 select/input 요소에도 강조 색상 적용 */
-  select.selected,
-  input.selected {
-    border: 2px solid #007bff;
-    background-color: #e8f0fe;
-    font-weight: bold;
-  }
+    /* 🔧 선택된 select/input 요소 강조 */
+    select.selected,
+    input.selected {
+      border: 2px solid #007bff;
+      background-color: #e8f0fe;
+      font-weight: bold;
+    }
 
-  /* ✅ 날짜 입력창 텍스트 확대 */
-  input[type="date"] {
-    font-size: 18px;
-  }
+    /* 🔧 날짜 입력창 텍스트 확대 */
+    input[type="date"] {
+      font-size: 18px;
+    }
 
-  .number-row {
-    display: flex;
-    gap: 10px;
-  }
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
 
-  .number-row > div {
-    flex: 1;
-  }
+    .number-row > div {
+      flex: 1;
+    }
 
-  button[type="submit"] {
-    margin-top: 20px;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
+    button[type="submit"] {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
 
-  button[type="submit"]:hover {
-    background-color: #218838;
-  }
-</style>
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+  </style>
 </head>
 <body>
   <h2>금속검출 점검</h2>
@@ -176,81 +176,103 @@
     <button type="submit">저장</button>
   </form>
 
-  <script>
-    // 오늘 날짜 자동 지정
-    document.getElementById("date").valueAsDate = new Date();
+ <script>
+  // 날짜 기본값 설정 및 selected 적용
+  const dateInput = document.getElementById("date");
+  dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
 
-    // 점검 옵션에 따라 입력 필드 표시 제어
-    document.getElementById("option").addEventListener("change", e => {
-      const opt = e.target.value;
-      const show = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-      document.getElementById("subInputs").style.display = show ? "block" : "none";
-      document.getElementById("summaryInputs").style.display = (opt === "최종취합") ? "block" : "none";
-    });
-
-    // OX 항목 자동 생성
-    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-    const oxContainer = document.getElementById("oxContainer");
-
-    oxItems.forEach(label => {
-      const oxSet = document.createElement("div");
-      oxSet.className = "ox-set";
-      oxSet.innerHTML = `
-        <div>${label}</div>
-        <div class="ox-buttons">
-          <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-          <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-        </div>
-      `;
-      oxContainer.appendChild(oxSet);
-    });
-
-    // O/X 버튼 토글 저장
-    const oxValues = {};
-   document.addEventListener("click", e => {
-  if (e.target.classList.contains("ox")) {
-    const btn = e.target;
-    const label = btn.dataset.label;
-    oxValues[label] = btn.dataset.value;
-
-    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-      b.classList.toggle("selected", b === btn);
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
     });
   }
-});
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
 
-    // 전송 처리
-    document.getElementById("magnetForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const form = e.target;
+  // 점검 옵션에 따라 입력 필드 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
 
-      const [hour, minute] = form.time.value.split(':') || ["", ""];
-      const data = {
-        type: "magnet",
-        date: form.date.value,
-        option: form.option.value,
-        hour: hour,
-        minute: minute,
-        product: form.product.value,
-        passCount: form.passCount?.value || "",
-        detectCount: form.detectCount?.value || "",
-        states: oxValues
-      };
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+  });
 
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
-          method: "POST",
-          body: JSON.stringify({ data }),
-          headers: { "Content-Type": "application/json" }
-        });
-        alert("저장되었습니다!");
-        form.reset();
-        document.getElementById("date").valueAsDate = new Date();
-      } catch (err) {
-        alert("저장 중 오류 발생");
-        console.error(err);
-      }
-    });
-  </script>
+  // OX 항목 자동 생성
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxContainer = document.getElementById("oxContainer");
+
+  oxItems.forEach(label => {
+    const oxSet = document.createElement("div");
+    oxSet.className = "ox-set";
+    oxSet.innerHTML = `
+      <div>${label}</div>
+      <div class="ox-buttons">
+        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+      </div>
+    `;
+    oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  const oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
+    }
+  });
+
+  // 폼 전송 처리
+  document.getElementById("magnetForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const form = e.target;
+    const [hour, minute] = form.time.value.split(':') || ["", ""];
+
+    const data = {
+      type: "magnet",
+      date: form.date.value,
+      option: form.option.value,
+      hour: hour,
+      minute: minute,
+      product: form.product.value,
+      passCount: form.passCount?.value || "",
+      detectCount: form.detectCount?.value || "",
+      states: oxValues
+    };
+
+    try {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxPop9R_o9wIyfq1-fFV1LBkkKMBJYxoEj5dA3e8r_e_Jj2ktuNAR8qo1FwA2Hk8iJUvA/exec", {
+        method: "POST",
+        body: JSON.stringify({ data }),
+        headers: { "Content-Type": "application/json" }
+      });
+      alert("저장되었습니다!");
+      form.reset();
+      dateInput.valueAsDate = new Date();
+      dateInput.classList.add("selected");
+    } catch (err) {
+      alert("저장 중 오류 발생");
+      console.error(err);
+    }
+  });
+</script>
+
 </body>
 </html>
