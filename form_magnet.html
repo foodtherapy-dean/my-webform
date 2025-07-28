@@ -245,25 +245,16 @@ document.getElementById("magnetForm").addEventListener("submit", async e => {
   const form = e.target;
   const [hour, minute] = form.time.value.split(':') || ["", ""];
 
-  const isSummary = form.option.value === "최종취합";
-  const states = {};
-
-  if (!isSummary) {
-    oxItems.forEach(label => {
-      states[label] = oxValues[label] || "";
-    });
-  }
-
   const data = {
     type: "magnet",
     date: form.date.value,
     option: form.option.value,
-    hour,
-    minute,
+    hour: hour,
+    minute: minute,
     product: form.product.value,
     passCount: form.passCount?.value || "",
     detectCount: form.detectCount?.value || "",
-    states
+    states: oxValues
   };
 
   try {
