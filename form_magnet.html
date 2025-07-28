@@ -49,10 +49,22 @@
       margin-top: 5px;
     }
     .ox-buttons button {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  border-radius: 4px;
+}
+
+.ox-buttons button.selected {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
     .number-row {
       display: flex;
       gap: 10px;
@@ -88,7 +100,7 @@
 
     <div id="subInputs" style="display:none;">
       <label>시간
-        <input type="time" id="time" name="time" step="600" />
+        <input type="time" id="time" name="time" />
       </label>
 
       <label>제품명
@@ -155,17 +167,17 @@
 
     // O/X 버튼 토글 저장
     const oxValues = {};
-    document.addEventListener("click", e => {
-      if (e.target.classList.contains("ox")) {
-        const btn = e.target;
-        const label = btn.dataset.label;
-        oxValues[label] = btn.dataset.value;
+   document.addEventListener("click", e => {
+  if (e.target.classList.contains("ox")) {
+    const btn = e.target;
+    const label = btn.dataset.label;
+    oxValues[label] = btn.dataset.value;
 
-        document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-          b.style.backgroundColor = (b === btn) ? "#ddd" : "";
-        });
-      }
+    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+      b.classList.toggle("selected", b === btn);
     });
+  }
+});
 
     // 전송 처리
     document.getElementById("magnetForm").addEventListener("submit", async e => {
