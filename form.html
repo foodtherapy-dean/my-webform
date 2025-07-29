@@ -159,9 +159,11 @@
         });
       });
 
-      const data = { date, group, entries };
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(data));
+        const data = {
+    type: "pest",  // ✅ 중요: 타입을 명시해서 서버에서 구분 가능하게 함
+    date,
+    group,
+    entries
 
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbxt6L_blR-_xQ201LeCSgTvwtbI79gG5JwfM1owgcDGwkgO1dTHlphy_HwOdYOY1KvJxg/exec", {
