@@ -169,8 +169,16 @@
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbz5nmuOcna_6HHuBNFh_Z3VtA3EoWwxRcXEcZFwWTUMzP0-fXjPEjATZUF2WD4KP7_E_w/exec", {
           method: "POST",
-          body: formData
-        });
+            headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    type: "pest",
+    date,
+    group,
+    entries
+  })
+});
 
         const result = await response.text();
         alert("✅ Google Sheet에 저장 완료!\n\n" + result);
