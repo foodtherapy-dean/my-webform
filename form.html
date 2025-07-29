@@ -142,39 +142,48 @@
       });
     });
 
-    document.getElementById("trapForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
+      // 오늘 날짜 기본 설정
+  document.getElementById("date").valueAsDate = new Date();
 
-      const date = document.getElementById("date").value;
-      const group = document.getElementById("group").value;
-      const sections = document.querySelectorAll(".entry:not(.hidden)");
+  document.getElementById("trapForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
 
-      const entries = [];
-      sections.forEach(div => {
-        const category = div.dataset.category;
-        div.querySelectorAll("input").forEach(input => {
-          const subcategory = input.dataset.sub;
-          const value = parseInt(input.value) || 0;
-          entries.push({ category, subcategory, value });
-        });
+    const date = document.getElementById("date").value;
+    const group = document.getElementById("group").value;
+    const sections = document.querySelectorAll(".entry:not(.hidden)");
+
+    const entries = [];
+    sections.forEach(div => {
+      const category = div.dataset.category;
+      div.querySelectorAll("input").forEach(input => {
+        const subcategory = input.dataset.sub;
+        const value = parseInt(input.value) || 0;
+        entries.push({ category, subcategory, value });
+      });
+    });
+
+    const data = {
+      type: "pest", // ✅ 앱스스크립트에서 이 타입으로 분기 처리
+      date,
+      group,
+      entries
+    };
+
+    try {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxt6L_blR-_xQ201LeCSgTvwtbI79gG5JwfM1owgcDGwkgO1dTHlphy_HwOdYOY1KvJxg/exec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"  // ✅ JSON 전송 명시
+        },
+        body: JSON.stringify(data)
       });
 
-        const data = { date, group, entries };
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(data));
-
-      try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbxt6L_blR-_xQ201LeCSgTvwtbI79gG5JwfM1owgcDGwkgO1dTHlphy_HwOdYOY1KvJxg/exec", {
-          method: "POST",
-          body: formData
-        });
-
-        const result = await response.text();
-        alert("✅ Google Sheet에 저장 완료!\n\n" + result);
-      } catch (err) {
-        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
-      }
-    });
+      const result = await response.text();
+      alert("✅ Google Sheet에 저장 완료!\n\n" + result);
+    } catch (err) {
+      alert("❌ 전송 중 오류 발생:\n\n" + err.message);
+    }
+  });
   </script>
 </body>
 </html>
