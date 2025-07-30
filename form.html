@@ -166,7 +166,7 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
   formData.append("pest", JSON.stringify(data)); // ✅ key는 "pest"
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbz5nmuOcna_6HHuBNFh_Z3VtA3EoWwxRcXEcZFwWTUMzP0-fXjPEjATZUF2WD4KP7_E_w/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbxD3Gg89SSPKePz_maTEajXMkooesY9IjhxT4C2KgRB4IFtCmvFo1JOGUDLBfN9HJscwQ/exec", {
       method: "POST",
       body: formData
     });
