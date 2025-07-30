@@ -217,27 +217,27 @@
   </form>
 
 <script>
-  // 날짜 기본값 설정 및 selected 적용
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("magnetForm");
   const dateInput = document.getElementById("date");
+  const oxContainer = document.getElementById("oxContainer");
+
+  // 날짜 자동입력
   dateInput.valueAsDate = new Date();
   dateInput.classList.add("selected");
 
-  // select와 time에 선택 시 .selected 적용
+  // select와 time에 .selected 적용
   function applySelectedStyle(selector) {
     document.querySelectorAll(selector).forEach(el => {
       el.addEventListener("change", () => {
-        if (el.value) {
-          el.classList.add("selected");
-        } else {
-          el.classList.remove("selected");
-        }
+        el.classList.toggle("selected", !!el.value);
       });
     });
   }
   applySelectedStyle("select");
   applySelectedStyle('input[type="time"]');
 
-  // 점검 옵션에 따라 입력 필드 표시 제어
+  // 점검 옵션에 따른 표시 제어
   document.getElementById("option").addEventListener("change", e => {
     const opt = e.target.value;
     const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
@@ -245,13 +245,12 @@
 
     document.getElementById("subInputs").style.display = showSub ? "block" : "none";
     document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+    oxContainer.style.display = isSummary ? "none" : "block";
   });
 
-  // OX 항목 자동 생성
+  // OX 항목 생성
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  const oxContainer = document.getElementById("oxContainer");
-
+  let oxValues = {};
   oxItems.forEach(label => {
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
@@ -265,14 +264,11 @@
     oxContainer.appendChild(oxSet);
   });
 
-  // O/X 버튼 선택 시 .selected 토글
-  let oxValues = {}; 
   document.addEventListener("click", e => {
     if (e.target.classList.contains("ox")) {
       const btn = e.target;
       const label = btn.dataset.label;
       oxValues[label] = btn.dataset.value;
-
       document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
         b.classList.toggle("selected", b === btn);
       });
@@ -280,72 +276,73 @@
   });
 
   // 폼 전송 처리
- // 필수 입력 확인
-  const activeInputs = form.querySelectorAll("input, select");
-  for (const input of activeInputs) {
-    if (input.offsetParent === null) continue;
-    if (!input.value) {
-      alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
-      input.focus();
-      return;
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    // 필수값 검증
+    const activeInputs = form.querySelectorAll("input, select");
+    for (const input of activeInputs) {
+      if (input.offsetParent === null) continue;
+      if (!input.value) {
+        alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
+        input.focus();
+        return;
+      }
     }
-  }
 
-  // OX 버튼 선택 체크
-  const requiredLabels = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  for (const label of requiredLabels) {
-    if (!(label in oxValues)) {
-      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-      const btn = document.querySelector(`.ox[data-label="${label}"]`);
-      if (btn) btn.focus();
-      return;
+    // OX 선택 검증
+    const requiredLabels = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+    for (const label of requiredLabels) {
+      if (!(label in oxValues)) {
+        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+        const btn = document.querySelector(`.ox[data-label="${label}"]`);
+        if (btn) btn.focus();
+        return;
+      }
     }
-  }
 
-  // ✅ hour / minute 안전하게 추출
-  const hourEl = document.getElementById("hour");
-  const minuteEl = document.getElementById("minute");
-  const hour = hourEl ? hourEl.value : "";
-  const minute = minuteEl ? minuteEl.value : "";
+    // 시간 정보
+    const hour = document.getElementById("hour")?.value || "";
+    const minute = document.getElementById("minute")?.value || "";
 
-  const data = {
-    type: "test",
-    date: form.date.value,
-    option: form.option.value,
-    hour: hour,
-    minute: minute,
-    product: form.product.value,
-    passCount: form.querySelector('input[name="passCount"]')?.value || "",
-    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-    states: oxValues
-  };
+    const data = {
+      type: "test",
+      date: form.date.value,
+      option: form.option.value,
+      hour,
+      minute,
+      product: form.product.value,
+      passCount: form.querySelector('input[name="passCount"]')?.value || "",
+      detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+      states: oxValues
+    };
 
-  const formData = new FormData();
-  formData.append("data", JSON.stringify(data));
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
 
-  try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxZqOGrQIjdRCACEA5Llg-eWgqekxDnt_0yah0NuitqTm-E2k_ZcW7erNhtrSKnA1kWBg/exec", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxZqOGrQIjdRCACEA5Llg-eWgqekxDnt_0yah0NuitqTm-E2k_ZcW7erNhtrSKnA1kWBg/exec", {
+        method: "POST",
+        body: formData
+      });
 
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
-      form.reset();
-      document.getElementById("date").valueAsDate = new Date();
-      oxValues = {};
-      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-    } else {
-      alert("❌ 서버 오류:\n" + result);
+      const result = await response.text();
+      if (response.ok) {
+        alert("✅ 저장 완료:\n" + result);
+        form.reset();
+        document.getElementById("date").valueAsDate = new Date(); // 다시 날짜 지정
+        oxValues = {};
+        document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
+      } else {
+        alert("❌ 서버 오류:\n" + result);
+      }
+    } catch (err) {
+      alert("❌ 저장 중 오류 발생:\n" + err.message);
+      console.error("❌ 예외:", err);
     }
-  } catch (err) {
-    alert("❌ 저장 중 오류 발생:\n" + err.message);
-    console.error("❌ 예외:", err);
-  }
+  });
 });
 </script>
-
 
 </body>
 </html>
