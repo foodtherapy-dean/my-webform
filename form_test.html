@@ -266,7 +266,7 @@
   });
 
   // O/X 버튼 선택 시 .selected 토글
-  const oxValues = {};
+  let oxValues = {}; = {};
   document.addEventListener("click", e => {
     if (e.target.classList.contains("ox")) {
       const btn = e.target;
