@@ -1,199 +1,271 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링</title>
-<style>
-body {
-  padding-left: 20px;
-  padding-right: 20px;
-  margin: 10 auto;
-  max-width: 600px;
-  font-family: sans-serif;
-}
+  <meta charset="UTF-8" />
+  <title>금속검출 점검</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
 
-.inline-row {
-  display: flex;
-  gap: 20px;
-}
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 16px;
+    }
 
-.inline-row > * {
-  flex: 1;
-  padding: 0 5px;
-  box-sizing: border-box;
-}
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 16px;
+    }
 
-.inline-row label {
-  display: block;
-  margin-bottom: 6px;
-}
+    select option:first-child {
+      color: #aaa;
+      font-style: italic;
+    }
 
-/* input, select 전체 스타일 통일 */
-input[type="number"], select, input[type="date"] {
-  width: 100%;
-  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
-  font-size: 18px;
-  box-sizing: border-box;
-  height: 40px;               /* 높이 맞추기 */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline-offset: 0;
-}
-</style>
+    .inline-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .inline-row > div {
+      flex: 1;
+    }
+
+    .ox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .ox-set {
+      flex: 1 1 48%;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      border-radius: 4px;
+    }
+
+    .ox-buttons button.selected {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
+
+    /* 🔧 선택된 select/input 요소 강조 */
+    select.selected,
+    input.selected {
+      border: 2px solid #007bff;
+      background-color: #e8f0fe;
+      font-weight: bold;
+    }
+
+    /* 🔧 날짜 입력창 텍스트 확대 */
+    input[type="date"] {
+      font-size: 18px;
+    }
+
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .number-row > div {
+      flex: 1;
+    }
+
+    button[type="submit"] {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+  </style>
 </head>
 <body>
-  <h2>건면공정 점검 입력</h2>
+  <h2>금속검출 점검</h2>
+  <form id="magnetForm">
+    <label>날짜
+      <input type="date" id="date" name="date" />
+    </label>
 
-  <label for="date">날짜</label>
-  <input type="date" id="date" required />
- <div class="inline-row" style="margin-top:10px;">
-  <label for="group">점검 옵션</label>
-  </div>
-   <select id="group" required>
-    <option value="">선택하세요1</option>
-    <option value="시스템ON">시스템ON</option>
-    <option value="1차점검">1차점검</option>
-    <option value="2차점검">2차점검</option>
-    <option value="시스템OFF">시스템OFF</option>
-  </select>
+    <label>점검 옵션
+      <select id="option" name="option" required>
+        <option value="">선택하세요</option>
+        <option value="1차점검">1차점검</option>
+        <option value="2차점검">2차점검</option>
+        <option value="3차점검">3차점검</option>
+        <option value="4차점검">4차점검</option>
+        <option value="최종취합">최종취합</option>
+      </select>
+    </label>
 
-  <div class="inline-row" style="margin-top:10px;">
-    <div>
-      <label for="hour">시간 (시)</label>
-      <select id="hour" required></select>
+    <div id="subInputs" style="display:none;">
+      <label>시간
+        <input type="time" id="time" name="time" />
+      </label>
+
+      <label>제품명
+        <select id="product" name="product">
+          <option value="">선택하세요</option>
+          <option>제품A</option>
+          <option>제품B</option>
+          <option>제품C</option>
+          <option>제품D</option>
+          <option>제품E</option>
+          <option>제품F</option>
+        </select>
+      </label>
+
+      <label>검출 상태</label>
+      <div class="ox-group" id="oxContainer">
+        <!-- JS에서 자동 생성 -->
+      </div>
     </div>
-    <div>
-      <label for="minute">시간 (분)</label>
-      <select id="minute" required></select>
+
+    <div id="summaryInputs" style="display:none;">
+      <label>통과/검출 수량</label>
+      <div class="number-row">
+        <div>
+          <input type="number" name="passCount" placeholder="통과 수량" />
+        </div>
+        <div>
+          <input type="number" name="detectCount" placeholder="검출 수량" />
+        </div>
+      </div>
     </div>
-  </div>
 
-<!-- 온도/습도 입력 그룹 : 시/분과 같은 행에 배치 -->
-<div class="inline-row" style="margin-top:10px;">
-  <div>
-    <label for="temp">온도(℃)</label>
-    <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
-  </div>
-  <div>
-    <label for="humidity">습도(%)</label>
-    <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
-  </div>
-</div>
-
- <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
-
+    <button type="submit">저장</button>
+  </form>
 
 <script>
+  // 날짜 기본값 설정 및 selected 적용
   const dateInput = document.getElementById("date");
-  const groupSelect = document.getElementById("group");
-  const hourSelect = document.getElementById("hour");
-  const minuteSelect = document.getElementById("minute");
-  const tempInput = document.getElementById("temp");
-  const humidityInput = document.getElementById("humidity");
-  const submitBtn = document.getElementById("submitBtn");
-
-  // ✅ 날짜 자동 입력 (오늘 날짜)
   dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
 
-  // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
-  function fillTimeOptions() {
-    // 시 선택 - 빈 옵션 추가
-    hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
-      const option = document.createElement("option");
-      const val = h.toString().padStart(2, "0");
-      option.value = val;
-      option.textContent = val;
-      hourSelect.appendChild(option);
-    }
-
-    // 분 선택 - 빈 옵션 추가
-    minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
-      const option = document.createElement("option");
-      const val = m.toString().padStart(2, "0");
-      option.value = val;
-      option.textContent = val;
-      minuteSelect.appendChild(option);
-    }
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
   }
-  fillTimeOptions();
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
 
-  // ✅ 옵션별 입력 필드 활성/비활성 제어
-  function updateInputFields() {
-    const group = groupSelect.value;
+  // 점검 옵션에 따라 입력 필드 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
 
-    if(group === "시스템ON" || group === "시스템OFF") {
-      hourSelect.disabled = false; hourSelect.required = true;
-      minuteSelect.disabled = false; minuteSelect.required = true;
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
+  });
 
-      tempInput.disabled = true; tempInput.required = false; tempInput.value = "";
-      humidityInput.disabled = true; humidityInput.required = false; humidityInput.value = "";
-    } 
-    else if(group === "1차점검" || group === "2차점검") {
-      hourSelect.disabled = false; hourSelect.required = true;
-      minuteSelect.disabled = false; minuteSelect.required = true;
+  // OX 항목 자동 생성
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxContainer = document.getElementById("oxContainer");
 
-      tempInput.disabled = false; tempInput.required = true;
-      humidityInput.disabled = false; humidityInput.required = true;
-    } else {
-      hourSelect.disabled = true; hourSelect.required = false;
-      minuteSelect.disabled = true; minuteSelect.required = false;
-      tempInput.disabled = true; tempInput.required = false;
-      humidityInput.disabled = true; humidityInput.required = false;
+  oxItems.forEach(label => {
+    const oxSet = document.createElement("div");
+    oxSet.className = "ox-set";
+    oxSet.innerHTML = `
+      <div>${label}</div>
+      <div class="ox-buttons">
+        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+      </div>
+    `;
+    oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  let oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
     }
+  });
 
-    // 시/분 선택 초기화
-    hourSelect.value = "";
-    minuteSelect.value = "";
-  }
+  // 폼 전송 처리
+  document.getElementById("magnetForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const form = e.target;
 
-  groupSelect.addEventListener("change", updateInputFields);
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxStates = {};
+  oxItems.forEach(label => {
+    const selectedBtn = document.querySelector(`.ox.selected[data-label="${label}"]`);
+    oxStates[label] = selectedBtn?.dataset.value || "";
+  });
 
-  // ✅ 저장 클릭 시
-  submitBtn.addEventListener("click", () => {
-    if (!groupSelect.value) {
-      alert("점검 옵션을 선택하세요.");
-      groupSelect.focus();
-      return;
-    }
-    if (!dateInput.value) {
-      alert("날짜를 선택하세요.");
-      dateInput.focus();
-      return;
-    }
-    if (!hourSelect.disabled && !hourSelect.value) {
-      alert("시간(시)을 선택하세요.");
-      hourSelect.focus();
-      return;
-    }
-    if (!minuteSelect.disabled && !minuteSelect.value) {
-      alert("시간(분)을 선택하세요.");
-      minuteSelect.focus();
-      return;
-    }
-    if (!tempInput.disabled && !tempInput.value) {
-      alert("온도를 입력하세요.");
-      tempInput.focus();
-      return;
-    }
-    if (!humidityInput.disabled && !humidityInput.value) {
-      alert("습도를 입력하세요.");
-      humidityInput.focus();
-      return;
-    }
+  const timeParts = form.time.value.split(":");
+  const hour = timeParts[0] || "";
+  const minute = timeParts[1] || "";
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        temp: tempInput.value,
-        humidity: humidityInput.value
-      }
-    };
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour,
+    minute,
+    product: form.product.value,
+    passCount: form.querySelector('input[name="passCount"]')?.value || "",
+    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+    states: oxStates
+  };
 
     console.log("전송 데이터:", data);
 
