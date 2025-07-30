@@ -311,13 +311,13 @@
   }
 
   // 3) 시간 시/분 분리
-const hour = form.hour?.value || "";
-const minute = form.minute?.value || "";
+const hour = document.getElementById("hour").value || "";
+const minute = document.getElementById("minute").value || "";
   
 
   // 4) 데이터 객체 생성
   const data = {
-    type: "magnet",
+    type: "test",
     date: form.date.value,
     option: form.option.value,
     hour: hour,
