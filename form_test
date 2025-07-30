@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>건면공정 모니터링</title>
+<style>
+body {
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 10 auto;
+  max-width: 600px;
+  font-family: sans-serif;
+}
+
+.inline-row {
+  display: flex;
+  gap: 20px;
+}
+
+.inline-row > * {
+  flex: 1;
+  padding: 0 5px;
+  box-sizing: border-box;
+}
+
+.inline-row label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* input, select 전체 스타일 통일 */
+input[type="number"], select, input[type="date"] {
+  width: 100%;
+  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+  font-size: 18px;
+  box-sizing: border-box;
+  height: 40px;               /* 높이 맞추기 */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline-offset: 0;
+}
+</style>
+</head>
+<body>
+  <h2>건면공정 점검 입력</h2>
+
+  <label for="date">날짜</label>
+  <input type="date" id="date" required />
+ <div class="inline-row" style="margin-top:10px;">
+  <label for="group">점검 옵션</label>
+  </div>
+   <select id="group" required>
+    <option value="">선택하세요</option>
+    <option value="시스템ON">시스템ON</option>
+    <option value="1차점검">1차점검</option>
+    <option value="2차점검">2차점검</option>
+    <option value="시스템OFF">시스템OFF</option>
+  </select>
+
+  <div class="inline-row" style="margin-top:10px;">
+    <div>
+      <label for="hour">시간 (시)</label>
+      <select id="hour" required></select>
+    </div>
+    <div>
+      <label for="minute">시간 (분)</label>
+      <select id="minute" required></select>
+    </div>
+  </div>
+
+<!-- 온도/습도 입력 그룹 : 시/분과 같은 행에 배치 -->
+<div class="inline-row" style="margin-top:10px;">
+  <div>
+    <label for="temp">온도(℃)</label>
+    <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
+  </div>
+  <div>
+    <label for="humidity">습도(%)</label>
+    <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
+  </div>
+</div>
+
+ <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
+
+
+<script>
+  const dateInput = document.getElementById("date");
+  const groupSelect = document.getElementById("group");
+  const hourSelect = document.getElementById("hour");
+  const minuteSelect = document.getElementById("minute");
+  const tempInput = document.getElementById("temp");
+  const humidityInput = document.getElementById("humidity");
+  const submitBtn = document.getElementById("submitBtn");
+
+  // ✅ 날짜 자동 입력 (오늘 날짜)
+  dateInput.valueAsDate = new Date();
+
+  // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
+  function fillTimeOptions() {
+    // 시 선택 - 빈 옵션 추가
+    hourSelect.innerHTML = '<option value=""></option>';
+    for(let h=1; h<=24; h++) {
+      const option = document.createElement("option");
+      const val = h.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
+      hourSelect.appendChild(option);
+    }
+
+    // 분 선택 - 빈 옵션 추가
+    minuteSelect.innerHTML = '<option value=""></option>';
+    for(let m=0; m<=60; m+=10) {
+      const option = document.createElement("option");
+      const val = m.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
+      minuteSelect.appendChild(option);
+    }
+  }
+  fillTimeOptions();
+
+  // ✅ 옵션별 입력 필드 활성/비활성 제어
+  function updateInputFields() {
+    const group = groupSelect.value;
+
+    if(group === "시스템ON" || group === "시스템OFF") {
+      hourSelect.disabled = false; hourSelect.required = true;
+      minuteSelect.disabled = false; minuteSelect.required = true;
+
+      tempInput.disabled = true; tempInput.required = false; tempInput.value = "";
+      humidityInput.disabled = true; humidityInput.required = false; humidityInput.value = "";
+    } 
+    else if(group === "1차점검" || group === "2차점검") {
+      hourSelect.disabled = false; hourSelect.required = true;
+      minuteSelect.disabled = false; minuteSelect.required = true;
+
+      tempInput.disabled = false; tempInput.required = true;
+      humidityInput.disabled = false; humidityInput.required = true;
+    } else {
+      hourSelect.disabled = true; hourSelect.required = false;
+      minuteSelect.disabled = true; minuteSelect.required = false;
+      tempInput.disabled = true; tempInput.required = false;
+      humidityInput.disabled = true; humidityInput.required = false;
+    }
+
+    // 시/분 선택 초기화
+    hourSelect.value = "";
+    minuteSelect.value = "";
+  }
+
+  groupSelect.addEventListener("change", updateInputFields);
+
+  // ✅ 저장 클릭 시
+  submitBtn.addEventListener("click", () => {
+    if (!groupSelect.value) {
+      alert("점검 옵션을 선택하세요.");
+      groupSelect.focus();
+      return;
+    }
+    if (!dateInput.value) {
+      alert("날짜를 선택하세요.");
+      dateInput.focus();
+      return;
+    }
+    if (!hourSelect.disabled && !hourSelect.value) {
+      alert("시간(시)을 선택하세요.");
+      hourSelect.focus();
+      return;
+    }
+    if (!minuteSelect.disabled && !minuteSelect.value) {
+      alert("시간(분)을 선택하세요.");
+      minuteSelect.focus();
+      return;
+    }
+    if (!tempInput.disabled && !tempInput.value) {
+      alert("온도를 입력하세요.");
+      tempInput.focus();
+      return;
+    }
+    if (!humidityInput.disabled && !humidityInput.value) {
+      alert("습도를 입력하세요.");
+      humidityInput.focus();
+      return;
+    }
+
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: {
+        hour: hourSelect.value,
+        minute: minuteSelect.value,
+        temp: tempInput.value,
+        humidity: humidityInput.value
+      }
+    };
+
+    console.log("전송 데이터:", data);
+
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbyjrKmFmRYgWc0k0g7k7Fn2sxxB-qDv0uUtloDErTM4C0SIxoGy49ph-44R4G0lq4MfVg/exec";
+
+    fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "test=" + encodeURIComponent(JSON.stringify(data))
+    })
+    .then(res => res.text())
+    .then(text => {
+      alert("서버 응답: " + text);
+      // ✅ 전송 후 입력폼 초기화
+      document.querySelector("form")?.reset();  // form 태그가 있다면 reset
+      // 날짜는 다시 오늘 날짜로
+      dateInput.valueAsDate = new Date();
+      updateInputFields(); // 필드 비활성화 재설정
+    })
+    .catch(err => alert("에러 발생: " + err.message));
+  });
+
+  // 페이지 초기 진입 시 상태 설정
+  updateInputFields();
+</script>
+
+</body>
+</html>
