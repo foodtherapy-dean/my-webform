@@ -176,12 +176,27 @@
     <button type="submit">저장</button>
   </form>
 
-<script>
+document.addEventListener("DOMContentLoaded", () => {
   // 날짜 기본값 설정 및 selected 적용
   const dateInput = document.getElementById("date");
   dateInput.valueAsDate = new Date();
   dateInput.classList.add("selected");
 
+  // 🔧 DOM이 완전히 준비된 후 실행
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
+
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
+  }
   // select와 time에 선택 시 .selected 적용
   function applySelectedStyle(selector) {
     document.querySelectorAll(selector).forEach(el => {
