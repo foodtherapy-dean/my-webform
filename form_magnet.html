@@ -287,14 +287,17 @@
       states: oxValues
     };
 
-    const formData = new FormData();
-    formData.append("magnet", JSON.stringify(data)); // ✅ 여기 수정됨!
+    const payload = new URLSearchParams();
+payload.append("magnet", JSON.stringify(data));
 
     try {
       const response = await fetch("https://script.google.com/macros/s/AKfycbyjrKmFmRYgWc0k0g7k7Fn2sxxB-qDv0uUtloDErTM4C0SIxoGy49ph-44R4G0lq4MfVg/exec", {
         method: "POST",
-        body: formData
-      });
+         headers: {
+    "Content-Type": "application/x-www-form-urlencoded"  // 중요!!
+  },
+  body: payload
+});
 
       const result = await response.text();
       if (response.ok) {
