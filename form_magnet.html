@@ -176,6 +176,69 @@
     <button type="submit">저장</button>
   </form>
 
+<script>
+  // 날짜 기본값 설정 및 selected 적용
+  const dateInput = document.getElementById("date");
+  dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
+
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
+  }
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
+
+  // 점검 옵션에 따라 입력 필드 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
+
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+  });
+
+  // OX 항목 자동 생성
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxContainer = document.getElementById("oxContainer");
+
+  oxItems.forEach(label => {
+    const oxSet = document.createElement("div");
+    oxSet.className = "ox-set";
+    oxSet.innerHTML = 
+      <div>${label}</div>
+      <div class="ox-buttons">
+        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+      </div>
+    ;
+    oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  const oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
+    }
+  });
+
 document.addEventListener("DOMContentLoaded", () => {
   // 날짜 기본값 설정 및 selected 적용
   const dateInput = document.getElementById("date");
