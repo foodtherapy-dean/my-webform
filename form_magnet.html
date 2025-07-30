@@ -215,13 +215,13 @@
   oxItems.forEach(label => {
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
-    oxSet.innerHTML = 
+    oxSet.innerHTML = `
       <div>${label}</div>
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
       </div>
-    ;
+    `;
     oxContainer.appendChild(oxSet);
   });
 
@@ -233,7 +233,7 @@
       const label = btn.dataset.label;
       oxValues[label] = btn.dataset.value;
 
-      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
         b.classList.toggle("selected", b === btn);
       });
     }
@@ -252,7 +252,7 @@
 
     // required 처리
     if (!input.value) {
-      alert(${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.);
+      alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
       input.focus();
       return;
     }
@@ -262,9 +262,9 @@
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
   for (const label of oxItems) {
     if (!(label in oxValues)) {
-      alert(검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.);
+      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
       // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
-      const btn = document.querySelector(.ox[data-label="${label}"]);
+      const btn = document.querySelector(`.ox[data-label="${label}"]`);
       if (btn) btn.focus();
       return;
     }
@@ -293,7 +293,7 @@
   };
 
   const formData = new FormData();
-  formData.append("magnet", JSON.stringify(data));
+  formData.append("data", JSON.stringify(data));
 
   try {
     const response = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
@@ -318,6 +318,9 @@
     console.error("❌ 예외:", err);
   }
 });
+
 </script>
+
+
 </body>
 </html>
