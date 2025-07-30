@@ -280,24 +280,21 @@
   });
 
   // 폼 전송 처리
- document.getElementById("magnetForm").addEventListener("submit", async function(e) {
+ document.getElementById("testForm").addEventListener("submit", async function(e) {
   e.preventDefault();
+
   const form = e.target;
 
-  // 1) 활성화된 input/select 필수 입력 체크
+  // 필수 입력 확인
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
-    // display:none 이거나 비활성화된 input은 체크 안 함
-    if (input.offsetParent === null) continue;  // 부모가 display:none 인 경우 skip
-
-    // required 처리
+    if (input.offsetParent === null) continue;
     if (!input.value) {
       alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
       input.focus();
       return;
     }
   }
-
   // 2) O/X 버튼 필수 선택 체크
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
   for (const label of oxItems) {
