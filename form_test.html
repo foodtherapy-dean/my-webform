@@ -311,12 +311,8 @@
   }
 
   // 3) 시간 시/분 분리
-  let hour = "";
-  let minute = "";
-  if (form.time.value) {
-    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
-    hour = timeParts[0] || "";
-    minute = timeParts[1] || "";
+const hour = form.hour?.value || "";
+const minute = form.minute?.value || "";
   }
 
   // 4) 데이터 객체 생성
