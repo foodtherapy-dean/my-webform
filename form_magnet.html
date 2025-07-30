@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>금속검출 모니터링</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
@@ -38,11 +38,11 @@
     <div style="display: flex; gap: 10px;">
       <select id="hour" name="hour" required>
         <option value="">시 선택</option>
-        ${[...Array(24).keys()].map(i => `<option value="${(i+1).toString().padStart(2, '0')}">${(i+1).toString().padStart(2, '0')}시</option>`).join('')}
+        <!-- JS로 채움 -->
       </select>
       <select id="minute" name="minute" required>
         <option value="">분 선택</option>
-        ${[0,10,20,30,40,50].map(i => `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}분</option>`).join('')}
+        <!-- JS로 채움 -->
       </select>
     </div>
 
@@ -57,32 +57,62 @@
       <option>F상품</option>
     </select>
 
-    <div class="section">
-      ${["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].map(key => `
-        <label>${key}</label>
-        <div class="ox-buttons" data-key="${key}">
-          <button type="button" onclick="selectOX('${key}', 'O')">O</button>
-          <button type="button" onclick="selectOX('${key}', 'X')">X</button>
-        </div>
-      `).join('')}
-    </div>
-
-    <input type="hidden" id="oxStates" name="oxStates" />
+    <div class="section" id="oxSection"></div>
 
     <button type="submit" style="margin-top: 20px;">저장</button>
   </form>
 
   <script>
-    // 날짜 자동 입력
-    document.getElementById("date").valueAsDate = new Date();
+    // 날짜 자동 설정
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("date").value = today;
 
+    // 시간 선택 (시/분)
+    const hourSelect = document.getElementById("hour");
+    const minuteSelect = document.getElementById("minute");
+    for (let i = 1; i <= 24; i++) {
+      const h = i.toString().padStart(2, '0');
+      hourSelect.innerHTML += `<option value="${h}">${h}시</option>`;
+    }
+    [0,10,20,30,40,50].forEach(m => {
+      const mm = m.toString().padStart(2, '0');
+      minuteSelect.innerHTML += `<option value="${mm}">${mm}분</option>`;
+    });
+
+    // OX 버튼 렌더링
+    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
     const oxState = {};
+    const section = document.getElementById("oxSection");
+
+    oxItems.forEach(key => {
+      const label = document.createElement("label");
+      label.textContent = key;
+
+      const buttonGroup = document.createElement("div");
+      buttonGroup.className = "ox-buttons";
+      buttonGroup.dataset.key = key;
+
+      const btnO = document.createElement("button");
+      btnO.type = "button";
+      btnO.textContent = "O";
+      btnO.onclick = () => selectOX(key, "O");
+
+      const btnX = document.createElement("button");
+      btnX.type = "button";
+      btnX.textContent = "X";
+      btnX.onclick = () => selectOX(key, "X");
+
+      buttonGroup.appendChild(btnO);
+      buttonGroup.appendChild(btnX);
+
+      section.appendChild(label);
+      section.appendChild(buttonGroup);
+    });
 
     function selectOX(key, value) {
       oxState[key] = value;
-
-      const container = document.querySelector(\`.ox-buttons[data-key="\${key}"]\`);
-      container.querySelectorAll("button").forEach(btn => {
+      const buttons = document.querySelectorAll(`.ox-buttons[data-key="${key}"] button`);
+      buttons.forEach(btn => {
         btn.classList.toggle("selected", btn.textContent === value);
       });
     }
@@ -96,14 +126,14 @@
       const minute = document.getElementById("minute").value;
       const product = document.getElementById("product").value;
 
-      // 필수 입력 검사
+      // 필수 체크
       const missing = [];
       if (!step) missing.push("점검차수");
       if (!hour) missing.push("시");
       if (!minute) missing.push("분");
       if (!product) missing.push("제품");
-      ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(key => {
-        if (!oxState[key]) missing.push(key);
+      oxItems.forEach(k => {
+        if (!oxState[k]) missing.push(k);
       });
 
       if (missing.length > 0) {
@@ -113,11 +143,7 @@
 
       const postData = {
         magnet: true,
-        date,
-        step,
-        hour,
-        minute,
-        product,
+        date, step, hour, minute, product,
         states: JSON.stringify(oxState)
       };
 
@@ -131,15 +157,15 @@
         const text = await response.text();
         alert("✅ 저장 완료:\n" + text);
 
-        // 입력창 초기화 (날짜 제외)
+        // 폼 초기화 (날짜 제외)
         document.getElementById("step").value = "";
         document.getElementById("hour").value = "";
         document.getElementById("minute").value = "";
         document.getElementById("product").value = "";
-        Object.keys(oxState).forEach(k => delete oxState[k]);
+        oxItems.forEach(k => delete oxState[k]);
         document.querySelectorAll(".ox-buttons button").forEach(btn => btn.classList.remove("selected"));
       } catch (err) {
-        alert("❌ 전송 실패: " + err.message);
+        alert("❌ 저장 실패: " + err.message);
       }
     });
   </script>
