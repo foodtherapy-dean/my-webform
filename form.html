@@ -143,7 +143,7 @@
     });
 
       // 오늘 날짜 기본 설정
-  document.getElementById("date").valueAsDate = new Date();
+document.getElementById("date").valueAsDate = new Date();
 document.getElementById("trapForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
@@ -163,18 +163,18 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
 
   const data = { date, group, entries };
   const formData = new FormData();
-  formData.append("pest", JSON.stringify(data));
+  formData.append("pest", JSON.stringify(data)); // ✅ key는 "pest"
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycb.../exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbz5nmuOcna_6HHuBNFh_Z3VtA3EoWwxRcXEcZFwWTUMzP0-fXjPEjATZUF2WD4KP7_E_w/exec", {
       method: "POST",
       body: formData
     });
 
     const result = await response.text();
-    alert("✅ 저장 완료: \n" + result);
+    alert("✅ 저장 완료!\n\n" + result);
   } catch (err) {
-    alert("❌ 전송 실패: " + err.message);
+    alert("❌ 오류 발생:\n\n" + err.message);
   }
 });
 
