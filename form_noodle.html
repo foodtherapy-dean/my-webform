@@ -142,6 +142,7 @@ input[type="number"], select, input[type="date"] {
   });
 
   // 폼 제출 시 유효성 검사 및 전송
+  document.getElementById("date").valueAsDate = new Date();
   submitBtn.addEventListener("click", () => {
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
