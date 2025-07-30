@@ -228,12 +228,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // select와 time에 .selected 적용
   function applySelectedStyle(selector) {
-    document.querySelectorAll(selector).forEach(el => {
-      el.addEventListener("change", () => {
-        el.classList.toggle("selected", !!el.value);
-      });
-    });
+  const elements = document.querySelectorAll(selector);
+
+  // elements가 존재하고 forEach 함수를 가졌는지 확인
+  if (!elements || typeof elements.forEach !== "function") {
+    console.warn("⚠️ forEach 호출 불가: ", selector, elements);
+    return;
   }
+
+  elements.forEach(el => {
+    el.addEventListener("change", () => {
+      el.classList.toggle("selected", !!el.value);
+    });
+  });
+}
   applySelectedStyle("select");
  //applySelectedStyle('input[type="time"]');
 
