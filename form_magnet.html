@@ -241,80 +241,56 @@
 
   // 폼 전송 처리
   document.getElementById("magnetForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const form = e.target;
+  e.preventDefault();
+  const form = e.target;
 
-    // 1) 활성화된 input/select 필수 입력 체크
-    const activeInputs = form.querySelectorAll("input, select");
-    for (const input of activeInputs) {
-      if (input.offsetParent === null) continue;
-      if (!input.value) {
-        alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
-        input.focus();
-        return;
-      }
-    }
-
-    // 2) O/X 버튼 필수 선택 체크
-    for (const label of oxItems) {
-      if (!(label in oxValues)) {
-        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-        const btn = document.querySelector(`.ox[data-label="${label}"]`);
-        if (btn) btn.focus();
-        return;
-      }
-    }
-
-    // 3) 시간 시/분 분리
-    let hour = "";
-    let minute = "";
-    if (form.time.value) {
-      const timeParts = form.time.value.split(":");
-      hour = timeParts[0] || "";
-      minute = timeParts[1] || "";
-    }
-
-    // 4) 데이터 객체 생성
-    const data = {
-      type: "magnet",
-      date: form.date.value,
-      option: form.option.value,
-      hour: hour,
-      minute: minute,
-      product: form.product.value,
-      passCount: form.querySelector('input[name="passCount"]')?.value || "",
-      detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-      states: oxValues
-    };
-
-    const payload = new URLSearchParams();
-payload.append("magnet", JSON.stringify(data));
-
-    try {
-      const response = await fetch("https://script.google.com/macros/s/AKfycbyjrKmFmRYgWc0k0g7k7Fn2sxxB-qDv0uUtloDErTM4C0SIxoGy49ph-44R4G0lq4MfVg/exec", {
-        method: "POST",
-         headers: {
-    "Content-Type": "application/x-www-form-urlencoded"  // 중요!!
-  },
-  body: payload
-});
-
-      const result = await response.text();
-      if (response.ok) {
-        alert("✅ 저장 완료:\n" + result);
-        form.reset();
-        dateInput.valueAsDate = new Date();
-        dateInput.classList.add("selected");
-        oxValues = {};
-        document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-      } else {
-        alert("❌ 서버 오류:\n" + result);
-      }
-    } catch (err) {
-      alert("❌ 저장 중 오류 발생:\n" + err.message);
-      console.error("❌ 예외:", err);
-    }
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxStates = {};
+  oxItems.forEach(label => {
+    const selectedBtn = document.querySelector(`.ox.selected[data-label="${label}"]`);
+    oxStates[label] = selectedBtn?.dataset.value || "";
   });
+
+  const timeParts = form.time.value.split(":");
+  const hour = timeParts[0] || "";
+  const minute = timeParts[1] || "";
+
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour,
+    minute,
+    product: form.product.value,
+    passCount: form.querySelector('input[name="passCount"]')?.value || "",
+    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+    states: oxStates
+  };
+
+  // ✅ 핵심 변경 부분: application/x-www-form-urlencoded 방식
+  const payload = new URLSearchParams();
+  payload.append("magnet", JSON.stringify(data));
+
+  try {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbyjrKmFmRYgWc0k0g7k7Fn2sxxB-qDv0uUtloDErTM4C0SIxoGy49ph-44R4G0lq4MfVg/exec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: payload.toString()
+    });
+
+    const result = await response.text();
+    if (response.ok) {
+      alert("✅ 저장 완료:\n" + result);
+    } else {
+      alert("❌ 서버 오류:\n" + result);
+    }
+  } catch (err) {
+    alert("❌ 저장 중 오류 발생:\n" + err.message);
+    console.error(err);
+  }
+});
 </script>
 
 
