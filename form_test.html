@@ -251,10 +251,10 @@
     oxStates[label] = selectedBtn?.dataset.value || "";
   });
   // ✅ 안전한 시간 처리 방식으로 교체
-  const timeValue = form.time?.value || "";
-  const timeParts = timeValue.includes(":") ? timeValue.split(":") : ["", ""];
-  const hour = timeParts[0];
-  const minute = timeParts[1];
+ // const timeValue = form.time?.value || "";
+ // const timeParts = timeValue.includes(":") ? timeValue.split(":") : ["", ""];
+  // const hour = "";
+  // const minute = "";
   const data = {
     type: "test",
     date: form.date.value,
