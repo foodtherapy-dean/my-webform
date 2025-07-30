@@ -317,16 +317,16 @@ const minute = document.getElementById("minute").value || "";
 
   // 4) 데이터 객체 생성
   const data = {
-    type: "test",
-    date: form.date.value,
-    option: form.option.value,
-    hour: hour,
-    minute: minute,
-    product: form.product.value,
-    passCount: form.querySelector('input[name="passCount"]')?.value || "",
-    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-    states: oxValues
-  };
+  type: "test",
+  date: form.date.value,
+  option: form.option.value,
+  hour: document.getElementById("hour")?.value || "",
+  minute: document.getElementById("minute")?.value || "",
+  product: form.product.value,
+  passCount: form.querySelector('input[name="passCount"]')?.value || "",
+  detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+  states: oxValues
+};
 
   const formData = new FormData();
   formData.append("test", JSON.stringify(data));
