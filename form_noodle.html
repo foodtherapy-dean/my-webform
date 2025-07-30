@@ -85,6 +85,7 @@ input[type="number"], select, input[type="date"] {
 
 
 <script>
+  const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
   const hourSelect = document.getElementById("hour");
   const minuteSelect = document.getElementById("minute");
@@ -92,29 +93,38 @@ input[type="number"], select, input[type="date"] {
   const humidityInput = document.getElementById("humidity");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 시(0~23) / 분(0~59) select 옵션 생성
+  // ✅ 날짜 자동 입력 (오늘 날짜)
+  dateInput.valueAsDate = new Date();
+
+  // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
   function fillTimeOptions() {
-    for(let h=0; h<24; h++) {
+    // 시 선택 - 빈 옵션 추가
+    hourSelect.innerHTML = '<option value=""></option>';
+    for(let h=1; h<=24; h++) {
       const option = document.createElement("option");
-      option.value = h.toString().padStart(2,"0");
-      option.textContent = h.toString().padStart(2,"0");
+      const val = h.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
       hourSelect.appendChild(option);
     }
-    for(let m=0; m<60; m++) {
+
+    // 분 선택 - 빈 옵션 추가
+    minuteSelect.innerHTML = '<option value=""></option>';
+    for(let m=0; m<=60; m+=10) {
       const option = document.createElement("option");
-      option.value = m.toString().padStart(2,"0");
-      option.textContent = m.toString().padStart(2,"0");
+      const val = m.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
       minuteSelect.appendChild(option);
     }
   }
   fillTimeOptions();
 
-  // 옵션별 입력 필드 활성/비활성 및 required 제어 함수
+  // ✅ 옵션별 입력 필드 활성/비활성 제어
   function updateInputFields() {
     const group = groupSelect.value;
 
     if(group === "시스템ON" || group === "시스템OFF") {
-      // 시, 분 필수 / 온도, 습도 비활성화, 필수 해제
       hourSelect.disabled = false; hourSelect.required = true;
       minuteSelect.disabled = false; minuteSelect.required = true;
 
@@ -122,44 +132,43 @@ input[type="number"], select, input[type="date"] {
       humidityInput.disabled = true; humidityInput.required = false; humidityInput.value = "";
     } 
     else if(group === "1차점검" || group === "2차점검") {
-      // 시, 분, 온도, 습도 모두 활성화, 모두 필수
       hourSelect.disabled = false; hourSelect.required = true;
       minuteSelect.disabled = false; minuteSelect.required = true;
 
       tempInput.disabled = false; tempInput.required = true;
       humidityInput.disabled = false; humidityInput.required = true;
     } else {
-      // 선택없음 상태 - 모두 비활성화 필수 해제
       hourSelect.disabled = true; hourSelect.required = false;
       minuteSelect.disabled = true; minuteSelect.required = false;
       tempInput.disabled = true; tempInput.required = false;
       humidityInput.disabled = true; humidityInput.required = false;
     }
+
+    // 시/분 선택 초기화
+    hourSelect.value = "";
+    minuteSelect.value = "";
   }
 
-  groupSelect.addEventListener("change", () => {
-    updateInputFields();
-  });
+  groupSelect.addEventListener("change", updateInputFields);
 
-  // 폼 제출 시 유효성 검사 및 전송
-  document.getElementById("date").valueAsDate = new Date();
+  // ✅ 저장 클릭 시
   submitBtn.addEventListener("click", () => {
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
       groupSelect.focus();
       return;
     }
-    if (!document.getElementById("date").value) {
+    if (!dateInput.value) {
       alert("날짜를 선택하세요.");
-      document.getElementById("date").focus();
+      dateInput.focus();
       return;
     }
-    if (hourSelect.disabled === false && !hourSelect.value) {
+    if (!hourSelect.disabled && !hourSelect.value) {
       alert("시간(시)을 선택하세요.");
       hourSelect.focus();
       return;
     }
-    if (minuteSelect.disabled === false && !minuteSelect.value) {
+    if (!minuteSelect.disabled && !minuteSelect.value) {
       alert("시간(분)을 선택하세요.");
       minuteSelect.focus();
       return;
@@ -175,9 +184,8 @@ input[type="number"], select, input[type="date"] {
       return;
     }
 
-    // 전송 데이터 구성
     const data = {
-      date: document.getElementById("date").value,
+      date: dateInput.value,
       group: groupSelect.value,
       entries: {
         hour: hourSelect.value,
@@ -189,7 +197,6 @@ input[type="number"], select, input[type="date"] {
 
     console.log("전송 데이터:", data);
 
-    // 구글 앱스 스크립트 URL (실제 URL로 교체)
     const scriptUrl = "https://script.google.com/macros/s/AKfycbyjrKmFmRYgWc0k0g7k7Fn2sxxB-qDv0uUtloDErTM4C0SIxoGy49ph-44R4G0lq4MfVg/exec";
 
     fetch(scriptUrl, {
@@ -198,13 +205,19 @@ input[type="number"], select, input[type="date"] {
       body: "noodle=" + encodeURIComponent(JSON.stringify(data))
     })
     .then(res => res.text())
-    .then(text => alert("서버 응답: " + text))
+    .then(text => {
+      alert("서버 응답: " + text);
+      // ✅ 전송 후 입력폼 초기화
+      document.querySelector("form")?.reset();  // form 태그가 있다면 reset
+      // 날짜는 다시 오늘 날짜로
+      dateInput.valueAsDate = new Date();
+      updateInputFields(); // 필드 비활성화 재설정
+    })
     .catch(err => alert("에러 발생: " + err.message));
   });
 
-  // 초기 상태 필드 비활성화
+  // 페이지 초기 진입 시 상태 설정
   updateInputFields();
-
 </script>
 
 </body>
