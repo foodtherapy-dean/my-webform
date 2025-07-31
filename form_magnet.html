@@ -1,49 +1,49 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>금속검출 모니터링</title>
-  <style>
-    body {
-      padding-left: 20px;
-      padding-right: 20px;
-      margin: 10 auto;
-      max-width: 600px;
-      font-family: sans-serif;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>금속검출 모니터링</title>
+<style>
+body {
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 10 auto;
+  max-width: 600px;
+  font-family: sans-serif;
+}
 
-    .inline-row {
-      display: flex;
-      gap: 20px;
-    }
+.inline-row {
+  display: flex;
+  gap: 20px;
+}
 
-    .inline-row > * {
-      flex: 1;
-      padding: 0 5px;
-      box-sizing: border-box;
-    }
+.inline-row > * {
+  flex: 1;
+  padding: 0 5px;
+  box-sizing: border-box;
+}
 
-    .inline-row label {
-      display: block;
-      margin-bottom: 6px;
-    }
+.inline-row label {
+  display: block;
+  margin-bottom: 6px;
+}
 
-    /* input, select 전체 스타일 통일 */
-    input[type="number"], select, input[type="date"] {
-      width: 100%;
-      padding: 8px 10px;          /* 좌우 패딩 균일하게 */
-      font-size: 18px;
-      box-sizing: border-box;
-      height: 40px;               /* 높이 맞추기 */
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      outline-offset: 0;
-    }
-  </style>
+/* input, select 전체 스타일 통일 */
+input[type="number"], select, input[type="date"] {
+  width: 100%;
+  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+  font-size: 18px;
+  box-sizing: border-box;
+  height: 40px;               /* 높이 맞추기 */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline-offset: 0;
+}
+</style>
 </head>
 <body>
-  <h2>금속검출 모니터링3</h2>
+  <h2>금속검출 모니터링1</h2>
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
@@ -87,36 +87,12 @@
   <div class="inline-row" style="margin-top:10px;">
     <label>Fe / Sus 선택</label>
     <div>
-      <label for="feO">Fe - O</label>
-      <input type="checkbox" id="feO" name="feSus" value="FeO">
+      <label for="fe">Fe</label>
+      <input type="radio" id="fe" name="productType" value="Fe" required>
     </div>
     <div>
-      <label for="feX">Fe - X</label>
-      <input type="checkbox" id="feX" name="feSus" value="FeX">
-    </div>
-    <div>
-      <label for="susO">Sus - O</label>
-      <input type="checkbox" id="susO" name="feSus" value="SusO">
-    </div>
-    <div>
-      <label for="susX">Sus - X</label>
-      <input type="checkbox" id="susX" name="feSus" value="SusX">
-    </div>
-    <div>
-      <label for="productFeO">제품 + Fe - O</label>
-      <input type="checkbox" id="productFeO" name="feSus" value="ProductFeO">
-    </div>
-    <div>
-      <label for="productFeX">제품 + Fe - X</label>
-      <input type="checkbox" id="productFeX" name="feSus" value="ProductFeX">
-    </div>
-    <div>
-      <label for="productSusO">제품 + Sus - O</label>
-      <input type="checkbox" id="productSusO" name="feSus" value="ProductSusO">
-    </div>
-    <div>
-      <label for="productSusX">제품 + Sus - X</label>
-      <input type="checkbox" id="productSusX" name="feSus" value="ProductSusX">
+      <label for="sus">Sus</label>
+      <input type="radio" id="sus" name="productType" value="Sus" required>
     </div>
   </div>
 
@@ -214,31 +190,17 @@
       return;
     }
 
-    const selectedFeSus = [];
-document.querySelectorAll('input[name="feSus"]:checked').forEach(input => {
-  selectedFeSus.push(input.value);
-});
-
-const oxData = {
-  Fe: selectedFeSus.includes("FeO") ? "O" : selectedFeSus.includes("FeX") ? "X" : "",
-  Sus: selectedFeSus.includes("SusO") ? "O" : selectedFeSus.includes("SusX") ? "X" : "",
-  제품: selectedFeSus.includes("ProductFeO") ? "O" : selectedFeSus.includes("ProductFeX") ? "X" : "",
-  "제품+Fe": selectedFeSus.includes("ProductFeO") ? "O" : selectedFeSus.includes("ProductFeX") ? "X" : "",
-  "제품+Sus": selectedFeSus.includes("ProductSusO") ? "O" : selectedFeSus.includes("ProductSusX") ? "X" : ""
-};
-
-// 전송 데이터에 추가
-const data = {
-  date: dateInput.value,
-  group: groupSelect.value,
-  oxData: oxData,  // 수정된 oxData
-  hour: hourSelect.value,
-  minute: minuteSelect.value,
-  product: productSelect.value,
-  passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
-  detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
-};
-
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: {
+        product: productSelect.value,
+        hour: hourSelect.value,
+        minute: minuteSelect.value,
+        passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
+        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
+      }
+    };
 
     const scriptUrl = "https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec";
 
