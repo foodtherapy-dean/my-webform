@@ -1,64 +1,56 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>금속검출 모니터링</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    .inline-row {
-      display: flex;
-      gap: 20px;
-      margin-top: 10px;
-    }
-    select, input[type="number"], input[type="date"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    .section { display: none; }
-    .ox-button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .ox-block {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .ox-buttons button {
-      width: 40px;
-      height: 40px;
-      font-size: 18px;
-      margin: 5px;
-      border-radius: 6px;
-      border: 1px solid #999;
-      background-color: #f1f1f1;
-      cursor: pointer;
-    }
-    .ox-buttons button.active {
-      background-color: #007BFF;
-      color: white;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>금속검출 모니터링</title>
+<style>
+body {
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 10 auto;
+  max-width: 600px;
+  font-family: sans-serif;
+}
+
+.inline-row {
+  display: flex;
+  gap: 20px;
+}
+
+.inline-row > * {
+  flex: 1;
+  padding: 0 5px;
+  box-sizing: border-box;
+}
+
+.inline-row label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* input, select 전체 스타일 통일 */
+input[type="number"], select, input[type="date"] {
+  width: 100%;
+  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+  font-size: 18px;
+  box-sizing: border-box;
+  height: 40px;               /* 높이 맞추기 */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline-offset: 0;
+}
+</style>
 </head>
 <body>
   <h2>금속검출 모니터링</h2>
 
-  <label>날짜</label>
+  <label for="date">날짜</label>
   <input type="date" id="date" required />
-
-  <label style="margin-top: 10px;">점검 옵션</label>
+  
+  <div class="inline-row" style="margin-top:10px;">
+    <label for="group">점검 옵션</label>
+  </div>
   <select id="group" required>
     <option value="">선택하세요</option>
     <option value="1차점검">1차점검</option>
@@ -68,199 +60,167 @@
     <option value="최종취합">최종취합</option>
   </select>
 
-  <!-- 1~4차 공통 항목 -->
-  <div id="commonSection" class="section">
-    <div class="inline-row">
-      <div>
-        <label>시간 (시)</label>
-        <select id="hour"></select>
-      </div>
-      <div>
-        <label>시간 (분)</label>
-        <select id="minute"></select>
-      </div>
+  <div class="inline-row" style="margin-top:10px;">
+    <div>
+      <label for="hour">시간 (시)</label>
+      <select id="hour" required></select>
     </div>
+    <div>
+      <label for="minute">시간 (분)</label>
+      <select id="minute" required></select>
+    </div>
+  </div>
 
-    <label style="margin-top:10px;">대상 제품</label>
-    <select id="product">
+  <div class="inline-row" style="margin-top:10px;">
+    <label for="product">대상 제품</label>
+    <select id="product" required>
       <option value="">선택하세요</option>
-      <option>A상품</option>
-      <option>B상품</option>
-      <option>C상품</option>
-      <option>D상품</option>
-      <option>E상품</option>
-      <option>F상품</option>
+      <option value="A상품">A상품</option>
+      <option value="B상품">B상품</option>
+      <option value="C상품">C상품</option>
+      <option value="D상품">D상품</option>
+      <option value="E상품">E상품</option>
+      <option value="F상품">F상품</option>
     </select>
+  </div>
 
-    <div class="ox-button-group">
-      <div class="ox-block">
-        <span>Fe</span>
-        <div class="ox-buttons" data-name="Fe">
-          <button data-value="O">O</button><button data-value="X">X</button>
-        </div>
+  <div class="inline-row" style="margin-top:10px;">
+    <label>Fe / Sus 선택</label>
+    <div>
+      <label for="fe">Fe</label>
+      <input type="radio" id="fe" name="productType" value="Fe" required>
+    </div>
+    <div>
+      <label for="sus">Sus</label>
+      <input type="radio" id="sus" name="productType" value="Sus" required>
+    </div>
+  </div>
+
+  <div id="finalCheckFields" style="display:none;">
+    <div class="inline-row" style="margin-top:10px;">
+      <div>
+        <label for="passCount">통과수량</label>
+        <input type="number" id="passCount" required />
       </div>
-      <div class="ox-block">
-        <span>Sus</span>
-        <div class="ox-buttons" data-name="Sus">
-          <button data-value="O">O</button><button data-value="X">X</button>
-        </div>
-      </div>
-      <div class="ox-block">
-        <span>제품</span>
-        <div class="ox-buttons" data-name="제품">
-          <button data-value="O">O</button><button data-value="X">X</button>
-        </div>
-      </div>
-      <div class="ox-block">
-        <span>제품+Fe</span>
-        <div class="ox-buttons" data-name="제품+Fe">
-          <button data-value="O">O</button><button data-value="X">X</button>
-        </div>
-      </div>
-      <div class="ox-block">
-        <span>제품+Sus</span>
-        <div class="ox-buttons" data-name="제품+Sus">
-          <button data-value="O">O</button><button data-value="X">X</button>
-        </div>
+      <div>
+        <label for="detectCount">검출수량</label>
+        <input type="number" id="detectCount" required />
       </div>
     </div>
   </div>
 
-  <!-- 최종취합 전용 항목 -->
-  <div id="finalSection" class="section">
-    <label style="margin-top:10px;">대상 제품</label>
-    <select id="finalProduct">
-      <option value="">선택하세요</option>
-      <option>A상품</option>
-      <option>B상품</option>
-      <option>C상품</option>
-      <option>D상품</option>
-      <option>E상품</option>
-      <option>F상품</option>
-    </select>
-    <div class="inline-row">
-      <div>
-        <label>통과 수량</label>
-        <input type="number" id="passCount" />
-      </div>
-      <div>
-        <label>검출 수량</label>
-        <input type="number" id="detectCount" />
-      </div>
-    </div>
-  </div>
-
-  <button id="submitBtn" style="margin-top:20px;width:100%;padding:12px;font-size:18px;">📥 저장</button>
+  <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
 
 <script>
-  // 오늘 날짜 자동입력
-  document.getElementById("date").value = new Date().toISOString().slice(0, 10);
-
-  const optionEl = document.getElementById("group");
-  const commonSection = document.getElementById("commonSection");
-  const finalSection = document.getElementById("finalSection");
-  const oxButtons = document.querySelectorAll(".ox-buttons button");
+  const dateInput = document.getElementById("date");
+  const groupSelect = document.getElementById("group");
   const hourSelect = document.getElementById("hour");
   const minuteSelect = document.getElementById("minute");
+  const productSelect = document.getElementById("product");
+  const submitBtn = document.getElementById("submitBtn");
+  const finalCheckFields = document.getElementById("finalCheckFields");
 
-  // 시/분 옵션 채우기
+  // ✅ 날짜 자동 입력 (오늘 날짜)
+  dateInput.valueAsDate = new Date();
+
+  // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
   function fillTimeOptions() {
-    // 시 (01~24)
     hourSelect.innerHTML = '<option value=""></option>';
-    for (let h = 1; h <= 24; h++) {
+    for(let h=1; h<=24; h++) {
       const option = document.createElement("option");
-      option.value = h.toString().padStart(2, "0");
-      option.textContent = h.toString().padStart(2, "0");
+      const val = h.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
       hourSelect.appendChild(option);
     }
 
-    // 분 (00~50, 10분 단위)
     minuteSelect.innerHTML = '<option value=""></option>';
-    for (let m = 0; m <= 50; m += 10) {
+    for(let m=0; m<=60; m+=10) {
       const option = document.createElement("option");
-      option.value = m.toString().padStart(2, "0");
-      option.textContent = m.toString().padStart(2, "0");
+      const val = m.toString().padStart(2, "0");
+      option.value = val;
+      option.textContent = val;
       minuteSelect.appendChild(option);
     }
   }
+  fillTimeOptions();
 
-  // 점검 옵션 선택 시 UI 토글
-  optionEl.addEventListener("change", () => {
-    const val = optionEl.value;
-    commonSection.style.display = (val !== "최종취합" && val !== "") ? "block" : "none";
-    finalSection.style.display = (val === "최종취합") ? "block" : "none";
-  });
+  // ✅ 옵션별 입력 필드 활성/비활성 제어
+  function updateInputFields() {
+    const group = groupSelect.value;
 
-  // OX 버튼 클릭 시 active 클래스 토글
-  oxButtons.forEach(button => {
-    button.addEventListener("click", function() {
-      this.classList.toggle("active");
-      const otherButton = this.parentElement.querySelector(`button:not(.active)`);
-      if (otherButton) otherButton.classList.remove("active");
-    });
-  });
+    if(group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
+      hourSelect.disabled = false; hourSelect.required = true;
+      minuteSelect.disabled = false; minuteSelect.required = true;
+      productSelect.disabled = false; productSelect.required = true;
+      finalCheckFields.style.display = "none"; // 최종취합 필드 숨기기
+    } else if (group === "최종취합") {
+      hourSelect.disabled = true; minuteSelect.disabled = true;
+      finalCheckFields.style.display = "block"; // 통과수량, 검출수량 필드 보이기
+    }
+  }
 
-  // 저장 시 필수 입력 확인
-  document.getElementById("submitBtn").addEventListener("click", () => {
-    const selectedOption = optionEl.value;
-    if (!selectedOption) {
-      alert("점검 옵션을 선택하세요");
+  groupSelect.addEventListener("change", updateInputFields);
+
+  // ✅ 저장 클릭 시
+  submitBtn.addEventListener("click", () => {
+    if (!groupSelect.value) {
+      alert("점검 옵션을 선택하세요.");
+      groupSelect.focus();
+      return;
+    }
+    if (!dateInput.value) {
+      alert("날짜를 선택하세요.");
+      dateInput.focus();
+      return;
+    }
+    if (!hourSelect.disabled && !hourSelect.value) {
+      alert("시간(시)을 선택하세요.");
+      hourSelect.focus();
+      return;
+    }
+    if (!minuteSelect.disabled && !minuteSelect.value) {
+      alert("시간(분)을 선택하세요.");
+      minuteSelect.focus();
+      return;
+    }
+    if (!productSelect.value) {
+      alert("대상 제품을 선택하세요.");
+      productSelect.focus();
       return;
     }
 
-    let formData = {
-      date: document.getElementById("date").value,
-      option: selectedOption,
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: {
+        hour: hourSelect.value,
+        minute: minuteSelect.value,
+        product: productSelect.value,
+        passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
+        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
+      }
     };
 
-    if (selectedOption !== "최종취합") {
-      formData.hour = document.getElementById("hour").value;
-      formData.minute = document.getElementById("minute").value;
-      formData.product = document.getElementById("product").value;
+    const scriptUrl = "https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec";
 
-      const oxData = {};
-      ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(item => {
-        const selectedButton = document.querySelector(`.ox-buttons[data-name="${item}"] button.active`);
-        if (selectedButton) {
-          oxData[item] = selectedButton.dataset.value;
-        }
-      });
-
-      formData.oxData = oxData;
-
-      if (!formData.hour || !formData.minute || !formData.product || Object.keys(formData.oxData).length < 5) {
-        alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
-        return;
-      }
-    } else {
-      formData.finalProduct = document.getElementById("finalProduct").value;
-      formData.passCount = document.getElementById("passCount").value;
-      formData.detectCount = document.getElementById("detectCount").value;
-
-      if (!formData.finalProduct || !formData.passCount || !formData.detectCount) {
-        alert("최종취합 항목을 모두 입력하세요");
-        return;
-      }
-    }
-
-    // POST 요청 보내기
-    fetch("https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec", {
+    fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ magnet: JSON.stringify(formData) })
+      body: "magnet=" + encodeURIComponent(JSON.stringify(data))
     })
     .then(res => res.text())
-    .then(response => {
-      alert("서버 응답: " + response);
-      document.querySelector("form").reset();
-      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
-      document.querySelectorAll(".ox-buttons button").forEach(button => button.classList.remove("active"));
+    .then(text => {
+      alert("서버 응답: " + text);
+      document.querySelector("form")?.reset();
+      dateInput.valueAsDate = new Date();
+      updateInputFields();
     })
     .catch(err => alert("에러 발생: " + err.message));
   });
 
-  // 페이지 로드시 시/분 옵션 채우기
-  fillTimeOptions();
+  // 페이지 초기 진입 시 상태 설정
+  updateInputFields();
 </script>
 
 </body>
