@@ -47,15 +47,17 @@ input[type="number"], select, input[type="date"] {
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
- <div class="inline-row" style="margin-top:10px;">
-  <label for="group">점검 옵션</label>
+  
+  <div class="inline-row" style="margin-top:10px;">
+    <label for="group">점검 옵션</label>
   </div>
-   <select id="group" required>
+  <select id="group" required>
     <option value="">선택하세요</option>
-    <option value="시스템ON">시스템ON</option>
     <option value="1차점검">1차점검</option>
     <option value="2차점검">2차점검</option>
-    <option value="시스템OFF">시스템OFF</option>
+    <option value="3차점검">3차점검</option>
+    <option value="4차점검">4차점검</option>
+    <option value="최종취합">최종취합</option>
   </select>
 
   <div class="inline-row" style="margin-top:10px;">
@@ -69,36 +71,60 @@ input[type="number"], select, input[type="date"] {
     </div>
   </div>
 
-<!-- 온도/습도 입력 그룹 : 시/분과 같은 행에 배치 -->
-<div class="inline-row" style="margin-top:10px;">
-  <div>
-    <label for="temp">온도(℃)</label>
-    <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
+  <div class="inline-row" style="margin-top:10px;">
+    <label for="product">대상 제품</label>
+    <select id="product" required>
+      <option value="">선택하세요</option>
+      <option value="A상품">A상품</option>
+      <option value="B상품">B상품</option>
+      <option value="C상품">C상품</option>
+      <option value="D상품">D상품</option>
+      <option value="E상품">E상품</option>
+      <option value="F상품">F상품</option>
+    </select>
   </div>
-  <div>
-    <label for="humidity">습도(%)</label>
-    <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
+
+  <div class="inline-row" style="margin-top:10px;">
+    <label>Fe / Sus 선택</label>
+    <div>
+      <label for="fe">Fe</label>
+      <input type="radio" id="fe" name="productType" value="Fe" required>
+    </div>
+    <div>
+      <label for="sus">Sus</label>
+      <input type="radio" id="sus" name="productType" value="Sus" required>
+    </div>
   </div>
-</div>
 
- <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
+  <div id="finalCheckFields" style="display:none;">
+    <div class="inline-row" style="margin-top:10px;">
+      <div>
+        <label for="passCount">통과수량</label>
+        <input type="number" id="passCount" required />
+      </div>
+      <div>
+        <label for="detectCount">검출수량</label>
+        <input type="number" id="detectCount" required />
+      </div>
+    </div>
+  </div>
 
+  <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
 
 <script>
   const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
   const hourSelect = document.getElementById("hour");
   const minuteSelect = document.getElementById("minute");
-  const tempInput = document.getElementById("temp");
-  const humidityInput = document.getElementById("humidity");
+  const productSelect = document.getElementById("product");
   const submitBtn = document.getElementById("submitBtn");
+  const finalCheckFields = document.getElementById("finalCheckFields");
 
   // ✅ 날짜 자동 입력 (오늘 날짜)
   dateInput.valueAsDate = new Date();
 
   // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
   function fillTimeOptions() {
-    // 시 선택 - 빈 옵션 추가
     hourSelect.innerHTML = '<option value=""></option>';
     for(let h=1; h<=24; h++) {
       const option = document.createElement("option");
@@ -108,7 +134,6 @@ input[type="number"], select, input[type="date"] {
       hourSelect.appendChild(option);
     }
 
-    // 분 선택 - 빈 옵션 추가
     minuteSelect.innerHTML = '<option value=""></option>';
     for(let m=0; m<=60; m+=10) {
       const option = document.createElement("option");
@@ -124,29 +149,15 @@ input[type="number"], select, input[type="date"] {
   function updateInputFields() {
     const group = groupSelect.value;
 
-    if(group === "시스템ON" || group === "시스템OFF") {
+    if(group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
       hourSelect.disabled = false; hourSelect.required = true;
       minuteSelect.disabled = false; minuteSelect.required = true;
-
-      tempInput.disabled = true; tempInput.required = false; tempInput.value = "";
-      humidityInput.disabled = true; humidityInput.required = false; humidityInput.value = "";
-    } 
-    else if(group === "1차점검" || group === "2차점검") {
-      hourSelect.disabled = false; hourSelect.required = true;
-      minuteSelect.disabled = false; minuteSelect.required = true;
-
-      tempInput.disabled = false; tempInput.required = true;
-      humidityInput.disabled = false; humidityInput.required = true;
-    } else {
-      hourSelect.disabled = true; hourSelect.required = false;
-      minuteSelect.disabled = true; minuteSelect.required = false;
-      tempInput.disabled = true; tempInput.required = false;
-      humidityInput.disabled = true; humidityInput.required = false;
+      productSelect.disabled = false; productSelect.required = true;
+      finalCheckFields.style.display = "none"; // 최종취합 필드 숨기기
+    } else if (group === "최종취합") {
+      hourSelect.disabled = true; minuteSelect.disabled = true;
+      finalCheckFields.style.display = "block"; // 통과수량, 검출수량 필드 보이기
     }
-
-    // 시/분 선택 초기화
-    hourSelect.value = "";
-    minuteSelect.value = "";
   }
 
   groupSelect.addEventListener("change", updateInputFields);
@@ -173,14 +184,9 @@ input[type="number"], select, input[type="date"] {
       minuteSelect.focus();
       return;
     }
-    if (!tempInput.disabled && !tempInput.value) {
-      alert("온도를 입력하세요.");
-      tempInput.focus();
-      return;
-    }
-    if (!humidityInput.disabled && !humidityInput.value) {
-      alert("습도를 입력하세요.");
-      humidityInput.focus();
+    if (!productSelect.value) {
+      alert("대상 제품을 선택하세요.");
+      productSelect.focus();
       return;
     }
 
@@ -190,12 +196,11 @@ input[type="number"], select, input[type="date"] {
       entries: {
         hour: hourSelect.value,
         minute: minuteSelect.value,
-        temp: tempInput.value,
-        humidity: humidityInput.value
+        product: productSelect.value,
+        passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
+        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
       }
     };
-
-    console.log("전송 데이터:", data);
 
     const scriptUrl = "https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec";
 
@@ -207,11 +212,9 @@ input[type="number"], select, input[type="date"] {
     .then(res => res.text())
     .then(text => {
       alert("서버 응답: " + text);
-      // ✅ 전송 후 입력폼 초기화
-      document.querySelector("form")?.reset();  // form 태그가 있다면 reset
-      // 날짜는 다시 오늘 날짜로
+      document.querySelector("form")?.reset();
       dateInput.valueAsDate = new Date();
-      updateInputFields(); // 필드 비활성화 재설정
+      updateInputFields();
     })
     .catch(err => alert("에러 발생: " + err.message));
   });
