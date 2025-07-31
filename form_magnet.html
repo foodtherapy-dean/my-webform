@@ -137,14 +137,23 @@
   function updateInputFields() {
     const group = groupSelect.value;
 
+    // 1~4차 점검을 선택한 경우
     if (group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
       hourSelect.disabled = false; hourSelect.required = true;
       minuteSelect.disabled = false; minuteSelect.required = true;
       productSelect.disabled = false; productSelect.required = true;
       finalCheckFields.style.display = "none"; // 최종취합 필드 숨기기
-    } else if (group === "최종취합") {
+    } 
+    // 최종취합을 선택한 경우
+    else if (group === "최종취합") {
       hourSelect.disabled = true; minuteSelect.disabled = true;
       finalCheckFields.style.display = "block"; // 통과수량, 검출수량 필드 보이기
+    } 
+    // 아무 것도 선택하지 않은 경우
+    else {
+      hourSelect.disabled = true; minuteSelect.disabled = true;
+      productSelect.disabled = true;
+      finalCheckFields.style.display = "none"; // 최종취합 필드 숨기기
     }
   }
 
