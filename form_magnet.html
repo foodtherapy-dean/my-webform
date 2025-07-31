@@ -80,7 +80,7 @@
   </style>
 </head>
 <body>
-  <h2>금속검출 모니터링5</h2>
+  <h2>금속검출 모니터링6</h2>
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
@@ -252,7 +252,9 @@
   groupSelect.addEventListener("change", updateInputFields);
 
   // 저장 버튼 클릭 시 필수 항목 확인
-  submitBtn.addEventListener("click", () => {
+  submitBtn.addEventListener("click", (event) => {
+    event.preventDefault(); // 폼 제출 방지
+
     console.log("Submit clicked!"); // 디버깅용
 
     if (!groupSelect.value) {
