@@ -217,16 +217,17 @@
       formData.hour = document.getElementById("hour").value;
       formData.minute = document.getElementById("minute").value;
       formData.product = document.getElementById("product").value;
-      formData.oxData = {};
 
+      const oxData = {};
       ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(item => {
-        const selectedButton = document.querySelector(`.ox-buttons[data-name="${item}"] .active`);
+        const selectedButton = document.querySelector(`.ox-buttons[data-name="${item}"] button.active`);
         if (selectedButton) {
-          formData.oxData[item] = selectedButton.dataset.value;
+          oxData[item] = selectedButton.dataset.value;
         }
       });
 
-      // 필수 값 확인
+      formData.oxData = oxData;
+
       if (!formData.hour || !formData.minute || !formData.product || Object.keys(formData.oxData).length < 5) {
         alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
         return;
@@ -236,7 +237,6 @@
       formData.passCount = document.getElementById("passCount").value;
       formData.detectCount = document.getElementById("detectCount").value;
 
-      // 최종취합 필수 값 확인
       if (!formData.finalProduct || !formData.passCount || !formData.detectCount) {
         alert("최종취합 항목을 모두 입력하세요");
         return;
