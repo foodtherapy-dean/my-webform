@@ -160,6 +160,29 @@
   const commonSection = document.getElementById("commonSection");
   const finalSection = document.getElementById("finalSection");
   const oxButtons = document.querySelectorAll(".ox-buttons button");
+  const hourSelect = document.getElementById("hour");
+  const minuteSelect = document.getElementById("minute");
+
+  // 시/분 옵션 채우기
+  function fillTimeOptions() {
+    // 시 (01~24)
+    hourSelect.innerHTML = '<option value=""></option>';
+    for (let h = 1; h <= 24; h++) {
+      const option = document.createElement("option");
+      option.value = h.toString().padStart(2, "0");
+      option.textContent = h.toString().padStart(2, "0");
+      hourSelect.appendChild(option);
+    }
+
+    // 분 (00~50, 10분 단위)
+    minuteSelect.innerHTML = '<option value=""></option>';
+    for (let m = 0; m <= 50; m += 10) {
+      const option = document.createElement("option");
+      option.value = m.toString().padStart(2, "0");
+      option.textContent = m.toString().padStart(2, "0");
+      minuteSelect.appendChild(option);
+    }
+  }
 
   // 점검 옵션 선택 시 UI 토글
   optionEl.addEventListener("change", () => {
@@ -198,9 +221,12 @@
 
       ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(item => {
         const selectedButton = document.querySelector(`.ox-buttons[data-name="${item}"] .active`);
-        if (selectedButton) formData.oxData[item] = selectedButton.dataset.value;
+        if (selectedButton) {
+          formData.oxData[item] = selectedButton.dataset.value;
+        }
       });
 
+      // 필수 값 확인
       if (!formData.hour || !formData.minute || !formData.product || Object.keys(formData.oxData).length < 5) {
         alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
         return;
@@ -210,15 +236,31 @@
       formData.passCount = document.getElementById("passCount").value;
       formData.detectCount = document.getElementById("detectCount").value;
 
+      // 최종취합 필수 값 확인
       if (!formData.finalProduct || !formData.passCount || !formData.detectCount) {
         alert("최종취합 항목을 모두 입력하세요");
         return;
       }
     }
 
-    // 데이터 전송 (API 호출)
-    alert("데이터가 정상적으로 제출되었습니다.");
+    // POST 요청 보내기
+    fetch("https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ magnet: JSON.stringify(formData) })
+    })
+    .then(res => res.text())
+    .then(response => {
+      alert("서버 응답: " + response);
+      document.querySelector("form").reset();
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      document.querySelectorAll(".ox-buttons button").forEach(button => button.classList.remove("active"));
+    })
+    .catch(err => alert("에러 발생: " + err.message));
   });
+
+  // 페이지 로드시 시/분 옵션 채우기
+  fillTimeOptions();
 </script>
 
 </body>
