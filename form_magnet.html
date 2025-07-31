@@ -215,22 +215,30 @@
     }
 
     const selectedFeSus = [];
-    document.querySelectorAll('input[name="feSus"]:checked').forEach(input => {
-      selectedFeSus.push(input.value);
-    });
+document.querySelectorAll('input[name="feSus"]:checked').forEach(input => {
+  selectedFeSus.push(input.value);
+});
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
-        product: productSelect.value,
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
-        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : "",
-        feSusSelections: selectedFeSus
-      }
-    };
+const oxData = {
+  Fe: selectedFeSus.includes("FeO") ? "O" : selectedFeSus.includes("FeX") ? "X" : "",
+  Sus: selectedFeSus.includes("SusO") ? "O" : selectedFeSus.includes("SusX") ? "X" : "",
+  제품: selectedFeSus.includes("ProductFeO") ? "O" : selectedFeSus.includes("ProductFeX") ? "X" : "",
+  "제품+Fe": selectedFeSus.includes("ProductFeO") ? "O" : selectedFeSus.includes("ProductFeX") ? "X" : "",
+  "제품+Sus": selectedFeSus.includes("ProductSusO") ? "O" : selectedFeSus.includes("ProductSusX") ? "X" : ""
+};
+
+// 전송 데이터에 추가
+const data = {
+  date: dateInput.value,
+  group: groupSelect.value,
+  oxData: oxData,  // 수정된 oxData
+  hour: hourSelect.value,
+  minute: minuteSelect.value,
+  product: productSelect.value,
+  passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
+  detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
+};
+
 
     const scriptUrl = "https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec";
 
