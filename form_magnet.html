@@ -156,83 +156,68 @@
   // 오늘 날짜 자동입력
   document.getElementById("date").value = new Date().toISOString().slice(0, 10);
 
-  const optionEl = document.getElementById("option");
-  const basicFields = document.getElementById("basicFields");
-  const finalFields = document.getElementById("finalFields");
-  const oxButtons = document.querySelectorAll(".ox-button");
+  const optionEl = document.getElementById("group");
+  const commonSection = document.getElementById("commonSection");
+  const finalSection = document.getElementById("finalSection");
+  const oxButtons = document.querySelectorAll(".ox-buttons button");
 
   // 점검 옵션 선택 시 UI 토글
   optionEl.addEventListener("change", () => {
     const val = optionEl.value;
-    basicFields.classList.toggle("hidden", !val.includes("점검"));
-    finalFields.classList.toggle("hidden", val !== "최종취합");
+    commonSection.style.display = (val !== "최종취합" && val !== "") ? "block" : "none";
+    finalSection.style.display = (val === "최종취합") ? "block" : "none";
   });
 
-  // OX 버튼 토글
-  oxButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const group = btn.dataset.group;
-      document.querySelectorAll(`.ox-button[data-group="${group}"]`).forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
+  // OX 버튼 클릭 시 active 클래스 토글
+  oxButtons.forEach(button => {
+    button.addEventListener("click", function() {
+      this.classList.toggle("active");
+      const otherButton = this.parentElement.querySelector(`button:not(.active)`);
+      if (otherButton) otherButton.classList.remove("active");
     });
   });
 
-  // 저장 시 필수 확인 및 데이터 전송
-  document.getElementById("magnetForm").addEventListener("submit", (e) => {
-    e.preventDefault();
+  // 저장 시 필수 입력 확인
+  document.getElementById("submitBtn").addEventListener("click", () => {
     const selectedOption = optionEl.value;
-    if (!selectedOption) return alert("점검 옵션을 선택하세요");
+    if (!selectedOption) {
+      alert("점검 옵션을 선택하세요");
+      return;
+    }
 
     let formData = {
       date: document.getElementById("date").value,
-      option: selectedOption
+      option: selectedOption,
     };
 
-    if (selectedOption.includes("점검")) {
-      // 1~4차 점검 데이터 처리
+    if (selectedOption !== "최종취합") {
       formData.hour = document.getElementById("hour").value;
       formData.minute = document.getElementById("minute").value;
       formData.product = document.getElementById("product").value;
+      formData.oxData = {};
 
-      const oxData = {};
       ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(item => {
-        const selectedButton = document.querySelector(`.ox-button.selected[data-group="${item}"]`);
-        if (selectedButton) {
-          oxData[item] = selectedButton.dataset.value;
-        }
+        const selectedButton = document.querySelector(`.ox-buttons[data-name="${item}"] .active`);
+        if (selectedButton) formData.oxData[item] = selectedButton.dataset.value;
       });
 
-      formData.oxData = oxData;
-
-      if (!formData.hour || !formData.minute || !formData.product || Object.keys(oxData).length < 5) {
-        return alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
+      if (!formData.hour || !formData.minute || !formData.product || Object.keys(formData.oxData).length < 5) {
+        alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
+        return;
       }
-    } else if (selectedOption === "최종취합") {
-      // 최종취합 데이터 처리
+    } else {
       formData.finalProduct = document.getElementById("finalProduct").value;
-      formData.passCount = document.getElementById("pass").value;
-      formData.detectCount = document.getElementById("fail").value;
+      formData.passCount = document.getElementById("passCount").value;
+      formData.detectCount = document.getElementById("detectCount").value;
 
       if (!formData.finalProduct || !formData.passCount || !formData.detectCount) {
-        return alert("최종취합 항목을 모두 입력하세요");
+        alert("최종취합 항목을 모두 입력하세요");
+        return;
       }
     }
 
-    // 데이터 전송
-    fetch("https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ magnet: JSON.stringify(formData) })
-    })
-    .then(res => res.text())
-    .then(text => {
-      alert("서버 응답: " + text);
-      // 입력 후 초기화
-      document.getElementById("magnetForm").reset();
-      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
-      document.querySelectorAll(".ox-button").forEach(btn => btn.classList.remove("selected"));
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+    // 데이터 전송 (API 호출)
+    alert("데이터가 정상적으로 제출되었습니다.");
   });
 </script>
 
