@@ -1,46 +1,46 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>금속검출 모니터링</title>
-<style>
-body {
-  padding-left: 20px;
-  padding-right: 20px;
-  margin: 10 auto;
-  max-width: 600px;
-  font-family: sans-serif;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>금속검출 모니터링</title>
+  <style>
+    body {
+      padding-left: 20px;
+      padding-right: 20px;
+      margin: 10 auto;
+      max-width: 600px;
+      font-family: sans-serif;
+    }
 
-.inline-row {
-  display: flex;
-  gap: 20px;
-}
+    .inline-row {
+      display: flex;
+      gap: 20px;
+    }
 
-.inline-row > * {
-  flex: 1;
-  padding: 0 5px;
-  box-sizing: border-box;
-}
+    .inline-row > * {
+      flex: 1;
+      padding: 0 5px;
+      box-sizing: border-box;
+    }
 
-.inline-row label {
-  display: block;
-  margin-bottom: 6px;
-}
+    .inline-row label {
+      display: block;
+      margin-bottom: 6px;
+    }
 
-/* input, select 전체 스타일 통일 */
-input[type="number"], select, input[type="date"] {
-  width: 100%;
-  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
-  font-size: 18px;
-  box-sizing: border-box;
-  height: 40px;               /* 높이 맞추기 */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline-offset: 0;
-}
-</style>
+    /* input, select 전체 스타일 통일 */
+    input[type="number"], select, input[type="date"] {
+      width: 100%;
+      padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+      font-size: 18px;
+      box-sizing: border-box;
+      height: 40px;               /* 높이 맞추기 */
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline-offset: 0;
+    }
+  </style>
 </head>
 <body>
   <h2>금속검출 모니터링</h2>
@@ -84,18 +84,6 @@ input[type="number"], select, input[type="date"] {
     </select>
   </div>
 
-  <div class="inline-row" style="margin-top:10px;">
-    <label>Fe / Sus 선택</label>
-    <div>
-      <label for="fe">Fe</label>
-      <input type="radio" id="fe" name="productType" value="Fe" required>
-    </div>
-    <div>
-      <label for="sus">Sus</label>
-      <input type="radio" id="sus" name="productType" value="Sus" required>
-    </div>
-  </div>
-
   <div id="finalCheckFields" style="display:none;">
     <div class="inline-row" style="margin-top:10px;">
       <div>
@@ -126,7 +114,7 @@ input[type="number"], select, input[type="date"] {
   // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
+    for (let h = 1; h <= 24; h++) {
       const option = document.createElement("option");
       const val = h.toString().padStart(2, "0");
       option.value = val;
@@ -135,7 +123,7 @@ input[type="number"], select, input[type="date"] {
     }
 
     minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
+    for (let m = 0; m <= 60; m += 10) {
       const option = document.createElement("option");
       const val = m.toString().padStart(2, "0");
       option.value = val;
@@ -149,7 +137,7 @@ input[type="number"], select, input[type="date"] {
   function updateInputFields() {
     const group = groupSelect.value;
 
-    if(group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
+    if (group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
       hourSelect.disabled = false; hourSelect.required = true;
       minuteSelect.disabled = false; minuteSelect.required = true;
       productSelect.disabled = false; productSelect.required = true;
