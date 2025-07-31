@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>금속검출 모니터링</title>
+  <title>금속검출 모니터링4</title>
   <style>
     body {
       padding-left: 20px;
@@ -80,7 +80,7 @@
   </style>
 </head>
 <body>
-  <h2>금속검출 모니터링3</h2>
+  <h2>금속검출 모니터링4</h2>
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
@@ -283,12 +283,17 @@
 
       // OX 선택 체크
       const oxData = {};
-      document.querySelectorAll(".ox-buttons button.active").forEach(button => {
-        const name = button.closest('.ox-block').getAttribute("data-name");
-        oxData[name] = button.getAttribute("data-value");
+      let allOXSelected = true;
+      document.querySelectorAll(".ox-buttons").forEach(oxButtonGroup => {
+        const activeButton = oxButtonGroup.querySelector("button.active");
+        if (!activeButton) {
+          allOXSelected = false;
+        }
+        const name = oxButtonGroup.getAttribute("data-name");
+        oxData[name] = activeButton ? activeButton.getAttribute("data-value") : "";
       });
 
-      if (Object.keys(oxData).length !== 5) {
+      if (!allOXSelected) {
         alert("Fe, Sus, 제품, 제품+Fe, 제품+Sus 항목을 모두 선택하세요.");
         return;
       }
