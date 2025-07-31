@@ -123,6 +123,10 @@
 <body>
   <h2>금속검출 점검</h2>
   <form id="magnetForm">
+    <label>날짜
+      <input type="date" id="date" name="date" />
+    </label>
+
     <label>점검 옵션
       <select id="option" name="option" required>
         <option value="">선택하세요</option>
@@ -133,6 +137,51 @@
         <option value="최종취합">최종취합</option>
       </select>
     </label>
+
+    <div id="subInputs" style="display:none;">
+      <label>시간</label>
+<div class="inline-row">
+  <div>
+    <select id="hour" name="hour" required>
+      <option value="">시 선택</option>
+      <option value="01">01시</option>
+      <option value="02">02시</option>
+      <option value="03">03시</option>
+      <option value="04">04시</option>
+      <option value="05">05시</option>
+      <option value="06">06시</option>
+      <option value="07">07시</option>
+      <option value="08">08시</option>
+      <option value="09">09시</option>
+      <option value="10">10시</option>
+      <option value="11">11시</option>
+      <option value="12">12시</option>
+      <option value="13">13시</option>
+      <option value="14">14시</option>
+      <option value="15">15시</option>
+      <option value="16">16시</option>
+      <option value="17">17시</option>
+      <option value="18">18시</option>
+      <option value="19">19시</option>
+      <option value="20">20시</option>
+      <option value="21">21시</option>
+      <option value="22">22시</option>
+      <option value="23">23시</option>
+      <option value="24">24시</option>
+    </select>
+  </div>
+  <div>
+    <select id="minute" name="minute" required>
+      <option value="">분 선택</option>
+      <option value="00">00분</option>
+      <option value="10">10분</option>
+      <option value="20">20분</option>
+      <option value="30">30분</option>
+      <option value="40">40분</option>
+      <option value="50">50분</option>
+    </select>
+  </div>
+</div>
 
       <label>제품명
         <select id="product" name="product">
