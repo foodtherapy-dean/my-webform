@@ -43,7 +43,7 @@ input[type="number"], select, input[type="date"] {
 </style>
 </head>
 <body>
-  <h2>금속검출 모니터링</h2>
+  <h2>금속검출 모니터링1</h2>
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
@@ -194,9 +194,9 @@ input[type="number"], select, input[type="date"] {
       date: dateInput.value,
       group: groupSelect.value,
       entries: {
+        product: productSelect.value,
         hour: hourSelect.value,
         minute: minuteSelect.value,
-        product: productSelect.value,
         passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
         detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
       }
