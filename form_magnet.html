@@ -1,46 +1,46 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>금속검출 모니터링</title>
-<style>
-body {
-  padding-left: 20px;
-  padding-right: 20px;
-  margin: 10 auto;
-  max-width: 600px;
-  font-family: sans-serif;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>금속검출 모니터링</title>
+  <style>
+    body {
+      padding-left: 20px;
+      padding-right: 20px;
+      margin: 10 auto;
+      max-width: 600px;
+      font-family: sans-serif;
+    }
 
-.inline-row {
-  display: flex;
-  gap: 20px;
-}
+    .inline-row {
+      display: flex;
+      gap: 20px;
+    }
 
-.inline-row > * {
-  flex: 1;
-  padding: 0 5px;
-  box-sizing: border-box;
-}
+    .inline-row > * {
+      flex: 1;
+      padding: 0 5px;
+      box-sizing: border-box;
+    }
 
-.inline-row label {
-  display: block;
-  margin-bottom: 6px;
-}
+    .inline-row label {
+      display: block;
+      margin-bottom: 6px;
+    }
 
-/* input, select 전체 스타일 통일 */
-input[type="number"], select, input[type="date"] {
-  width: 100%;
-  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
-  font-size: 18px;
-  box-sizing: border-box;
-  height: 40px;               /* 높이 맞추기 */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline-offset: 0;
-}
-</style>
+    /* input, select 전체 스타일 통일 */
+    input[type="number"], select, input[type="date"] {
+      width: 100%;
+      padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+      font-size: 18px;
+      box-sizing: border-box;
+      height: 40px;               /* 높이 맞추기 */
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline-offset: 0;
+    }
+  </style>
 </head>
 <body>
   <h2>금속검출 모니터링1</h2>
@@ -87,12 +87,36 @@ input[type="number"], select, input[type="date"] {
   <div class="inline-row" style="margin-top:10px;">
     <label>Fe / Sus 선택</label>
     <div>
-      <label for="fe">Fe</label>
-      <input type="radio" id="fe" name="productType" value="Fe" required>
+      <label for="feO">Fe - O</label>
+      <input type="checkbox" id="feO" name="feSus" value="FeO">
     </div>
     <div>
-      <label for="sus">Sus</label>
-      <input type="radio" id="sus" name="productType" value="Sus" required>
+      <label for="feX">Fe - X</label>
+      <input type="checkbox" id="feX" name="feSus" value="FeX">
+    </div>
+    <div>
+      <label for="susO">Sus - O</label>
+      <input type="checkbox" id="susO" name="feSus" value="SusO">
+    </div>
+    <div>
+      <label for="susX">Sus - X</label>
+      <input type="checkbox" id="susX" name="feSus" value="SusX">
+    </div>
+    <div>
+      <label for="productFeO">제품 + Fe - O</label>
+      <input type="checkbox" id="productFeO" name="feSus" value="ProductFeO">
+    </div>
+    <div>
+      <label for="productFeX">제품 + Fe - X</label>
+      <input type="checkbox" id="productFeX" name="feSus" value="ProductFeX">
+    </div>
+    <div>
+      <label for="productSusO">제품 + Sus - O</label>
+      <input type="checkbox" id="productSusO" name="feSus" value="ProductSusO">
+    </div>
+    <div>
+      <label for="productSusX">제품 + Sus - X</label>
+      <input type="checkbox" id="productSusX" name="feSus" value="ProductSusX">
     </div>
   </div>
 
@@ -190,6 +214,11 @@ input[type="number"], select, input[type="date"] {
       return;
     }
 
+    const selectedFeSus = [];
+    document.querySelectorAll('input[name="feSus"]:checked').forEach(input => {
+      selectedFeSus.push(input.value);
+    });
+
     const data = {
       date: dateInput.value,
       group: groupSelect.value,
@@ -198,7 +227,8 @@ input[type="number"], select, input[type="date"] {
         hour: hourSelect.value,
         minute: minuteSelect.value,
         passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
-        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
+        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : "",
+        feSusSelections: selectedFeSus
       }
     };
 
