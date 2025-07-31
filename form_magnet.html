@@ -153,82 +153,88 @@
   <button id="submitBtn" style="margin-top:20px;width:100%;padding:12px;font-size:18px;">📥 저장</button>
 
 <script>
-  const dateInput = document.getElementById("date");
-  const groupSelect = document.getElementById("group");
-  const hourSelect = document.getElementById("hour");
-  const minuteSelect = document.getElementById("minute");
-  const commonSection = document.getElementById("commonSection");
-  const finalSection = document.getElementById("finalSection");
+  // 오늘 날짜 자동입력
+  document.getElementById("date").value = new Date().toISOString().slice(0, 10);
 
-  // 날짜 기본 오늘로
-  dateInput.valueAsDate = new Date();
+  const optionEl = document.getElementById("option");
+  const basicFields = document.getElementById("basicFields");
+  const finalFields = document.getElementById("finalFields");
+  const oxButtons = document.querySelectorAll(".ox-button");
 
-  // 시간 드롭다운
-  for(let i=1; i<=24; i++) {
-    hourSelect.innerHTML += `<option value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</option>`;
-  }
-  for(let i=0; i<=50; i+=10) {
-    minuteSelect.innerHTML += `<option value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</option>`;
-  }
-
-  // 점검옵션 선택 시 필드 활성화
-  groupSelect.addEventListener("change", () => {
-    const val = groupSelect.value;
-    commonSection.style.display = ['1차점검','2차점검','3차점검','4차점검'].includes(val) ? "block" : "none";
-    finalSection.style.display = val === "최종취합" ? "block" : "none";
+  // 점검 옵션 선택 시 UI 토글
+  optionEl.addEventListener("change", () => {
+    const val = optionEl.value;
+    basicFields.classList.toggle("hidden", !val.includes("점검"));
+    finalFields.classList.toggle("hidden", val !== "최종취합");
   });
 
-  // OX 버튼 토글 처리
-  document.querySelectorAll(".ox-buttons").forEach(group => {
-    group.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-      });
+  // OX 버튼 토글
+  oxButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const group = btn.dataset.group;
+      document.querySelectorAll(`.ox-button[data-group="${group}"]`).forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
     });
   });
 
-  // 저장 버튼
-  document.getElementById("submitBtn").addEventListener("click", () => {
-    const group = groupSelect.value;
-    if (!dateInput.value || !group) {
-      alert("날짜 및 점검옵션은 필수입니다.");
-      return;
-    }
+  // 저장 시 필수 확인 및 데이터 전송
+  document.getElementById("magnetForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const selectedOption = optionEl.value;
+    if (!selectedOption) return alert("점검 옵션을 선택하세요");
 
-    if (['1차점검','2차점검','3차점검','4차점검'].includes(group)) {
-      const product = document.getElementById("product").value;
-      if (!hourSelect.value || !minuteSelect.value || !product) {
-        alert("시/분/대상 제품을 입력하세요.");
-        return;
-      }
+    let formData = {
+      date: document.getElementById("date").value,
+      option: selectedOption
+    };
 
-      const states = {};
-      document.querySelectorAll(".ox-buttons").forEach(group => {
-        const name = group.getAttribute("data-name");
-        const active = group.querySelector("button.active");
-        if (!active) {
-          alert(`${name} 항목을 선택하세요.`);
-          return;
+    if (selectedOption.includes("점검")) {
+      // 1~4차 점검 데이터 처리
+      formData.hour = document.getElementById("hour").value;
+      formData.minute = document.getElementById("minute").value;
+      formData.product = document.getElementById("product").value;
+
+      const oxData = {};
+      ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"].forEach(item => {
+        const selectedButton = document.querySelector(`.ox-button.selected[data-group="${item}"]`);
+        if (selectedButton) {
+          oxData[item] = selectedButton.dataset.value;
         }
-        states[name] = active.dataset.value;
       });
 
-      alert("✅ 점검 데이터 저장 준비 완료 (데이터 전송 로직 필요)");
+      formData.oxData = oxData;
 
-    } else if (group === "최종취합") {
-      const finalProduct = document.getElementById("finalProduct").value;
-      const pass = document.getElementById("passCount").value;
-      const detect = document.getElementById("detectCount").value;
-
-      if (!finalProduct || !pass || !detect) {
-        alert("최종취합 항목을 모두 입력하세요.");
-        return;
+      if (!formData.hour || !formData.minute || !formData.product || Object.keys(oxData).length < 5) {
+        return alert("시간, 제품, OX 선택 항목을 모두 입력하세요");
       }
+    } else if (selectedOption === "최종취합") {
+      // 최종취합 데이터 처리
+      formData.finalProduct = document.getElementById("finalProduct").value;
+      formData.passCount = document.getElementById("pass").value;
+      formData.detectCount = document.getElementById("fail").value;
 
-      alert("✅ 최종취합 데이터 저장 준비 완료 (데이터 전송 로직 필요)");
+      if (!formData.finalProduct || !formData.passCount || !formData.detectCount) {
+        return alert("최종취합 항목을 모두 입력하세요");
+      }
     }
+
+    // 데이터 전송
+    fetch("https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ magnet: JSON.stringify(formData) })
+    })
+    .then(res => res.text())
+    .then(text => {
+      alert("서버 응답: " + text);
+      // 입력 후 초기화
+      document.getElementById("magnetForm").reset();
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      document.querySelectorAll(".ox-button").forEach(btn => btn.classList.remove("selected"));
+    })
+    .catch(err => alert("에러 발생: " + err.message));
   });
 </script>
+
 </body>
 </html>
