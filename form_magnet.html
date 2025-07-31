@@ -1,227 +1,326 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>금속검출 모니터링</title>
-<style>
-body {
-  padding-left: 20px;
-  padding-right: 20px;
-  margin: 10 auto;
-  max-width: 600px;
-  font-family: sans-serif;
-}
+  <meta charset="UTF-8" />
+  <title>금속검출 점검</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
 
-.inline-row {
-  display: flex;
-  gap: 20px;
-}
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 16px;
+    }
 
-.inline-row > * {
-  flex: 1;
-  padding: 0 5px;
-  box-sizing: border-box;
-}
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 16px;
+    }
 
-.inline-row label {
-  display: block;
-  margin-bottom: 6px;
-}
+    select option:first-child {
+      color: #aaa;
+      font-style: italic;
+    }
 
-/* input, select 전체 스타일 통일 */
-input[type="number"], select, input[type="date"] {
-  width: 100%;
-  padding: 8px 10px;          /* 좌우 패딩 균일하게 */
-  font-size: 18px;
-  box-sizing: border-box;
-  height: 40px;               /* 높이 맞추기 */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline-offset: 0;
-}
-</style>
+    .inline-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .inline-row > div {
+      flex: 1;
+    }
+
+    .ox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .ox-set {
+      flex: 1 1 48%;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      border-radius: 4px;
+    }
+
+    .ox-buttons button.selected {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
+
+    /* 🔧 선택된 select/input 요소 강조 */
+    select.selected,
+    input.selected {
+      border: 2px solid #007bff;
+      background-color: #e8f0fe;
+      font-weight: bold;
+    }
+
+    /* 🔧 날짜 입력창 텍스트 확대 */
+    input[type="date"] {
+      font-size: 18px;
+    }
+
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .number-row > div {
+      flex: 1;
+    }
+
+    button[type="submit"] {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+  </style>
 </head>
 <body>
-  <h2>금속검출 모니터링1</h2>
+  <h2>금속검출 점검</h2>
+  <form id="magnetForm">
+    <label>날짜
+      <input type="date" id="date" name="date" />
+    </label>
 
-  <label for="date">날짜</label>
-  <input type="date" id="date" required />
-  
-  <div class="inline-row" style="margin-top:10px;">
-    <label for="group">점검 옵션</label>
-  </div>
-  <select id="group" required>
-    <option value="">선택하세요</option>
-    <option value="1차점검">1차점검</option>
-    <option value="2차점검">2차점검</option>
-    <option value="3차점검">3차점검</option>
-    <option value="4차점검">4차점검</option>
-    <option value="최종취합">최종취합</option>
-  </select>
+    <label>점검 옵션
+      <select id="option" name="option" required>
+        <option value="">선택하세요</option>
+        <option value="1차점검">1차점검</option>
+        <option value="2차점검">2차점검</option>
+        <option value="3차점검">3차점검</option>
+        <option value="4차점검">4차점검</option>
+        <option value="최종취합">최종취합</option>
+      </select>
+    </label>
 
-  <div class="inline-row" style="margin-top:10px;">
-    <div>
-      <label for="hour">시간 (시)</label>
-      <select id="hour" required></select>
-    </div>
-    <div>
-      <label for="minute">시간 (분)</label>
-      <select id="minute" required></select>
-    </div>
-  </div>
+    <div id="subInputs" style="display:none;">
+      <label>시간
+        <input type="time" id="time" name="time" />
+      </label>
 
-  <div class="inline-row" style="margin-top:10px;">
-    <label for="product">대상 제품</label>
-    <select id="product" required>
-      <option value="">선택하세요</option>
-      <option value="A상품">A상품</option>
-      <option value="B상품">B상품</option>
-      <option value="C상품">C상품</option>
-      <option value="D상품">D상품</option>
-      <option value="E상품">E상품</option>
-      <option value="F상품">F상품</option>
-    </select>
-  </div>
+      <label>제품명
+        <select id="product" name="product">
+          <option value="">선택하세요</option>
+          <option>제품A</option>
+          <option>제품B</option>
+          <option>제품C</option>
+          <option>제품D</option>
+          <option>제품E</option>
+          <option>제품F</option>
+        </select>
+      </label>
 
-  <div class="inline-row" style="margin-top:10px;">
-    <label>Fe / Sus 선택</label>
-    <div>
-      <label for="fe">Fe</label>
-      <input type="radio" id="fe" name="productType" value="Fe" required>
-    </div>
-    <div>
-      <label for="sus">Sus</label>
-      <input type="radio" id="sus" name="productType" value="Sus" required>
-    </div>
-  </div>
-
-  <div id="finalCheckFields" style="display:none;">
-    <div class="inline-row" style="margin-top:10px;">
-      <div>
-        <label for="passCount">통과수량</label>
-        <input type="number" id="passCount" required />
-      </div>
-      <div>
-        <label for="detectCount">검출수량</label>
-        <input type="number" id="detectCount" required />
+      <label>검출 상태</label>
+      <div class="ox-group" id="oxContainer">
+        <!-- JS에서 자동 생성 -->
       </div>
     </div>
-  </div>
 
-  <button id="submitBtn" style="margin-top: 20px; width: 100%; font-size: 18px; padding: 12px 0;">📥 서버로 전송</button>
+    <div id="summaryInputs" style="display:none;">
+      <label>통과/검출 수량</label>
+      <div class="number-row">
+        <div>
+          <input type="number" name="passCount" placeholder="통과 수량" />
+        </div>
+        <div>
+          <input type="number" name="detectCount" placeholder="검출 수량" />
+        </div>
+      </div>
+    </div>
+
+    <button type="submit">저장</button>
+  </form>
 
 <script>
+  // 날짜 기본값 설정 및 selected 적용
   const dateInput = document.getElementById("date");
-  const groupSelect = document.getElementById("group");
-  const hourSelect = document.getElementById("hour");
-  const minuteSelect = document.getElementById("minute");
-  const productSelect = document.getElementById("product");
-  const submitBtn = document.getElementById("submitBtn");
-  const finalCheckFields = document.getElementById("finalCheckFields");
-
-  // ✅ 날짜 자동 입력 (오늘 날짜)
   dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
 
-  // ✅ 시(01~24) / 분(00~60, 10단위) 드롭다운 생성
-  function fillTimeOptions() {
-    hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
-      const option = document.createElement("option");
-      const val = h.toString().padStart(2, "0");
-      option.value = val;
-      option.textContent = val;
-      hourSelect.appendChild(option);
-    }
-
-    minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
-      const option = document.createElement("option");
-      const val = m.toString().padStart(2, "0");
-      option.value = val;
-      option.textContent = val;
-      minuteSelect.appendChild(option);
-    }
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
   }
-  fillTimeOptions();
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
 
-  // ✅ 옵션별 입력 필드 활성/비활성 제어
-  function updateInputFields() {
-    const group = groupSelect.value;
+  // 점검 옵션에 따라 입력 필드 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
 
-    if(group === "1차점검" || group === "2차점검" || group === "3차점검" || group === "4차점검") {
-      hourSelect.disabled = false; hourSelect.required = true;
-      minuteSelect.disabled = false; minuteSelect.required = true;
-      productSelect.disabled = false; productSelect.required = true;
-      finalCheckFields.style.display = "none"; // 최종취합 필드 숨기기
-    } else if (group === "최종취합") {
-      hourSelect.disabled = true; minuteSelect.disabled = true;
-      finalCheckFields.style.display = "block"; // 통과수량, 검출수량 필드 보이기
-    }
-  }
-
-  groupSelect.addEventListener("change", updateInputFields);
-
-  // ✅ 저장 클릭 시
-  submitBtn.addEventListener("click", () => {
-    if (!groupSelect.value) {
-      alert("점검 옵션을 선택하세요.");
-      groupSelect.focus();
-      return;
-    }
-    if (!dateInput.value) {
-      alert("날짜를 선택하세요.");
-      dateInput.focus();
-      return;
-    }
-    if (!hourSelect.disabled && !hourSelect.value) {
-      alert("시간(시)을 선택하세요.");
-      hourSelect.focus();
-      return;
-    }
-    if (!minuteSelect.disabled && !minuteSelect.value) {
-      alert("시간(분)을 선택하세요.");
-      minuteSelect.focus();
-      return;
-    }
-    if (!productSelect.value) {
-      alert("대상 제품을 선택하세요.");
-      productSelect.focus();
-      return;
-    }
-
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
-        product: productSelect.value,
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        passCount: finalCheckFields.style.display === "block" ? document.getElementById("passCount").value : "",
-        detectCount: finalCheckFields.style.display === "block" ? document.getElementById("detectCount").value : ""
-      }
-    };
-
-    const scriptUrl = "https://script.google.com/macros/s/AKfycby5gXmOyosW_yyW9jR3P6wQyxL0MPCBmfl_gb0KkmCvpVU1vx4Y52woP-rKfLbUTZczhA/exec";
-
-    fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "magnet=" + encodeURIComponent(JSON.stringify(data))
-    })
-    .then(res => res.text())
-    .then(text => {
-      alert("서버 응답: " + text);
-      document.querySelector("form")?.reset();
-      dateInput.valueAsDate = new Date();
-      updateInputFields();
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
   });
 
-  // 페이지 초기 진입 시 상태 설정
-  updateInputFields();
+  // OX 항목 자동 생성
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  const oxContainer = document.getElementById("oxContainer");
+
+  oxItems.forEach(label => {
+    const oxSet = document.createElement("div");
+    oxSet.className = "ox-set";
+    oxSet.innerHTML = `
+      <div>${label}</div>
+      <div class="ox-buttons">
+        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+      </div>
+    `;
+    oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  const oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
+    }
+  });
+
+  // 폼 전송 처리
+ document.getElementById("magnetForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const form = e.target;
+
+  // 1) 활성화된 input/select 필수 입력 체크
+  const activeInputs = form.querySelectorAll("input, select");
+  for (const input of activeInputs) {
+    // display:none 이거나 비활성화된 input은 체크 안 함
+    if (input.offsetParent === null) continue;  // 부모가 display:none 인 경우 skip
+
+    // required 처리
+    if (!input.value) {
+      alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
+      input.focus();
+      return;
+    }
+  }
+
+  // 2) O/X 버튼 필수 선택 체크
+  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+  for (const label of oxItems) {
+    if (!(label in oxValues)) {
+      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+      // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
+      const btn = document.querySelector(`.ox[data-label="${label}"]`);
+      if (btn) btn.focus();
+      return;
+    }
+  }
+
+  // 3) 시간 시/분 분리
+  let hour = "";
+  let minute = "";
+  if (form.time.value) {
+    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
+    hour = timeParts[0] || "";
+    minute = timeParts[1] || "";
+  }
+
+  // 4) 데이터 객체 생성
+  const data = {
+    type: "magnet",
+    date: form.date.value,
+    option: form.option.value,
+    hour: hour,
+    minute: minute,
+    product: form.product.value,
+    passCount: form.querySelector('input[name="passCount"]')?.value || "",
+    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+    states: oxValues
+  };
+
+  const formData = new FormData();
+  formData.append("magnet", JSON.stringify(data));
+
+  try {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbwrspkat8meQL8n-8FA8cgBn953wBl4PpILAcYJwHcelEVsYnIY9KOA0AYHqXnA4WUfJQ/exec", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.text();
+    if (response.ok) {
+      alert("✅ 저장 완료:\n" + result);
+      form.reset();
+      dateInput.valueAsDate = new Date();
+      dateInput.classList.add("selected");
+      // 선택된 OX 버튼 초기화
+      oxValues = {};
+      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
+    } else {
+      alert("❌ 서버 오류:\n" + result);
+    }
+  } catch (err) {
+    alert("❌ 저장 중 오류 발생:\n" + err.message);
+    console.error("❌ 예외:", err);
+  }
+});
+
 </script>
+
 
 </body>
 </html>
