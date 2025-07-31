@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>금속검출 모니터링4</title>
+  <title>금속검출 모니터링</title>
   <style>
     body {
       padding-left: 20px;
@@ -80,7 +80,7 @@
   </style>
 </head>
 <body>
-  <h2>금속검출 모니터링4</h2>
+  <h2>금속검출 모니터링5</h2>
 
   <label for="date">날짜</label>
   <input type="date" id="date" required />
@@ -253,6 +253,8 @@
 
   // 저장 버튼 클릭 시 필수 항목 확인
   submitBtn.addEventListener("click", () => {
+    console.log("Submit clicked!"); // 디버깅용
+
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
       groupSelect.focus();
@@ -338,12 +340,16 @@
     })
     .then(res => res.text())
     .then(text => {
+      console.log("Response from server:", text); // 디버깅용
       alert("서버 응답: " + text);
       document.querySelector("form")?.reset();
       dateInput.valueAsDate = new Date();
       updateInputFields();
     })
-    .catch(err => alert("에러 발생: " + err.message));
+    .catch(err => {
+      console.error("Error:", err); // 에러 메시지 디버깅용
+      alert("에러 발생: " + err.message);
+    });
   });
 
   // 페이지 초기 진입 시 상태 설정
