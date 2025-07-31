@@ -32,10 +32,10 @@
     /* input, select 전체 스타일 통일 */
     input[type="number"], select, input[type="date"] {
       width: 100%;
-      padding: 8px 10px;          /* 좌우 패딩 균일하게 */
+      padding: 8px 10px;
       font-size: 18px;
       box-sizing: border-box;
-      height: 40px;               /* 높이 맞추기 */
+      height: 40px;
       border: 1px solid #ccc;
       border-radius: 4px;
       outline-offset: 0;
@@ -223,6 +223,15 @@
     }
   }
   fillTimeOptions();
+
+  // OX 버튼 클릭 시 활성화/비활성화
+  document.querySelectorAll(".ox-buttons button").forEach(button => {
+    button.addEventListener("click", () => {
+      const oxButtons = button.closest('.ox-buttons').querySelectorAll("button");
+      oxButtons.forEach(btn => btn.classList.remove("active"));
+      button.classList.add("active");
+    });
+  });
 
   // 점검 옵션 선택 시 필드 활성화
   function updateInputFields() {
