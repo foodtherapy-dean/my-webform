@@ -28,43 +28,13 @@
       font-size: 16px;
     }
 
-    /* 시/분 입력창 스타일 */
-    .time-container {
+    .inline-row {
       display: flex;
       gap: 10px;
     }
 
-    .time-container input {
-      width: 50px;
-    }
-
-    .time-select-container {
-      display: none;
-      position: absolute;
-      background-color: white;
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-top: 5px;
-      box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
-      z-index: 100;
-    }
-
-    .time-select-container button {
-      padding: 10px;
-      font-size: 16px;
-      width: 50px;
-      background-color: #f0f0f0;
-      border: 1px solid #ccc;
-      color: #333;
-      cursor: pointer;
-      transition: background-color 0.3s, color 0.3s;
-      border-radius: 4px;
-    }
-
-    .time-select-container button.selected {
-      background-color: #007bff;
-      color: white;
-      border-color: #0056b3;
+    .inline-row > div {
+      flex: 1;
     }
 
     button[type="submit"] {
@@ -104,46 +74,47 @@
 
     <div id="subInputs" style="display:none;">
       <label>시간</label>
-      <div class="time-container">
-        <input type="text" id="hourInput" placeholder="시(01~24)" readonly />
-        <input type="text" id="minuteInput" placeholder="분(00~50)" readonly />
-      </div>
-
-      <!-- 시/분 선택 UI -->
-      <div class="time-select-container" id="hourSelectContainer">
-        <button type="button" data-value="01">01</button>
-        <button type="button" data-value="02">02</button>
-        <button type="button" data-value="03">03</button>
-        <button type="button" data-value="04">04</button>
-        <button type="button" data-value="05">05</button>
-        <button type="button" data-value="06">06</button>
-        <button type="button" data-value="07">07</button>
-        <button type="button" data-value="08">08</button>
-        <button type="button" data-value="09">09</button>
-        <button type="button" data-value="10">10</button>
-        <button type="button" data-value="11">11</button>
-        <button type="button" data-value="12">12</button>
-        <button type="button" data-value="13">13</button>
-        <button type="button" data-value="14">14</button>
-        <button type="button" data-value="15">15</button>
-        <button type="button" data-value="16">16</button>
-        <button type="button" data-value="17">17</button>
-        <button type="button" data-value="18">18</button>
-        <button type="button" data-value="19">19</button>
-        <button type="button" data-value="20">20</button>
-        <button type="button" data-value="21">21</button>
-        <button type="button" data-value="22">22</button>
-        <button type="button" data-value="23">23</button>
-        <button type="button" data-value="24">24</button>
-      </div>
-
-      <div class="time-select-container" id="minuteSelectContainer">
-        <button type="button" data-value="00">00</button>
-        <button type="button" data-value="10">10</button>
-        <button type="button" data-value="20">20</button>
-        <button type="button" data-value="30">30</button>
-        <button type="button" data-value="40">40</button>
-        <button type="button" data-value="50">50</button>
+      <div class="inline-row">
+        <div>
+          <select id="hour" name="hour" required>
+            <option value="">시 선택</option>
+            <option value="01">01시</option>
+            <option value="02">02시</option>
+            <option value="03">03시</option>
+            <option value="04">04시</option>
+            <option value="05">05시</option>
+            <option value="06">06시</option>
+            <option value="07">07시</option>
+            <option value="08">08시</option>
+            <option value="09">09시</option>
+            <option value="10">10시</option>
+            <option value="11">11시</option>
+            <option value="12">12시</option>
+            <option value="13">13시</option>
+            <option value="14">14시</option>
+            <option value="15">15시</option>
+            <option value="16">16시</option>
+            <option value="17">17시</option>
+            <option value="18">18시</option>
+            <option value="19">19시</option>
+            <option value="20">20시</option>
+            <option value="21">21시</option>
+            <option value="22">22시</option>
+            <option value="23">23시</option>
+            <option value="24">24시</option>
+          </select>
+        </div>
+        <div>
+          <select id="minute" name="minute" required>
+            <option value="">분 선택</option>
+            <option value="00">00분</option>
+            <option value="10">10분</option>
+            <option value="20">20분</option>
+            <option value="30">30분</option>
+            <option value="40">40분</option>
+            <option value="50">50분</option>
+          </select>
+        </div>
       </div>
 
       <label>제품명
@@ -180,33 +151,6 @@
   </form>
 
 <script>
-  // 시/분 선택 UI 토글 및 값 설정
-  document.getElementById("hourInput").addEventListener("click", () => {
-    const container = document.getElementById("hourSelectContainer");
-    container.style.display = container.style.display === "none" || container.style.display === "" ? "block" : "none";
-    document.getElementById("minuteSelectContainer").style.display = "none"; // 분 UI는 숨김
-  });
-
-  document.getElementById("minuteInput").addEventListener("click", () => {
-    const container = document.getElementById("minuteSelectContainer");
-    container.style.display = container.style.display === "none" || container.style.display === "" ? "block" : "none";
-    document.getElementById("hourSelectContainer").style.display = "none"; // 시 UI는 숨김
-  });
-
-  // 선택된 시간 값 입력창에 반영
-  function setTimeValue(inputId, containerId) {
-    document.getElementById(containerId).addEventListener("click", (e) => {
-      if (e.target.tagName === "BUTTON") {
-        document.getElementById(inputId).value = e.target.dataset.value;
-        document.getElementById(containerId).style.display = "none"; // 선택 후 UI 숨김
-      }
-    });
-  }
-
-  // 시/분 값 설정
-  setTimeValue("hourInput", "hourSelectContainer");
-  setTimeValue("minuteInput", "minuteSelectContainer");
-
   // 점검 옵션에 따라 입력 필드 표시 제어
   document.getElementById("option").addEventListener("change", e => {
     const opt = e.target.value;
@@ -230,7 +174,7 @@
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>`;
+      </div>`; 
     oxContainer.appendChild(oxSet);
   });
 
@@ -239,8 +183,8 @@
     e.preventDefault();
     const form = e.target;
 
-    const hour = document.getElementById("hourInput").value;
-    const minute = document.getElementById("minuteInput").value;
+    const hour = document.getElementById("hour").value;
+    const minute = document.getElementById("minute").value;
 
     const data = {
       type: "test",
