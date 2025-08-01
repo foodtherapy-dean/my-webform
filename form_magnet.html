@@ -273,8 +273,9 @@
   // 3) 시간 시/분 분리
   let hour = "";
   let minute = "";
-  if (form.time.value) {
-    const timeParts = form.time.value.split(":");  // "11:00" → ["11", "00"]
+  const timeInput = form.querySelector("#time");
+  if (timeInput && timeInput.value) {
+    const timeParts = timeInput.value.split(":");  // "11:00" → ["11", "00"]
     hour = timeParts[0] || "";
     minute = timeParts[1] || "";
   }
