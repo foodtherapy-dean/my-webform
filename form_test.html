@@ -28,11 +28,6 @@
       font-size: 16px;
     }
 
-    select option:first-child {
-      color: #aaa;
-      font-style: italic;
-    }
-
     .inline-row {
       display: flex;
       gap: 10px;
@@ -81,32 +76,39 @@
       border-color: #0056b3;
     }
 
-    /* 시/분 선택 버튼 스타일 */
-    .time-select-container {
-      display: none;
-      margin-top: 10px;
-    }
-
-    .time-buttons {
+    /* 시/분 입력창 스타일 */
+    .time-container {
       display: flex;
       gap: 10px;
-      justify-content: center;
-      margin-top: 5px;
     }
 
-    .time-buttons button {
-      padding: 12px;
+    .time-container input {
+      width: 50px;
+    }
+
+    .time-select-container {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 5px;
+      box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .time-select-container button {
+      padding: 10px;
       font-size: 16px;
       width: 50px;
-      text-align: center;
       background-color: #f0f0f0;
       border: 1px solid #ccc;
+      color: #333;
       cursor: pointer;
       transition: background-color 0.3s, color 0.3s;
       border-radius: 4px;
     }
 
-    .time-buttons button.selected {
+    .time-select-container button.selected {
       background-color: #007bff;
       color: white;
       border-color: #0056b3;
@@ -149,14 +151,46 @@
 
     <div id="subInputs" style="display:none;">
       <label>시간</label>
-      <input type="text" id="timeDisplay" readonly placeholder="시/분 선택" />
-      <div class="time-select-container" id="timeSelectContainer">
-        <div class="time-buttons" id="hourButtons">
-          <!-- 시 버튼 자동 생성 -->
-        </div>
-        <div class="time-buttons" id="minuteButtons">
-          <!-- 분 버튼 자동 생성 -->
-        </div>
+      <div class="time-container">
+        <input type="text" id="hourInput" placeholder="시(01~24)" readonly />
+        <input type="text" id="minuteInput" placeholder="분(00~50)" readonly />
+      </div>
+
+      <!-- 시/분 선택 UI -->
+      <div class="time-select-container" id="hourSelectContainer">
+        <button type="button" data-value="01">01</button>
+        <button type="button" data-value="02">02</button>
+        <button type="button" data-value="03">03</button>
+        <button type="button" data-value="04">04</button>
+        <button type="button" data-value="05">05</button>
+        <button type="button" data-value="06">06</button>
+        <button type="button" data-value="07">07</button>
+        <button type="button" data-value="08">08</button>
+        <button type="button" data-value="09">09</button>
+        <button type="button" data-value="10">10</button>
+        <button type="button" data-value="11">11</button>
+        <button type="button" data-value="12">12</button>
+        <button type="button" data-value="13">13</button>
+        <button type="button" data-value="14">14</button>
+        <button type="button" data-value="15">15</button>
+        <button type="button" data-value="16">16</button>
+        <button type="button" data-value="17">17</button>
+        <button type="button" data-value="18">18</button>
+        <button type="button" data-value="19">19</button>
+        <button type="button" data-value="20">20</button>
+        <button type="button" data-value="21">21</button>
+        <button type="button" data-value="22">22</button>
+        <button type="button" data-value="23">23</button>
+        <button type="button" data-value="24">24</button>
+      </div>
+
+      <div class="time-select-container" id="minuteSelectContainer">
+        <button type="button" data-value="00">00</button>
+        <button type="button" data-value="10">10</button>
+        <button type="button" data-value="20">20</button>
+        <button type="button" data-value="30">30</button>
+        <button type="button" data-value="40">40</button>
+        <button type="button" data-value="50">50</button>
       </div>
 
       <label>제품명
@@ -193,45 +227,30 @@
   </form>
 
 <script>
-  // 날짜 기본값 설정 및 selected 적용
-  const dateInput = document.getElementById("date");
-  dateInput.valueAsDate = new Date();
-  dateInput.classList.add("selected");
-
-  // 시, 분 버튼 생성 함수
-  function createTimeButtons(id, values) {
-    const container = document.getElementById(id);
-    values.forEach(value => {
-      const btn = document.createElement("button");
-      btn.textContent = value;
-      btn.dataset.value = value;
-      container.appendChild(btn);
-    });
-  }
-
-  // 시, 분 버튼 생성 (시: 01~24, 분: 00~50 : 10분 단위)
-  createTimeButtons("hourButtons", Array.from({ length: 24 }, (_, i) => (i + 1).toString().padStart(2, "0")));
-  createTimeButtons("minuteButtons", Array.from({ length: 6 }, (_, i) => (i * 10).toString().padStart(2, "0")));
-
-  // 시/분 입력창 클릭 시 선택 UI 활성화
-  document.getElementById("timeDisplay").addEventListener("click", () => {
-    const container = document.getElementById("timeSelectContainer");
+  // 시/분 선택 UI 토글 및 값 설정
+  document.getElementById("hourInput").addEventListener("click", () => {
+    const container = document.getElementById("hourSelectContainer");
     container.style.display = container.style.display === "none" || container.style.display === "" ? "block" : "none";
   });
 
-  // 버튼 클릭 시 시/분 값 설정
-  function toggleButtonSelection(e, buttonGroup, inputField) {
-    const btn = e.target;
-    if (btn.tagName === "BUTTON") {
-      document.querySelectorAll(`#${buttonGroup} button`).forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      inputField.value = btn.dataset.value; // 선택한 값 입력창에 반영
-    }
+  document.getElementById("minuteInput").addEventListener("click", () => {
+    const container = document.getElementById("minuteSelectContainer");
+    container.style.display = container.style.display === "none" || container.style.display === "" ? "block" : "none";
+  });
+
+  // 선택된 시간 값 입력창에 반영
+  function setTimeValue(inputId, containerId) {
+    document.getElementById(containerId).addEventListener("click", (e) => {
+      if (e.target.tagName === "BUTTON") {
+        document.getElementById(inputId).value = e.target.dataset.value;
+        document.getElementById(containerId).style.display = "none"; // 선택 후 UI 숨김
+      }
+    });
   }
 
-  // 시, 분 선택 이벤트 리스너
-  document.getElementById("hourButtons").addEventListener("click", e => toggleButtonSelection(e, "hourButtons", document.getElementById("timeDisplay")));
-  document.getElementById("minuteButtons").addEventListener("click", e => toggleButtonSelection(e, "minuteButtons", document.getElementById("timeDisplay")));
+  // 시/분 값 설정
+  setTimeValue("hourInput", "hourSelectContainer");
+  setTimeValue("minuteInput", "minuteSelectContainer");
 
   // 점검 옵션에 따라 입력 필드 표시 제어
   document.getElementById("option").addEventListener("change", e => {
@@ -260,34 +279,13 @@
     oxContainer.appendChild(oxSet);
   });
 
-  // O/X 버튼 선택 시 .selected 토글
-  let oxValues = {};
-  document.addEventListener("click", e => {
-    if (e.target.classList.contains("ox")) {
-      const btn = e.target;
-      const label = btn.dataset.label;
-      oxValues[label] = btn.dataset.value;
-
-      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-        b.classList.toggle("selected", b === btn);
-      });
-    }
-  });
-
   // 폼 전송 처리
   document.getElementById("magnetForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     const form = e.target;
 
-    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-    const oxStates = {};
-    oxItems.forEach(label => {
-      const selectedBtn = document.querySelector(`.ox.selected[data-label="${label}"]`);
-      oxStates[label] = selectedBtn?.dataset.value || "";
-    });
-
-    const hour = document.querySelector("#hourButtons .selected")?.dataset.value || "";
-    const minute = document.querySelector("#minuteButtons .selected")?.dataset.value || "";
+    const hour = document.getElementById("hourInput").value;
+    const minute = document.getElementById("minuteInput").value;
 
     const data = {
       type: "test",
@@ -297,30 +295,13 @@
       minute,
       product: form.product.value,
       passCount: form.querySelector('input[name="passCount"]')?.value || "",
-      detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-      states: oxStates
+      detectCount: form.querySelector('input[name="detectCount"]')?.value || ""
     };
 
     console.log("전송 데이터:", data);
-
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxZqOGrQIjdRCACEA5Llg-eWgqekxDnt_0yah0NuitqTm-E2k_ZcW7erNhtrSKnA1kWBg/exec";
-
-    fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "test=" + encodeURIComponent(JSON.stringify(data))
-    })
-    .then(res => res.text())
-    .then(text => {
-      alert("서버 응답: " + text);
-      // ✅ 전송 후 입력폼 초기화
-      document.querySelector("form")?.reset();  // form 태그가 있다면 reset
-      // 날짜는 다시 오늘 날짜로
-      dateInput.valueAsDate = new Date();
-      updateInputFields(); // 필드 비활성화 재설정
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+    // 서버로 데이터 전송 처리
   });
 </script>
+
 </body>
 </html>
