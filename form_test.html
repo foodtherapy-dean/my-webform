@@ -217,6 +217,26 @@
   </form>
 
 <script>
+ // 날짜 기본값 설정 및 selected 적용
+  const dateInput = document.getElementById("date");
+  dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
+
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
+  }
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
+  
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("magnetForm");
   const dateInput = document.getElementById("date");
