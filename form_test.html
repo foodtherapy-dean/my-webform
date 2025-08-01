@@ -28,12 +28,75 @@
       font-size: 16px;
     }
 
+    select option:first-child {
+      color: #aaa;
+      font-style: italic;
+    }
+
     .inline-row {
       display: flex;
       gap: 10px;
     }
 
     .inline-row > div {
+      flex: 1;
+    }
+
+    .ox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .ox-set {
+      flex: 1 1 48%;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .ox-buttons button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      border-radius: 4px;
+    }
+
+    .ox-buttons button.selected {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
+
+    select.selected, input.selected {
+      border: 2px solid #007bff;
+      background-color: #e8f0fe;
+      font-weight: bold;
+    }
+
+    input[type="date"] {
+      font-size: 18px;
+    }
+
+    .number-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .number-row > div {
       flex: 1;
     }
 
@@ -73,49 +136,9 @@
     </label>
 
     <div id="subInputs" style="display:none;">
-      <label>시간</label>
-      <div class="inline-row">
-        <div>
-          <select id="hour" name="hour" required>
-            <option value="">시 선택</option>
-            <option value="01">01시</option>
-            <option value="02">02시</option>
-            <option value="03">03시</option>
-            <option value="04">04시</option>
-            <option value="05">05시</option>
-            <option value="06">06시</option>
-            <option value="07">07시</option>
-            <option value="08">08시</option>
-            <option value="09">09시</option>
-            <option value="10">10시</option>
-            <option value="11">11시</option>
-            <option value="12">12시</option>
-            <option value="13">13시</option>
-            <option value="14">14시</option>
-            <option value="15">15시</option>
-            <option value="16">16시</option>
-            <option value="17">17시</option>
-            <option value="18">18시</option>
-            <option value="19">19시</option>
-            <option value="20">20시</option>
-            <option value="21">21시</option>
-            <option value="22">22시</option>
-            <option value="23">23시</option>
-            <option value="24">24시</option>
-          </select>
-        </div>
-        <div>
-          <select id="minute" name="minute" required>
-            <option value="">분 선택</option>
-            <option value="00">00분</option>
-            <option value="10">10분</option>
-            <option value="20">20분</option>
-            <option value="30">30분</option>
-            <option value="40">40분</option>
-            <option value="50">50분</option>
-          </select>
-        </div>
-      </div>
+      <label>시간
+        <input type="time" id="time" name="time" />
+      </label>
 
       <label>제품명
         <select id="product" name="product">
@@ -151,6 +174,26 @@
   </form>
 
 <script>
+  // 날짜 기본값 설정 및 selected 적용
+  const dateInput = document.getElementById("date");
+  dateInput.valueAsDate = new Date();
+  dateInput.classList.add("selected");
+
+  // select와 time에 선택 시 .selected 적용
+  function applySelectedStyle(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener("change", () => {
+        if (el.value) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+    });
+  }
+  applySelectedStyle("select");
+  applySelectedStyle('input[type="time"]');
+
   // 점검 옵션에 따라 입력 필드 표시 제어
   document.getElementById("option").addEventListener("change", e => {
     const opt = e.target.value;
@@ -174,8 +217,22 @@
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>`; 
+      </div>`;
     oxContainer.appendChild(oxSet);
+  });
+
+  // O/X 버튼 선택 시 .selected 토글
+  let oxValues = {};
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("ox")) {
+      const btn = e.target;
+      const label = btn.dataset.label;
+      oxValues[label] = btn.dataset.value;
+
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
+    }
   });
 
   // 폼 전송 처리
@@ -183,8 +240,16 @@
     e.preventDefault();
     const form = e.target;
 
-    const hour = document.getElementById("hour").value;
-    const minute = document.getElementById("minute").value;
+    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+    const oxStates = {};
+    oxItems.forEach(label => {
+      const selectedBtn = document.querySelector(`.ox.selected[data-label="${label}"]`);
+      oxStates[label] = selectedBtn?.dataset.value || "";
+    });
+
+    const timeParts = form.time.value.split(":");
+    const hour = timeParts[0] || "";
+    const minute = timeParts[1] || "";
 
     const data = {
       type: "test",
@@ -194,13 +259,33 @@
       minute,
       product: form.product.value,
       passCount: form.querySelector('input[name="passCount"]')?.value || "",
-      detectCount: form.querySelector('input[name="detectCount"]')?.value || ""
+      detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+      states: oxStates
     };
 
     console.log("전송 데이터:", data);
-    // 서버로 데이터 전송 처리
-  });
-</script>
 
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxZqOGrQIjdRCACEA5Llg-eWgqekxDnt_0yah0NuitqTm-E2k_ZcW7erNhtrSKnA1kWBg/exec";
+
+    fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "test=" + encodeURIComponent(JSON.stringify(data))
+    })
+    .then(res => res.text())
+    .then(text => {
+      alert("서버 응답: " + text);
+      // ✅ 전송 후 입력폼 초기화
+      document.querySelector("form")?.reset();  // form 태그가 있다면 reset
+      // 날짜는 다시 오늘 날짜로
+      dateInput.valueAsDate = new Date();
+      updateInputFields(); // 필드 비활성화 재설정
+    })
+    .catch(err => alert("에러 발생: " + err.message));
+  });
+
+  // 페이지 초기 진입 시 상태 설정
+  updateInputFields();
+</script>
 </body>
 </html>
