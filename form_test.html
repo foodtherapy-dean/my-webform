@@ -82,6 +82,11 @@
     }
 
     /* 시/분 선택 버튼 스타일 */
+    .time-select-container {
+      display: none;
+      margin-top: 10px;
+    }
+
     .time-buttons {
       display: flex;
       gap: 10px;
@@ -144,11 +149,14 @@
 
     <div id="subInputs" style="display:none;">
       <label>시간</label>
-      <div class="time-buttons" id="hourButtons">
-        <!-- 시 버튼 자동 생성 -->
-      </div>
-      <div class="time-buttons" id="minuteButtons">
-        <!-- 분 버튼 자동 생성 -->
+      <input type="text" id="timeDisplay" readonly placeholder="시/분 선택" />
+      <div class="time-select-container" id="timeSelectContainer">
+        <div class="time-buttons" id="hourButtons">
+          <!-- 시 버튼 자동 생성 -->
+        </div>
+        <div class="time-buttons" id="minuteButtons">
+          <!-- 분 버튼 자동 생성 -->
+        </div>
       </div>
 
       <label>제품명
@@ -205,18 +213,25 @@
   createTimeButtons("hourButtons", Array.from({ length: 24 }, (_, i) => (i + 1).toString().padStart(2, "0")));
   createTimeButtons("minuteButtons", Array.from({ length: 6 }, (_, i) => (i * 10).toString().padStart(2, "0")));
 
-  // 버튼 선택 시 selected 클래스 추가
-  function toggleButtonSelection(e, buttonGroup) {
+  // 시/분 입력창 클릭 시 선택 UI 활성화
+  document.getElementById("timeDisplay").addEventListener("click", () => {
+    const container = document.getElementById("timeSelectContainer");
+    container.style.display = container.style.display === "none" || container.style.display === "" ? "block" : "none";
+  });
+
+  // 버튼 클릭 시 시/분 값 설정
+  function toggleButtonSelection(e, buttonGroup, inputField) {
     const btn = e.target;
     if (btn.tagName === "BUTTON") {
       document.querySelectorAll(`#${buttonGroup} button`).forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
+      inputField.value = btn.dataset.value; // 선택한 값 입력창에 반영
     }
   }
 
   // 시, 분 선택 이벤트 리스너
-  document.getElementById("hourButtons").addEventListener("click", e => toggleButtonSelection(e, "hourButtons"));
-  document.getElementById("minuteButtons").addEventListener("click", e => toggleButtonSelection(e, "minuteButtons"));
+  document.getElementById("hourButtons").addEventListener("click", e => toggleButtonSelection(e, "hourButtons", document.getElementById("timeDisplay")));
+  document.getElementById("minuteButtons").addEventListener("click", e => toggleButtonSelection(e, "minuteButtons", document.getElementById("timeDisplay")));
 
   // 점검 옵션에 따라 입력 필드 표시 제어
   document.getElementById("option").addEventListener("change", e => {
