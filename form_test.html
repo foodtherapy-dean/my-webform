@@ -81,15 +81,12 @@
       border-color: #0056b3;
     }
 
-    /* 🔧 선택된 select/input 요소 강조 */
-    select.selected,
-    input.selected {
+    select.selected, input.selected {
       border: 2px solid #007bff;
       background-color: #e8f0fe;
       font-weight: bold;
     }
 
-    /* 🔧 날짜 입력창 텍스트 확대 */
     input[type="date"] {
       font-size: 18px;
     }
@@ -216,12 +213,11 @@
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
     oxSet.innerHTML = 
-      <div>${label}</div>
+      `<div>${label}</div>
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>
-    ;
+      </div>`;
     oxContainer.appendChild(oxSet);
   });
 
@@ -233,7 +229,7 @@
       const label = btn.dataset.label;
       oxValues[label] = btn.dataset.value;
 
-      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
+      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
         b.classList.toggle("selected", b === btn);
       });
     }
@@ -241,31 +237,31 @@
 
   // 폼 전송 처리
   document.getElementById("magnetForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const form = e.target;
+    e.preventDefault();
+    const form = e.target;
 
-  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  const oxStates = {};
-  oxItems.forEach(label => {
-    const selectedBtn = document.querySelector(.ox.selected[data-label="${label}"]);
-    oxStates[label] = selectedBtn?.dataset.value || "";
-  });
+    const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+    const oxStates = {};
+    oxItems.forEach(label => {
+      const selectedBtn = document.querySelector(`.ox.selected[data-label="${label}"]`);
+      oxStates[label] = selectedBtn?.dataset.value || "";
+    });
 
-  const timeParts = form.time.value.split(":");
-  const hour = timeParts[0] || "";
-  const minute = timeParts[1] || "";
+    const timeParts = form.time.value.split(":");
+    const hour = timeParts[0] || "";
+    const minute = timeParts[1] || "";
 
-  const data = {
-    type: "test",
-    date: form.date.value,
-    option: form.option.value,
-    hour,
-    minute,
-    product: form.product.value,
-    passCount: form.querySelector('input[name="passCount"]')?.value || "",
-    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-    states: oxStates
-  };
+    const data = {
+      type: "test",
+      date: form.date.value,
+      option: form.option.value,
+      hour,
+      minute,
+      product: form.product.value,
+      passCount: form.querySelector('input[name="passCount"]')?.value || "",
+      detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+      states: oxStates
+    };
 
     console.log("전송 데이터:", data);
 
@@ -291,6 +287,5 @@
   // 페이지 초기 진입 시 상태 설정
   updateInputFields();
 </script>
-
 </body>
 </html>
