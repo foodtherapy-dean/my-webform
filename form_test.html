@@ -219,12 +219,42 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("magnetForm");
+  const dateInput = document.getElementById("date");
   const oxContainer = document.getElementById("oxContainer");
 
   // 날짜 자동입력
-  const dateInput = document.getElementById("date");
   dateInput.valueAsDate = new Date();
   dateInput.classList.add("selected");
+
+  // select와 time에 .selected 적용
+  function applySelectedStyle(selector) {
+  const elements = document.querySelectorAll(selector);
+
+  // elements가 존재하고 forEach 함수를 가졌는지 확인
+  if (!elements || typeof elements.forEach !== "function") {
+    console.warn("⚠️ forEach 호출 불가: ", selector, elements);
+    return;
+  }
+
+  elements.forEach(el => {
+    el.addEventListener("change", () => {
+      el.classList.toggle("selected", !!el.value);
+    });
+  });
+}
+  applySelectedStyle("select");
+ //applySelectedStyle('input[type="time"]');
+
+  // 점검 옵션에 따른 표시 제어
+  document.getElementById("option").addEventListener("change", e => {
+    const opt = e.target.value;
+    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+    const isSummary = opt === "최종취합";
+
+    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+    oxContainer.style.display = isSummary ? "none" : "block";
+  });
 
   // OX 항목 생성
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
@@ -232,13 +262,13 @@ document.addEventListener("DOMContentLoaded", () => {
   oxItems.forEach(label => {
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
-    oxSet.innerHTML = `
+    oxSet.innerHTML = 
       <div>${label}</div>
       <div class="ox-buttons">
         <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
       </div>
-    `;
+    ;
     oxContainer.appendChild(oxSet);
   });
 
@@ -247,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn = e.target;
       const label = btn.dataset.label;
       oxValues[label] = btn.dataset.value;
-      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+      document.querySelectorAll(.ox[data-label="${label}"]).forEach(b => {
         b.classList.toggle("selected", b === btn);
       });
     }
@@ -260,20 +290,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // 필수값 검증
     const activeInputs = form.querySelectorAll("input, select");
     for (const input of activeInputs) {
-      if (input.offsetParent === null) continue;  // 숨겨진 요소 제외
+      if (input.offsetParent === null) continue;
       if (!input.value) {
-        alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
+        alert(${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.);
         input.focus();
         return;
       }
     }
 
-    // OX 상태 검증
+    // OX 선택 검증
     const requiredLabels = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
     for (const label of requiredLabels) {
       if (!(label in oxValues)) {
-        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-        const btn = document.querySelector(`.ox[data-label="${label}"]`);
+        alert(검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.);
+        const btn = document.querySelector(.ox[data-label="${label}"]);
         if (btn) btn.focus();
         return;
       }
@@ -284,6 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const minute = document.getElementById("minute")?.value || "";
 
     const data = {
+      type: "test",
       date: form.date.value,
       option: form.option.value,
       hour,
@@ -307,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         alert("✅ 저장 완료:\n" + result);
         form.reset();
-        document.getElementById("date").valueAsDate = new Date(); // 날짜 초기화
+        document.getElementById("date").valueAsDate = new Date(); // 다시 날짜 지정
         oxValues = {};
         document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
       } else {
