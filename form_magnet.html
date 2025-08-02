@@ -315,9 +315,18 @@ document.getElementById("option").addEventListener("change", e => {
       form.reset();
       dateInput.valueAsDate = new Date();
       dateInput.classList.add("selected");
+      // 옵션 초기화
+  form.option.value = "";
+  form.option.classList.remove("selected");
+
+  // 서브 입력창 숨기기
+  document.getElementById("subInputs").style.display = "none";
+  document.getElementById("summaryInputs").style.display = "none";
       // 선택된 OX 버튼 초기화
       oxValues = {};
       document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
+      // 모든 input/select에서 .selected 제거
+  form.querySelectorAll(".selected").forEach(el => el.classList.remove("selected"));
     } else {
       alert("❌ 서버 오류:\n" + result);
     }
