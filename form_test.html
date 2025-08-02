@@ -198,15 +198,20 @@
   applySelectedStyle('input[type="time"]');
 
   // 점검 옵션에 따라 입력 필드 표시 제어
-  document.getElementById("option").addEventListener("change", e => {
-    const opt = e.target.value;
-    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-    const isSummary = opt === "최종취합";
+document.getElementById("option").addEventListener("change", e => {
+  const opt = e.target.value;
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const isSummary = opt === "최종취합";
 
-    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
-  });
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+
+  // 최종취합일 경우 oxValues를 비워둡니다
+  if (isSummary) {
+    oxValues = {}; // OX 선택을 비우고
+  }
+});
 
   // OX 항목 자동 생성
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
