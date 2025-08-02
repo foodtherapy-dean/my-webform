@@ -121,7 +121,7 @@
   </style>
 </head>
 <body>
-  <h2>금속검출 점검test</h2>
+  <h2>금속검출 점검test1</h2>
   <form id="magnetForm">
     <label>날짜
       <input type="date" id="date" name="date" />
@@ -263,15 +263,17 @@ document.getElementById("option").addEventListener("change", e => {
     }
   }
 
-  // 2) O/X 버튼 필수 선택 체크
+   // 2) O/X 버튼 필수 선택 체크 (최종취합 옵션이 아닐 경우에만 체크)
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  for (const label of oxItems) {
-    if (!(label in oxValues)) {
-      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-      // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
-      const btn = document.querySelector(`.ox[data-label="${label}"]`);
-      if (btn) btn.focus();
-      return;
+  if (form.option.value !== "최종취합") {  // 최종취합이 아니면 OX 체크
+    for (const label of oxItems) {
+      if (!(label in oxValues)) {
+        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+        // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
+        const btn = document.querySelector(`.ox[data-label="${label}"]`);
+        if (btn) btn.focus();
+        return;
+      }
     }
   }
 
