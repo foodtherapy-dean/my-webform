@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>금속검출 점검</title>
+  <title>금속검출 점검test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -121,7 +121,7 @@
   </style>
 </head>
 <body>
-  <h2>금속검출 점검</h2>
+  <h2>금속검출 점검test2</h2>
   <form id="magnetForm">
     <label>날짜
       <input type="date" id="date" name="date" />
@@ -198,15 +198,20 @@
   applySelectedStyle('input[type="time"]');
 
   // 점검 옵션에 따라 입력 필드 표시 제어
-  document.getElementById("option").addEventListener("change", e => {
-    const opt = e.target.value;
-    const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-    const isSummary = opt === "최종취합";
+document.getElementById("option").addEventListener("change", e => {
+  const opt = e.target.value;
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const isSummary = opt === "최종취합";
 
-    document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-    document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-    document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
-  });
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
+
+  // 최종취합일 경우 oxValues를 비워둡니다
+  if (isSummary) {
+    oxValues = {}; // OX 선택을 비우고
+  }
+});
 
   // OX 항목 자동 생성
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
@@ -226,7 +231,7 @@
   });
 
   // O/X 버튼 선택 시 .selected 토글
-  const oxValues = {};
+  let oxValues = {};  // 변수 선언
   document.addEventListener("click", e => {
     if (e.target.classList.contains("ox")) {
       const btn = e.target;
@@ -258,15 +263,17 @@
     }
   }
 
-  // 2) O/X 버튼 필수 선택 체크
+   // 2) O/X 버튼 필수 선택 체크 (최종취합 옵션이 아닐 경우에만 체크)
   const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  for (const label of oxItems) {
-    if (!(label in oxValues)) {
-      alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-      // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
-      const btn = document.querySelector(`.ox[data-label="${label}"]`);
-      if (btn) btn.focus();
-      return;
+  if (form.option.value !== "최종취합") {  // 최종취합이 아니면 OX 체크
+    for (const label of oxItems) {
+      if (!(label in oxValues)) {
+        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
+        // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
+        const btn = document.querySelector(`.ox[data-label="${label}"]`);
+        if (btn) btn.focus();
+        return;
+      }
     }
   }
 
@@ -282,7 +289,7 @@
 
   // 4) 데이터 객체 생성
   const data = {
-    type: "magnet",
+    type: "data",
     date: form.date.value,
     option: form.option.value,
     hour: hour,
@@ -294,10 +301,10 @@
   };
 
   const formData = new FormData();
-  formData.append("data", JSON.stringify(data));
+  formData.append("test", JSON.stringify(data));
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxZQ2Ez1iSC50chMsiztQJarxfXmbXVZ3-_G6aE9I1VJ-79lSrltXl-9cks1KpJ2eucvA/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec", {
       method: "POST",
       body: formData
     });
