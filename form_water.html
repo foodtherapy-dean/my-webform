@@ -5,25 +5,91 @@
   <title>지하수 검침기록</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto; }
-    label, input { display: block; width: 100%; font-size: 18px; margin: 5px 0; padding: 8px; }
-    button { background-color: #4CAF50; color: white; padding: 12px; width: 100%; font-size: 18px; margin-top: 20px; border: none; border-radius: 4px; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-header {
+  flex: 0 0 auto;
+  background-color: #2196F3;
+  color: white;
+  text-align: center;
+  padding: 16px;
+  font-size: 1.5rem;
+}
+
+.app-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+}
+
+.app-footer {
+  flex: 0 0 auto;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+input[type="date"],
+input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  box-sizing: border-box;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+button[type="submit"] {
+  width: 100%;
+  font-size: 1.4rem;
+  padding: 18px 0;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background-color: #45a049;
+}
   </style>
 </head>
 <body>
-  <h1>💧 지하수 검침</h1>
-  <form id="waterForm">
-    <label for="date">📅 날짜</label>
-    <input type="date" id="date" required>
+  <div class="app-container">
+    <div class="app-header">💧 지하수 검침</div>
 
-    <label for="value">🔢 수치 (m³)</label>
-    <input type="number" id="value" min="0" required>
+    <form id="waterForm" class="app-body">
+      <label for="date">📅 날짜</label>
+      <input type="date" id="date" required>
 
-    <button type="submit">📥 서버로 전송</button>
-  </form>
+      <label for="value">🔢 수치 (m³)</label>
+      <input type="number" id="value" min="0" required>
+    </form>
+
+    <div class="app-footer">
+      <button type="submit" form="waterForm">📥 서버로 전송</button>
+    </div>
+  </div>
 
   <script>
-    // ✅ 오늘 날짜 자동 입력
     document.getElementById("date").valueAsDate = new Date();
 
     document.getElementById("waterForm").addEventListener("submit", async function(e) {
@@ -31,6 +97,11 @@
 
       const date = document.getElementById("date").value;
       const value = parseFloat(document.getElementById("value").value);
+
+      if (!date || isNaN(value)) {
+        alert("날짜와 수치를 모두 입력하세요.");
+        return;
+      }
 
       const data = { date, value };
       const formData = new FormData();
@@ -43,7 +114,13 @@
         });
 
         const result = await response.text();
-        alert("✅ 저장 완료!\n\n" + result);
+        if (response.ok) {
+          alert("✅ 저장 완료!\n\n" + result);
+          document.getElementById("waterForm").reset();
+          document.getElementById("date").valueAsDate = new Date();
+        } else {
+          alert("❌ 서버 오류:\n\n" + result);
+        }
       } catch (err) {
         alert("❌ 오류 발생:\n\n" + err.message);
       }
