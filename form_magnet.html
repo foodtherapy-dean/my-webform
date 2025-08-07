@@ -156,7 +156,7 @@ input.selected {
     </label>
 
     <div id="subInputs" style="display:none;">
-      <label>시간
+      <label id="timeLabel">시간
         <input type="time" id="time" name="time" />
       </label>
 
@@ -222,6 +222,10 @@ document.getElementById("option").addEventListener("change", e => {
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
   document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
   document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
+  const timeLabel = document.getElementById("timeLabel");
+  if (timeLabel) {
+    timeLabel.style.display = isSummary ? "none" : "block";
+  }
 
   if (isSummary) oxValues = {};
 });
