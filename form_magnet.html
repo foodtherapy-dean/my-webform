@@ -214,8 +214,10 @@ applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
 
 // 점검 옵션 변경 시 입력 필드 표시 제어
-document.getElementById("option").addEventListener("change", e => {
+document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
+  const date = document.getElementById("date").value;  // ✅ 이 줄 추가
+
   const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
 
@@ -228,7 +230,8 @@ document.getElementById("option").addEventListener("change", e => {
   }
 
   if (isSummary) oxValues = {};
-// ✅ 날짜/옵션 없으면 중단
+
+  // ✅ 날짜/옵션 없으면 중단
   if (!opt || !date) return;
 
   try {
@@ -236,14 +239,12 @@ document.getElementById("option").addEventListener("change", e => {
     const result = await res.json();
 
     if (result.success) {
-      // ✅ 웹폼에 값 채우기
       if (!isSummary) {
         if (result.hour && result.minute) {
           document.getElementById("time").value = `${String(result.hour).padStart(2, '0')}:${String(result.minute).padStart(2, '0')}`;
         }
         if (result.product) document.getElementById("product").value = result.product;
 
-        // OX 상태 복원
         oxValues = result.states || {};
         for (const label of oxItems) {
           const value = oxValues[label];
@@ -266,6 +267,7 @@ document.getElementById("option").addEventListener("change", e => {
     console.error("❌ 조회 오류:", err.message);
   }
 });
+
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
