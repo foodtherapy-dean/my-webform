@@ -197,12 +197,10 @@ input.selected {
 </div>
 
 <script>
-// 날짜 기본값 설정 및 selected 적용
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
-// select, time 입력 시 selected 효과
 function applySelectedStyle(selector) {
   document.querySelectorAll(selector).forEach(el => {
     el.addEventListener("change", () => {
@@ -212,23 +210,6 @@ function applySelectedStyle(selector) {
 }
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
-
-// 점검 옵션 변경 시 입력 필드 표시 제어
-document.getElementById("option").addEventListener("change", e => {
-  const opt = e.target.value;
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-  const isSummary = opt === "최종취합";
-
-  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-  const timeLabel = document.getElementById("timeLabel");
-  if (timeLabel) {
-    timeLabel.style.display = isSummary ? "none" : "block";
-  }
-
-  if (isSummary) oxValues = {};
-});
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
@@ -260,12 +241,62 @@ document.addEventListener("click", e => {
   }
 });
 
-// 폼 제출 처리
+// 점검 옵션 선택 시 조회 및 UI 표시
+document.getElementById("option").addEventListener("change", async e => {
+  const opt = e.target.value;
+  const date = document.getElementById("date").value;
+
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const isSummary = opt === "최종취합";
+
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
+  const timeLabel = document.getElementById("timeLabel");
+  if (timeLabel) timeLabel.style.display = isSummary ? "none" : "block";
+  if (isSummary) oxValues = {};
+
+  // 조회 기능 실행
+  if (date && opt) {
+    try {
+      const query = `?date=${encodeURIComponent(date)}&option=${encodeURIComponent(opt)}`;
+      const response = await fetch(`https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec${query}`);
+      const result = await response.json();
+
+      if (result) {
+        // 시간
+        if (result.hour && result.minute) {
+          document.getElementById("time").value = `${result.hour.padStart(2, "0")}:${result.minute.padStart(2, "0")}`;
+        } else {
+          document.getElementById("time").value = "";
+        }
+
+        // 제품명, 수량
+        document.getElementById("product").value = result.product || "";
+        document.querySelector('input[name="passCount"]').value = result.passCount || "";
+        document.querySelector('input[name="detectCount"]').value = result.detectCount || "";
+
+        // OX 상태 복원
+        oxValues = result.states || {};
+        for (const label in oxValues) {
+          const value = oxValues[label];
+          document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(btn => {
+            btn.classList.toggle("selected", btn.dataset.value === value);
+          });
+        }
+      }
+    } catch (err) {
+      console.error("조회 실패", err);
+      alert("❌ 조회 실패: 서버 오류");
+    }
+  }
+});
+
+// 폼 제출
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
 
-  // 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
@@ -276,7 +307,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // OX 선택 필수 체크 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
@@ -287,7 +317,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
   if (timeInput && timeInput.value) {
@@ -333,5 +362,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 });
 </script>
+
 </body>
 </html>
