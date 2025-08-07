@@ -259,7 +259,7 @@ document.getElementById("option").addEventListener("change", async e => {
   // 조회 기능 실행
   if (date && opt) {
     try {
-      const query = `?date=${encodeURIComponent(date)}&option=${encodeURIComponent(opt)}`;
+      const query = `?date=${encodeURIComponent(fixedDate)}&group=${encodeURIComponent(opt)}`;
       const response = await fetch(`https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec${query}`);
       const result = await response.json();
 
