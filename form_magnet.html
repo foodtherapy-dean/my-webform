@@ -197,12 +197,14 @@ input.selected {
 </div>
 
 <script>
-// 날짜 기본값 설정 및 selected 적용
+/* -----------------------------
+   1. 날짜 기본값 설정
+----------------------------- */
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
-// select, time 입력 시 selected 효과
+/* select/time 입력 시 selected 클래스 추가 */
 function applySelectedStyle(selector) {
   document.querySelectorAll(selector).forEach(el => {
     el.addEventListener("change", () => {
@@ -213,49 +215,16 @@ function applySelectedStyle(selector) {
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
 
-// 점검 옵션 변경 시 입력 필드 표시 제어
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec"; // 본인 웹앱 URL
-
-document.getElementById("option").addEventListener("change", function() {
-  const date = document.getElementById("date").value;
-  const option = this.value;
-
-  if (!date || !option) {
-    console.warn("날짜와 옵션을 먼저 선택하세요.");
-    return;
-  }
-
-  const url = `${SCRIPT_URL}?mode=getMagnetData&date=${encodeURIComponent(date)}&option=${encodeURIComponent(option)}`;
-
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        console.log("조회 성공", data);
-
-        // 폼 채우기
-        document.getElementById("hour").value = data.hour || "";
-        document.getElementById("minute").value = data.minute || "";
-        document.getElementById("product").value = data.product || "";
-        document.getElementById("passCount").value = data.passCount || "";
-        document.getElementById("detectCount").value = data.detectCount || "";
-
-        // OX 값 채우기
-        for (const [label, value] of Object.entries(data.states)) {
-          const el = document.querySelector(`[name="ox_${label}"]`);
-          if (el) el.value = value;
-        }
-
-      } else {
-        console.warn(data.message);
-        // 데이터 없으면 폼 초기화
-        document.querySelectorAll("input").forEach(input => input.value = "");
-      }
-    })
-    .catch(err => console.error("조회 실패", err));
-});
-// OX 항목 생성
+/* -----------------------------
+   2. 전역변수
+----------------------------- */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec"; 
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+let oxValues = {};
+
+/* -----------------------------
+   3. OX 항목 생성
+----------------------------- */
 const oxContainer = document.getElementById("oxContainer");
 oxItems.forEach(label => {
   const oxSet = document.createElement("div");
@@ -270,8 +239,9 @@ oxItems.forEach(label => {
   oxContainer.appendChild(oxSet);
 });
 
-// OX 선택 처리
-let oxValues = {};
+/* -----------------------------
+   4. OX 버튼 선택 처리
+----------------------------- */
 document.addEventListener("click", e => {
   if (e.target.classList.contains("ox")) {
     const btn = e.target;
@@ -284,12 +254,64 @@ document.addEventListener("click", e => {
   }
 });
 
-// 폼 제출 처리
+/* -----------------------------
+   5. 옵션 변경 시 : UI 표시 + 데이터 조회
+----------------------------- */
+document.getElementById("option").addEventListener("change", function() {
+  const date = document.getElementById("date").value;
+  const option = this.value;
+
+  // (1) 옵션별 입력창 표시
+  document.getElementById("subInputs").style.display = (option === "1차" || option === "2차") ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = (option === "최종취합") ? "block" : "none";
+
+  // (2) 날짜/옵션이 없으면 중단
+  if (!date || !option) {
+    console.warn("날짜와 옵션을 먼저 선택하세요.");
+    return;
+  }
+
+  // (3) 데이터 조회
+  const url = `${SCRIPT_URL}?mode=getMagnetData&date=${encodeURIComponent(date)}&option=${encodeURIComponent(option)}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        console.log("조회 성공", data);
+
+        // 값 채우기
+        document.getElementById("hour").value = data.hour || "";
+        document.getElementById("minute").value = data.minute || "";
+        document.getElementById("product").value = data.product || "";
+        document.getElementById("passCount").value = data.passCount || "";
+        document.getElementById("detectCount").value = data.detectCount || "";
+
+        // OX 값 채우기
+        oxValues = {}; // 초기화
+        for (const [label, value] of Object.entries(data.states || {})) {
+          oxValues[label] = value;
+          document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
+            b.classList.toggle("selected", b.dataset.value === value);
+          });
+        }
+      } else {
+        console.warn(data.message);
+        document.querySelectorAll("input").forEach(input => input.value = "");
+        oxValues = {};
+        document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
+      }
+    })
+    .catch(err => console.error("조회 실패", err));
+});
+
+/* -----------------------------
+   6. 폼 제출 처리 (저장)
+----------------------------- */
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
 
-  // 활성화된 input/select 필수 입력 체크
+  // (1) 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
@@ -300,24 +322,24 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // OX 선택 필수 체크 (최종취합 제외)
+  // (2) OX 선택 필수 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
         alert(`검출 상태 '${label}'의 O 또는 X를 선택하세요.`);
-        document.querySelector(`.ox[data-label="${label}"]`)?.focus();
         return;
       }
     }
   }
 
-  // 시간 분리
+  // (3) 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
   if (timeInput && timeInput.value) {
     [hour, minute] = timeInput.value.split(":");
   }
 
+  // (4) 데이터 구성
   const data = {
     type: "data",
     date: form.date.value,
@@ -332,12 +354,9 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   const formData = new FormData();
   formData.append("magnet", JSON.stringify(data));
 
+  // (5) 저장 요청
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec", {
-      method: "POST",
-      body: formData
-    });
-
+    const response = await fetch(SCRIPT_URL, { method: "POST", body: formData });
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
@@ -357,5 +376,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 });
 </script>
+
 </body>
 </html>
