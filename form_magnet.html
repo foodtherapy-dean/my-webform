@@ -174,7 +174,8 @@ input.selected {
 
       <label>검출 상태</label>
       <div class="ox-group" id="oxContainer">
-        </div>
+        <!-- JS에서 자동 생성 -->
+      </div>
     </div>
 
     <div id="summaryInputs" style="display:none;">
@@ -196,9 +197,6 @@ input.selected {
 </div>
 
 <script>
-// Google Apps Script 웹 앱 URL
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxqVBMFTAqYFEGHsAi0H7ygxEF-OXkND69KbBDWGOUrLotitb89mr3oo4FBvBj4G_yOcw/exec";
-
 // 날짜 기본값 설정 및 selected 적용
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
@@ -214,6 +212,23 @@ function applySelectedStyle(selector) {
 }
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
+
+// 점검 옵션 변경 시 입력 필드 표시 제어
+document.getElementById("option").addEventListener("change", e => {
+  const opt = e.target.value;
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const isSummary = opt === "최종취합";
+
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
+  const timeLabel = document.getElementById("timeLabel");
+  if (timeLabel) {
+    timeLabel.style.display = isSummary ? "none" : "block";
+  }
+
+  if (isSummary) oxValues = {};
+});
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
@@ -245,99 +260,11 @@ document.addEventListener("click", e => {
   }
 });
 
-// 폼 초기화 함수
-function resetForm() {
-  const form = document.getElementById("magnetForm");
-  form.reset();
-  dateInput.valueAsDate = new Date();
-  dateInput.classList.add("selected");
-  form.option.value = "";
-  oxValues = {};
-  document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-  document.getElementById("subInputs").style.display = "none";
-  document.getElementById("summaryInputs").style.display = "none";
-}
-
-// 스프레드시트 데이터 불러오기 함수
-async function checkAndLoadData(date, option) {
-  if (!date || !option) {
-    return;
-  }
-
-  const data = {
-    type: "check", // 데이터 조회 요청임을 구분하기 위한 타입
-    date,
-    option
-  };
-
-  try {
-    const response = await fetch(`${GAS_URL}?data=${encodeURIComponent(JSON.stringify(data))}`);
-    const result = await response.json(); // JSON 형식으로 응답 받기
-
-    if (response.ok && result.status === "success") {
-      // 데이터가 존재할 경우
-      alert("✅ 저장된 데이터를 불러옵니다.");
-      const loadedData = result.data;
-      
-      // 폼 필드에 값 채우기
-      document.getElementById("time").value = loadedData.time || "";
-      document.getElementById("product").value = loadedData.product || "";
-      document.querySelector('input[name="passCount"]').value = loadedData.passCount || "";
-      document.querySelector('input[name="detectCount"]').value = loadedData.detectCount || "";
-      
-      // OX 버튼 선택 상태 업데이트
-      oxValues = loadedData.states || {};
-      document.querySelectorAll(".ox").forEach(btn => {
-        const label = btn.dataset.label;
-        const value = btn.dataset.value;
-        btn.classList.toggle("selected", oxValues[label] === value);
-      });
-      
-    } else {
-      // 데이터가 없을 경우
-      alert("⚠️ 일치하는 데이터가 없습니다. 신규 입력하세요.");
-      // 폼 필드 초기화 (날짜, 옵션 제외)
-      document.getElementById("time").value = "";
-      document.getElementById("product").value = "";
-      document.querySelector('input[name="passCount"]').value = "";
-      document.querySelector('input[name="detectCount"]').value = "";
-      oxValues = {};
-      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-    }
-    
-  } catch (err) {
-    alert("❌ 데이터 조회 중 오류 발생:\n" + err.message);
-  }
-}
-
-// 점검 옵션 변경 시 입력 필드 표시 및 데이터 로드 제어
-document.getElementById("option").addEventListener("change", e => {
-  const opt = e.target.value;
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-  const isSummary = opt === "최종취합";
-
-  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-  const timeLabel = document.getElementById("timeLabel");
-  if (timeLabel) {
-    timeLabel.style.display = isSummary ? "none" : "block";
-  }
-
-  if (isSummary) oxValues = {};
-  
-  // 날짜와 옵션이 모두 선택되었을 때만 데이터 로드 함수 호출
-  if (dateInput.value && opt) {
-    checkAndLoadData(dateInput.value, opt);
-  }
-});
-
 // 폼 제출 처리
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
-  
-  // ... (기존 제출 로직 그대로 유지) ...
+
   // 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
@@ -382,7 +309,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   formData.append("magnet", JSON.stringify(data));
 
   try {
-    const response = await fetch(GAS_URL, {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbxqVBMFTAqYFEGHsAi0H7ygxEF-OXkND69KbBDWGOUrLotitb89mr3oo4FBvBj4G_yOcw/exec", {
       method: "POST",
       body: formData
     });
@@ -390,7 +317,14 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      resetForm();
+      form.reset();
+      dateInput.valueAsDate = new Date();
+      dateInput.classList.add("selected");
+      form.option.value = "";
+      oxValues = {};
+      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
+      document.getElementById("subInputs").style.display = "none";
+      document.getElementById("summaryInputs").style.display = "none";
     } else {
       alert("❌ 서버 오류:\n" + result);
     }
@@ -398,7 +332,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     alert("❌ 저장 중 오류 발생:\n" + err.message);
   }
 });
-
 </script>
 </body>
 </html>
