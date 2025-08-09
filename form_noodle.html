@@ -108,25 +108,27 @@ input[type="number"], select, input[type="date"] {
       <option value="시스템OFF">시스템OFF</option>
     </select>
 
-    <div class="inline-row">
+    <!-- 시간 입력 -->
+    <div class="inline-row" id="timeRow">
       <div>
         <label for="hour">시간 (시)</label>
-        <select id="hour" required></select>
+        <select id="hour"></select>
       </div>
       <div>
         <label for="minute">시간 (분)</label>
-        <select id="minute" required></select>
+        <select id="minute"></select>
       </div>
     </div>
 
-    <div class="inline-row">
+    <!-- 온도 / 습도 입력 -->
+    <div class="inline-row" id="thRow">
       <div>
         <label for="temp">온도(℃)</label>
-        <input type="number" id="temp" step="0.1" min="0" max="100" disabled />
+        <input type="number" id="temp" step="0.1" min="0" max="100" />
       </div>
       <div>
         <label for="humidity">습도(%)</label>
-        <input type="number" id="humidity" step="0.1" min="0" max="100" disabled />
+        <input type="number" id="humidity" step="0.1" min="0" max="100" />
       </div>
     </div>
   </div>
@@ -145,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const tempInput = document.getElementById("temp");
   const humidityInput = document.getElementById("humidity");
   const submitBtn = document.getElementById("submitBtn");
+  const timeRow = document.getElementById("timeRow");
+  const thRow = document.getElementById("thRow");
 
   // 날짜 오늘 날짜로 자동 입력
   dateInput.valueAsDate = new Date();
@@ -165,30 +169,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 점검 옵션 변경 시 필드 활성/비활성
+  // 점검 옵션 변경 시 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
 
-    if(group === "시스템ON" || group === "시스템OFF") {
-      hourSelect.disabled = false;
-      minuteSelect.disabled = false;
-      tempInput.disabled = true; tempInput.value = "";
-      humidityInput.disabled = true; humidityInput.value = "";
-    } else if(group === "1차점검" || group === "2차점검") {
-      hourSelect.disabled = false;
-      minuteSelect.disabled = false;
-      tempInput.disabled = false;
-      humidityInput.disabled = false;
+    if (group === "시스템ON" || group === "시스템OFF") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "none";
+      tempInput.value = "";
+      humidityInput.value = "";
+    } else if (group === "1차점검" || group === "2차점검") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "flex";
     } else {
-      hourSelect.disabled = true;
-      minuteSelect.disabled = true;
-      tempInput.disabled = true; tempInput.value = "";
-      humidityInput.disabled = true; humidityInput.value = "";
+      timeRow.style.display = "none";
+      thRow.style.display = "none";
+      hourSelect.value = "";
+      minuteSelect.value = "";
+      tempInput.value = "";
+      humidityInput.value = "";
     }
-
-    // 시/분 초기화
-    hourSelect.value = "";
-    minuteSelect.value = "";
   }
 
   groupSelect.addEventListener("change", updateInputFields);
@@ -204,25 +204,29 @@ document.addEventListener('DOMContentLoaded', () => {
       dateInput.focus();
       return;
     }
-    if (!hourSelect.disabled && !hourSelect.value) {
-      alert("시간(시)을 선택하세요.");
-      hourSelect.focus();
-      return;
+    if (timeRow.style.display !== "none") {
+      if (!hourSelect.value) {
+        alert("시간(시)을 선택하세요.");
+        hourSelect.focus();
+        return;
+      }
+      if (!minuteSelect.value) {
+        alert("시간(분)을 선택하세요.");
+        minuteSelect.focus();
+        return;
+      }
     }
-    if (!minuteSelect.disabled && !minuteSelect.value) {
-      alert("시간(분)을 선택하세요.");
-      minuteSelect.focus();
-      return;
-    }
-    if (!tempInput.disabled && !tempInput.value) {
-      alert("온도를 입력하세요.");
-      tempInput.focus();
-      return;
-    }
-    if (!humidityInput.disabled && !humidityInput.value) {
-      alert("습도를 입력하세요.");
-      humidityInput.focus();
-      return;
+    if (thRow.style.display !== "none") {
+      if (!tempInput.value) {
+        alert("온도를 입력하세요.");
+        tempInput.focus();
+        return;
+      }
+      if (!humidityInput.value) {
+        alert("습도를 입력하세요.");
+        humidityInput.focus();
+        return;
+      }
     }
 
     const data = {
@@ -238,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log("전송 데이터:", data);
 
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxqVBMFTAqYFEGHsAi0H7ygxEF-OXkND69KbBDWGOUrLotitb89mr3oo4FBvBj4G_yOcw/exec";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec";
 
     fetch(scriptUrl, {
       method: "POST",
@@ -259,6 +263,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
-
 </body>
 </html>
