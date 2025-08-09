@@ -239,7 +239,7 @@ document.getElementById("option").addEventListener("change", async e => {
     console.error("중복 체크 오류:", err);
   }
 
-  // 기존 표시 제어 로직 유지
+  // 기존 UI 표시 제어
   const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
@@ -251,6 +251,7 @@ document.getElementById("option").addEventListener("change", async e => {
   }
   if (isSummary) oxValues = {};
 });
+
 
 
 // OX 항목 생성
