@@ -197,9 +197,6 @@ input.selected {
 </div>
 
 <script>
-// --- 설정: 웹앱 URL (여기를 본인 GAS 배포 URL로 유지하세요) ---
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec";
-
 // 날짜 기본값 설정 및 selected 적용
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
@@ -215,6 +212,47 @@ function applySelectedStyle(selector) {
 }
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
+
+// 점검 옵션 변경 시 입력 필드 표시 제어
+document.getElementById("option").addEventListener("change", async e => {
+  const opt = e.target.value;
+  const dateVal = document.getElementById("date").value;
+
+  if (!opt || !dateVal) return; // 날짜나 옵션이 비어있으면 패스
+
+  try {
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
+    const url = "https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec?checkMagnet=" + query;
+    
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.exists) {
+      const proceed = confirm(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`);
+      if (!proceed) {
+        e.target.value = ""; // 옵션 선택 해제
+        e.target.focus();
+        return; // 아래 UI 표시 로직 실행 안 함
+      }
+    }
+  } catch (err) {
+    console.error("중복 체크 오류:", err);
+  }
+
+  // 기존 UI 표시 제어
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const isSummary = opt === "최종취합";
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
+  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
+  const timeLabel = document.getElementById("timeLabel");
+  if (timeLabel) {
+    timeLabel.style.display = isSummary ? "none" : "block";
+  }
+  if (isSummary) oxValues = {};
+});
+
+
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
@@ -246,126 +284,7 @@ document.addEventListener("click", e => {
   }
 });
 
-// 폼을 기존 데이터로 채우는 헬퍼
-function populateFormWithExisting(existing) {
-  const form = document.getElementById("magnetForm");
-  if (!existing) return;
-  // 날짜(입력은 yyyy-MM-dd 형식으로)
-  if (existing.date) {
-    // existing.date가 Date 객체 또는 문자열일 수 있으니 안전하게 처리
-    try {
-      // existing.date가 이미 'yyyy-MM-dd'일 경우 그대로 사용
-      const d = new Date(existing.date);
-      if (!isNaN(d.getTime())) {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        form.date.value = `${yyyy}-${mm}-${dd}`;
-      } else {
-        form.date.value = existing.date;
-      }
-    } catch (err) {
-      form.date.value = existing.date;
-    }
-  }
-
-  // 옵션은 이미 선택된 상태(옵션 변경 흐름에서 호출) — 하지만 안전하게 설정
-  if (existing.option) form.option.value = existing.option;
-
-  // 시간
-  if (existing.hour !== undefined && existing.minute !== undefined && existing.hour !== "" && existing.minute !== "") {
-    form.querySelector('#time').value = `${String(existing.hour).padStart(2,"0")}:${String(existing.minute).padStart(2,"0")}`;
-  } else {
-    form.querySelector('#time').value = "";
-  }
-
-  // 제품
-  if (existing.product !== undefined) form.product.value = existing.product || "";
-
-  // 숫자들
-  if (existing.passCount !== undefined) form.querySelector('input[name="passCount"]').value = existing.passCount;
-  if (existing.detectCount !== undefined) form.querySelector('input[name="detectCount"]').value = existing.detectCount;
-
-  // OX
-  oxValues = existing.states || {};
-  document.querySelectorAll(".ox").forEach(btn => {
-    const label = btn.dataset.label;
-    btn.classList.toggle("selected", oxValues[label] === btn.dataset.value);
-  });
-}
-
-// 점검 옵션 변경 시 입력 필드 표시 + 중복 조회 및 confirm/불러오기
-document.getElementById("option").addEventListener("change", async e => {
-  const opt = e.target.value;
-  const dateVal = document.getElementById("date").value;
-
-  if (!opt || !dateVal) {
-    // UI 숨김 처리
-    document.getElementById("subInputs").style.display = "none";
-    document.getElementById("summaryInputs").style.display = "none";
-    document.getElementById("oxContainer").style.display = "none";
-    return;
-  }
-
-  // 먼저 중복 조회
-  try {
-    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-    const url = WEBAPP_URL + "?checkMagnet=" + query;
-
-    const res = await fetch(url);
-    const result = await res.json();
-
-    // 서버가 { exists: true } 또는 전체 데이터 객체를 반환할 수 있도록 대응
-    const exists = (result && (result.exists === true || result.date || result.product || result.hour !== undefined));
-
-    if (exists) {
-      // confirm: 불러오기 여부 (사용자 요청대로 '불러오기' 동작)
-      const load = confirm(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n기존 데이터를 불러오시겠습니까? (확인=불러오기, 취소=새로입력)`);
-
-      if (!load) {
-        // 사용자가 취소하면 옵션 리셋 및 포커스
-        e.target.value = "";
-        e.target.focus();
-        return;
-      }
-
-      // 사용자가 '확인'을 누르면 서버가 보낸 result(행 데이터)를 폼에 채움
-      // (만약 서버가 단순 {exists:true}만 반환한다면 불러올 데이터가 없으니 경고)
-      if (result && (result.product !== undefined || result.passCount !== undefined || result.detectCount !== undefined || result.states !== undefined || result.hour !== undefined)) {
-        populateFormWithExisting(result);
-      } else {
-        // 서버가 간단한 exists만 주는 경우: 알림
-        alert("중복 데이터는 존재하지만, 서버에서 상세 데이터를 반환하지 않습니다. 서버측 handleMagnetCheck를 전체 행 데이터를 반환하도록 수정해 주세요.");
-      }
-
-      // UI 표시: 불러온 데이터에 맞춰서 sub/summary 노출
-      const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-      const isSummary = opt === "최종취합";
-      document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-      document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-      document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-      const timeLabel = document.getElementById("timeLabel");
-      if (timeLabel) timeLabel.style.display = isSummary ? "none" : "block";
-
-      return;
-    }
-  } catch (err) {
-    console.error("중복 체크 오류:", err);
-    // 오류 발생해도 폼 사용 가능하게 UI 처리 계속
-  }
-
-  // 중복 없을 때 기존 UI 표시 로직
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-  const isSummary = opt === "최종취합";
-  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-  const timeLabel = document.getElementById("timeLabel");
-  if (timeLabel) timeLabel.style.display = isSummary ? "none" : "block";
-  if (isSummary) oxValues = {};
-});
-
-// 폼 제출 처리: 기존 서버로 magnet JSON 전송 (원래 로직 유지)
+// 폼 제출 처리
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const form = e.target;
@@ -373,7 +292,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   // 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
-    if (input.offsetParent === null) continue; // 숨겨진 요소는 건너뜀
+    if (input.offsetParent === null) continue;
     if (!input.value) {
       alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 입력하세요.`);
       input.focus();
@@ -414,14 +333,14 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   formData.append("magnet", JSON.stringify(data));
 
   try {
-    const response = await fetch(WEBAPP_URL, {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec", {
       method: "POST",
       body: formData
     });
 
-    const resultText = await response.text();
+    const result = await response.text();
     if (response.ok) {
-      alert("✅ 저장 완료:\n" + resultText);
+      alert("✅ 저장 완료:\n" + result);
       form.reset();
       dateInput.valueAsDate = new Date();
       dateInput.classList.add("selected");
@@ -431,7 +350,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
       document.getElementById("subInputs").style.display = "none";
       document.getElementById("summaryInputs").style.display = "none";
     } else {
-      alert("❌ 서버 오류:\n" + resultText);
+      alert("❌ 서버 오류:\n" + result);
     }
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
