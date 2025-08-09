@@ -150,6 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
 
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec";
+
   // 날짜 오늘 날짜로 자동 입력
   dateInput.valueAsDate = new Date();
 
@@ -160,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const val = h.toString().padStart(2, "0");
       hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
-
     minuteSelect.innerHTML = '<option value=""></option>';
     for(let m=0; m<=60; m+=10) {
       const val = m.toString().padStart(2, "0");
@@ -172,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 점검 옵션 변경 시 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
-
     if (group === "시스템ON" || group === "시스템OFF") {
       timeRow.style.display = "flex";
       thRow.style.display = "none";
@@ -190,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
       humidityInput.value = "";
     }
   }
-
   groupSelect.addEventListener("change", updateInputFields);
 
   submitBtn.addEventListener("click", () => {
@@ -240,28 +239,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    console.log("전송 데이터:", data);
-
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbwpvOoM3Y_z16NUU9iLK8rmwVPKFq5AIrNa8TgFTXTP-6YrcqwjRj_0vyTK_3UkfOgJBQ/exec";
-
-    fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-    })
-    .then(res => res.text())
-    .then(text => {
-      alert("서버 응답: " + text);
-      dateInput.valueAsDate = new Date();
-      groupSelect.value = "";
-      updateInputFields();
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+    // 1️⃣ 중복 체크
+    fetch(scriptUrl + "?checkNoodle=" + encodeURIComponent(JSON.stringify({ date: data.date, group: data.group })))
+      .then(res => res.json())
+      .then(result => {
+        if (result.exists) {
+          if (!confirm("이미 같은 날짜와 점검옵션의 데이터가 있습니다.\n수정하시겠습니까?")) {
+            return;
+          }
+        }
+        // 2️⃣ 저장 진행
+        return fetch(scriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "noodle=" + encodeURIComponent(JSON.stringify(data))
+        });
+      })
+      .then(res => res && res.text())
+      .then(text => {
+        if (text) alert("서버 응답: " + text);
+        dateInput.valueAsDate = new Date();
+        groupSelect.value = "";
+        updateInputFields();
+      })
+      .catch(err => alert("에러 발생: " + err.message));
   });
 
-  // 초기 상태 설정
   updateInputFields();
 });
 </script>
+
 </body>
 </html>
