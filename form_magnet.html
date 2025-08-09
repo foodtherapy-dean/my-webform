@@ -214,11 +214,31 @@ applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
 
 // 점검 옵션 변경 시 입력 필드 표시 제어
-document.getElementById("option").addEventListener("change", e => {
+document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
+  const dateVal = document.getElementById("date").value;
+
+  if (!opt || !dateVal) return; // 날짜나 옵션이 비어있으면 패스
+
+  try {
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
+    const url = "https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec?checkMagnet=" + query;
+    
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.exists) {
+      alert(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n확인 후 다시 입력해주세요.`);
+      e.target.value = ""; // 옵션 선택 해제
+      e.target.focus();
+    }
+  } catch (err) {
+    console.error("중복 체크 오류:", err);
+  }
+
+  // 기존 표시 제어 로직 유지
   const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
-
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
   document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
   document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
@@ -226,7 +246,6 @@ document.getElementById("option").addEventListener("change", e => {
   if (timeLabel) {
     timeLabel.style.display = isSummary ? "none" : "block";
   }
-
   if (isSummary) oxValues = {};
 });
 
