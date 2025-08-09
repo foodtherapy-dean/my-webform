@@ -222,15 +222,18 @@ document.getElementById("option").addEventListener("change", async e => {
 
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-    const url = "https://script.google.com/macros/s/AKfycbzivXLkNX2ZSJSPOp_zHkxIW_y4yt8k3t7_9SubbE_JkWlMAv5s9MjjagqW5c3I6V5nPg/exec?checkMagnet=" + query;
+    const url = "https://script.google.com/macros/s/AKfycbw3G7DPaJpx-fLtyfaYnnlxi6gZPo5-IauAlt4R4zurmOL6qojqIFYGt0Pd6eaWdCNyDg/exec?checkMagnet=" + query;
     
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.exists) {
-      alert(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n확인 후 다시 입력해주세요.`);
-      e.target.value = ""; // 옵션 선택 해제
-      e.target.focus();
+      const proceed = confirm(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`);
+      if (!proceed) {
+        e.target.value = ""; // 옵션 선택 해제
+        e.target.focus();
+        return; // 아래 UI 표시 로직 실행 안 함
+      }
     }
   } catch (err) {
     console.error("중복 체크 오류:", err);
@@ -248,6 +251,7 @@ document.getElementById("option").addEventListener("change", async e => {
   }
   if (isSummary) oxValues = {};
 });
+
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
