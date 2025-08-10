@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const val = h.toString().padStart(2, "0");
       hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
+
     minuteSelect.innerHTML = '<option value=""></option>';
     for(let m=0; m<=60; m+=10) {
       const val = m.toString().padStart(2, "0");
@@ -173,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 점검 옵션 변경 시 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
+
     if (group === "시스템ON" || group === "시스템OFF") {
       timeRow.style.display = "flex";
       thRow.style.display = "none";
@@ -190,9 +192,22 @@ document.addEventListener('DOMContentLoaded', () => {
       humidityInput.value = "";
     }
   }
+
   groupSelect.addEventListener("change", updateInputFields);
 
-  submitBtn.addEventListener("click", () => {
+  // 중복 확인 함수
+  async function checkDuplicate(date, group) {
+    try {
+      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
+      return await res.json();
+    } catch (err) {
+      console.error("중복 확인 오류:", err);
+      return { exists: false, error: err.message };
+    }
+  }
+
+  // 저장 버튼 클릭 이벤트
+  submitBtn.addEventListener("click", async () => {
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
       groupSelect.focus();
@@ -228,6 +243,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // ===== 중복 확인 실행 =====
+    const dupCheck = await checkDuplicate(dateInput.value, groupSelect.value);
+    if (dupCheck.exists) {
+      alert("⚠️ 이미 같은 날짜와 옵션이 존재합니다.");
+      return;
+    }
+
+    // ===== 전송 데이터 구성 =====
     const data = {
       date: dateInput.value,
       group: groupSelect.value,
@@ -239,35 +262,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // 1️⃣ 중복 체크
-    fetch(scriptUrl + "?checkNoodle=" + encodeURIComponent(JSON.stringify({ date: data.date, group: data.group })))
-      .then(res => res.json())
-      .then(result => {
-        if (result.exists) {
-          if (!confirm("이미 같은 날짜와 점검옵션의 데이터가 있습니다.\n수정하시겠습니까?")) {
-            return;
-          }
-        }
-        // 2️⃣ 저장 진행
-        return fetch(scriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-        });
-      })
-      .then(res => res && res.text())
-      .then(text => {
-        if (text) alert("서버 응답: " + text);
-        dateInput.valueAsDate = new Date();
-        groupSelect.value = "";
-        updateInputFields();
-      })
-      .catch(err => alert("에러 발생: " + err.message));
+    console.log("전송 데이터:", data);
+
+    // ===== 데이터 전송 =====
+    fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
+    })
+    .then(res => res.text())
+    .then(text => {
+      alert("서버 응답: " + text);
+      dateInput.valueAsDate = new Date();
+      groupSelect.value = "";
+      updateInputFields();
+    })
+    .catch(err => alert("에러 발생: " + err.message));
   });
 
+  // 초기 상태 설정
   updateInputFields();
 });
 </script>
-
 </body>
 </html>
