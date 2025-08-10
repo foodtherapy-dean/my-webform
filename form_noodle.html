@@ -158,12 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 시 / 분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
+    for (let h = 1; h <= 24; h++) {
       const val = h.toString().padStart(2, "0");
       hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
     minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
+    for (let m = 0; m <= 60; m += 10) {
       const val = m.toString().padStart(2, "0");
       minuteSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function checkDuplicate(date, group) {
     try {
       const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
-      return await res.json();
+      return await res.json(); // { exists: true/false, data: {...} }
     } catch (err) {
       console.error("중복 확인 오류:", err);
       return { exists: false, error: err.message };
@@ -203,31 +203,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 옵션 변경 시: 필드 표시 + 중복 확인
- groupSelect.addEventListener("change", async () => {
-  const dateVal = dateInput.value;
-  const opt = groupSelect.value;
+  groupSelect.addEventListener("change", async () => {
+    const dateVal = dateInput.value;
+    const opt = groupSelect.value;
 
-  if (dateVal && opt) {
-    // 1. 먼저 중복 체크
-    const dupCheck = await checkDuplicate(dateVal, opt);
+    if (dateVal && opt) {
+      // 1. 먼저 중복 체크
+      const dupCheck = await checkDuplicate(dateVal, opt);
 
-    if (dupCheck.exists) {
-      const proceed = confirm(
-        `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
-      );
+      if (dupCheck.exists) {
+        const proceed = confirm(
+          `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
+        );
 
-      if (!proceed) {
-        groupSelect.value = ""; // 옵션 초기화
-        updateInputFields();    // 입력창 닫기
-        return; // 여기서 중단
+        if (!proceed) {
+          groupSelect.value = ""; // 옵션 초기화
+          updateInputFields();    // 입력창 닫기
+          return; // 중단
+        } else {
+          // 기존 데이터 채우기
+          if (dupCheck.data) {
+            hourSelect.value = dupCheck.data.hour || "";
+            minuteSelect.value = dupCheck.data.minute || "";
+            tempInput.value = dupCheck.data.temp || "";
+            humidityInput.value = dupCheck.data.humidity || "";
+          }
+        }
       }
-      // proceed가 true면 → 계속 입력 가능
     }
-  }
 
-  // 2. 중복이 없거나 계속 입력 선택 시 필드 표시/숨김
-  updateInputFields();
-});
+    // 2. 중복이 없거나 계속 입력 선택 시 필드 표시
+    updateInputFields();
+  });
 
   // 저장 버튼 클릭 이벤트
   submitBtn.addEventListener("click", async () => {
@@ -282,19 +289,20 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "noodle=" + encodeURIComponent(JSON.stringify(data))
     })
-    .then(res => res.text())
-    .then(text => {
-      alert("서버 응답: " + text);
-      dateInput.valueAsDate = new Date();
-      groupSelect.value = "";
-      updateInputFields();
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+      .then(res => res.text())
+      .then(text => {
+        alert("서버 응답: " + text);
+        dateInput.valueAsDate = new Date();
+        groupSelect.value = "";
+        updateInputFields();
+      })
+      .catch(err => alert("에러 발생: " + err.message));
   });
 
   // 초기 상태
   updateInputFields();
 });
+
 </script>
 
 </body>
