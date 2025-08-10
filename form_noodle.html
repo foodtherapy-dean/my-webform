@@ -203,39 +203,42 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 옵션 변경 시: 필드 표시 + 중복 확인
-  groupSelect.addEventListener("change", async () => {
-    const dateVal = dateInput.value;
-    const opt = groupSelect.value;
+groupSelect.addEventListener("change", async () => {
+  const dateVal = dateInput.value;
+  const opt = groupSelect.value;
 
-    if (dateVal && opt) {
-      // 1. 먼저 중복 체크
-      const dupCheck = await checkDuplicate(dateVal, opt);
+  if (dateVal && opt) {
+    // 1. 먼저 중복 체크
+    const dupCheck = await checkDuplicate(dateVal, opt);
 
-      if (dupCheck.exists) {
-        const proceed = confirm(
-          `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n자료를 가져오시겠습니까?`
-        );
+    if (dupCheck.exists) {
+      const proceed = confirm(
+        `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n자료를 가져오시겠습니까?`
+      );
 
-        if (!proceed) {
-          groupSelect.value = ""; // 옵션 초기화
-          updateInputFields();    // 입력창 닫기
-          return; // 중단
+      if (!proceed) {
+        groupSelect.value = ""; // 옵션 초기화
+        updateInputFields();    // 입력창 닫기
+        return; // 중단
+      } else {
+        // 기존 데이터 채우기
+        if (dupCheck.data) {
+          updateInputFields(); // 필드 표시 먼저
+          hourSelect.value = dupCheck.data.hour || "";
+          minuteSelect.value = dupCheck.data.minute || "";
+          tempInput.value = dupCheck.data.temp || "";
+          humidityInput.value = dupCheck.data.humi || "";
         } else {
-          // 기존 데이터 채우기
-          if (dupCheck.data) {
-            hourSelect.value = dupCheck.data.hour || "";
-            minuteSelect.value = dupCheck.data.minute || "";
-            tempInput.value = dupCheck.data.temp || "";
-            humidityInput.value = dupCheck.data.humi || "";
-          }
+          updateInputFields(); // 데이터 없을 때만 초기화
         }
+        return; // 중복 있는 경우 처리 끝
       }
     }
+  }
 
-    // 2. 중복이 없거나 계속 입력 선택 시 필드 표시
-    updateInputFields();
-  });
-
+  // 2. 중복이 없을 때만 필드 표시/초기화
+  updateInputFields();
+});
   // 저장 버튼 클릭 이벤트
   submitBtn.addEventListener("click", async () => {
     if (!groupSelect.value) {
