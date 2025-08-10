@@ -203,17 +203,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 옵션 변경 시: 필드 표시 + 중복 확인
-  groupSelect.addEventListener("change", async () => {
-    updateInputFields();
+ groupSelect.addEventListener("change", async () => {
+  if (dateInput.value && groupSelect.value) {
+    // 1. 먼저 중복 체크
+    const dupCheck = await checkDuplicate(dateInput.value, groupSelect.value);
 
-    if (dateInput.value && groupSelect.value) {
-      const dupCheck = await checkDuplicate(dateInput.value, groupSelect.value);
-      if (dupCheck.exists) {
-        alert("⚠️ 이미 같은 날짜와 옵션이 존재합니다.");
-        // 여기에 기존 데이터 자동 채우기 로직도 넣을 수 있음
-      }
+    if (dupCheck.exists) {
+      alert("⚠️ 이미 같은 날짜와 옵션이 존재합니다.");
+      groupSelect.value = ""; // 옵션 다시 선택하도록 초기화
+      return; // 여기서 멈춤 → 입력창 안 열림
     }
-  });
+  }
+
+  // 2. 중복이 없으면 필드 표시/숨김
+  updateInputFields();
+});
 
   // 저장 버튼 클릭 이벤트
   submitBtn.addEventListener("click", async () => {
