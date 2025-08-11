@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링5</title>
+<title>건면공정 모니터링6</title>
 <style>
 body, html {
   margin: 0;
@@ -222,10 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (proceed) {
           // 기존 데이터 폼에 채우기
-          hourSelect.value = dupCheck.data.hour || "";
-          minuteSelect.value = dupCheck.data.minute || "";
-          tempInput.value = dupCheck.data.temp || "";
-          humidityInput.value = dupCheck.data.humi || "";
+          // 중복확인 후에만 값을 업데이트 합니다.
+          if (!hourSelect.value) hourSelect.value = dupCheck.data.hour || "";
+          if (!minuteSelect.value) minuteSelect.value = dupCheck.data.minute || "";
+          if (!tempInput.value) tempInput.value = dupCheck.data.temp || "";
+          if (!humidityInput.value) humidityInput.value = dupCheck.data.humi || "";
         } else {
           // 사용자가 새로 입력 원할 경우 초기화
           hourSelect.value = "";
