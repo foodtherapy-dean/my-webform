@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 입력 필드 표시/숨김
+  // 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
     if (group === "시스템ON" || group === "시스템OFF") {
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 서버에 중복 데이터 확인 요청
+  // 중복 확인 함수
   async function checkDuplicate(date, group) {
     try {
       const res = await fetch(
@@ -223,17 +223,24 @@ document.addEventListener('DOMContentLoaded', () => {
           minuteSelect.value = dupCheck.data.minute || "";
           tempInput.value = dupCheck.data.temp || "";
           humidityInput.value = dupCheck.data.humi || "";
+
+          // 필드 활성화
+          updateInputFields();  // 여기서 필드를 활성화하도록 호출
         } else {
           // 사용자가 새로 입력 원할 경우 초기화
           hourSelect.value = "";
           minuteSelect.value = "";
           tempInput.value = "";
           humidityInput.value = "";
+          
+          // 필드 비활성화
+          updateInputFields(); // 새로 입력을 시작하려면 필드를 비활성화
         }
+      } else {
+        // 중복되지 않으면 필드를 활성화
+        updateInputFields();
       }
     }
-
-    updateInputFields();
   });
 
   // 저장 버튼 클릭 시
@@ -299,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => alert("에러 발생: " + err.message));
   });
 
+  // 초기화
   updateInputFields();
 });
 </script>
