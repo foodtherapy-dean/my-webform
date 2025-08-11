@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링4</title>
+<title>건면공정 모니터링5</title>
 <style>
 body, html {
   margin: 0;
@@ -209,6 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateVal = dateInput.value; // yyyy-MM-dd
     const opt = groupSelect.value;
 
+    // 1. 먼저 입력창을 활성화
+    updateInputFields();
+
     if (dateVal && opt) {
       const dupCheck = await checkDuplicate(dateVal, opt);
 
@@ -223,22 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
           minuteSelect.value = dupCheck.data.minute || "";
           tempInput.value = dupCheck.data.temp || "";
           humidityInput.value = dupCheck.data.humi || "";
-
-          // 필드 활성화
-          updateInputFields();  // 기존 데이터를 가져온 후 필드를 활성화하도록 호출
         } else {
           // 사용자가 새로 입력 원할 경우 초기화
           hourSelect.value = "";
           minuteSelect.value = "";
           tempInput.value = "";
           humidityInput.value = "";
-
-          // 필드 비활성화
-          updateInputFields(); // 새로 입력을 시작하려면 필드를 비활성화
         }
-      } else {
-        // 중복되지 않으면 필드를 활성화
-        updateInputFields();
       }
     }
   });
@@ -317,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 
 
 
