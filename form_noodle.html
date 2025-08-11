@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링2</title>
+<title>건면공정 모니터링3</title>
 <style>
 body, html {
   margin: 0;
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
           minuteSelect.value = "";
           tempInput.value = "";
           humidityInput.value = "";
-          
+
           // 필드 비활성화
           updateInputFields(); // 새로 입력을 시작하려면 필드를 비활성화
         }
@@ -291,6 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
+    // 중복 데이터를 덮어쓰기 전에 확인
+    const dupCheck = await checkDuplicate(data.date, data.group);
+    if (dupCheck.exists) {
+      const confirmOverwrite = confirm("이미 동일한 데이터가 있습니다. 덮어쓰시겠습니까?");
+      if (!confirmOverwrite) return; // 덮어쓰지 않으면 중단
+    }
+
     fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -310,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 
 
 
