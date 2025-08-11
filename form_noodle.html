@@ -152,10 +152,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec";
 
-  // 오늘 날짜 자동 입력
+  // 오늘 날짜 기본값
   dateInput.valueAsDate = new Date();
 
-  // 시 / 분 옵션 채우기
+  // 시/분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
     for (let h = 1; h <= 24; h++) {
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 필드 표시/숨김
+  // 입력 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
     if (group === "시스템ON" || group === "시스템OFF") {
@@ -191,10 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 중복 확인 함수
+  // 서버에 중복 데이터 확인 요청
   async function checkDuplicate(date, group) {
     try {
-      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
+      const res = await fetch(
+        `${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group }))
+      );
       return await res.json();
     } catch (err) {
       console.error("중복 확인 오류:", err);
@@ -202,29 +204,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 옵션 변경 시 이벤트
+  // 그룹 변경 시 중복 확인 후 데이터 자동 입력
   groupSelect.addEventListener("change", async () => {
-    const dateVal = dateInput.value;
+    const dateVal = dateInput.value; // yyyy-MM-dd
     const opt = groupSelect.value;
 
     if (dateVal && opt) {
       const dupCheck = await checkDuplicate(dateVal, opt);
 
       if (dupCheck.exists) {
-        const proceed = confirm(
-          `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
-        );
+        if (dupCheck.data) {
+          const proceed = confirm(
+            `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n기존 데이터를 불러오시겠습니까?`
+          );
 
-        if (!proceed) {
-          groupSelect.value = "";
-          updateInputFields();
-          return;
-        } else if (dupCheck.data) {
-          // 기존 데이터 폼에 채우기
-          hourSelect.value = dupCheck.data.hour || "";
-          minuteSelect.value = dupCheck.data.minute || "";
-          tempInput.value = dupCheck.data.temp || "";
-          humidityInput.value = dupCheck.data.humi || "";
+          if (proceed) {
+            // 기존 데이터 폼에 채우기
+            hourSelect.value = dupCheck.data.hour || "";
+            minuteSelect.value = dupCheck.data.minute || "";
+            tempInput.value = dupCheck.data.temp || "";
+            humidityInput.value = dupCheck.data.humi || "";
+          } else {
+            // 사용자가 새로 입력 원할 경우 초기화
+            hourSelect.value = "";
+            minuteSelect.value = "";
+            tempInput.value = "";
+            humidityInput.value = "";
+          }
         }
       }
     }
@@ -232,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateInputFields();
   });
 
-  // 저장 버튼
+  // 저장 버튼 클릭 시
   submitBtn.addEventListener("click", async () => {
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
