@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 그룹 변경 시 중복 확인 후 데이터 자동 입력
+  // 그룹 변경 시 이벤트 - 중복 확인 후 메시지 및 기존 데이터 불러오기
   groupSelect.addEventListener("change", async () => {
     const dateVal = dateInput.value; // yyyy-MM-dd
     const opt = groupSelect.value;
@@ -213,24 +213,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const dupCheck = await checkDuplicate(dateVal, opt);
 
       if (dupCheck.exists) {
-        if (dupCheck.data) {
-          const proceed = confirm(
-            `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n기존 데이터를 불러오시겠습니까?`
-          );
+        const proceed = confirm(
+          `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n기존 데이터를 불러오시겠습니까?`
+        );
 
-          if (proceed) {
-            // 기존 데이터 폼에 채우기
-            hourSelect.value = dupCheck.data.hour || "";
-            minuteSelect.value = dupCheck.data.minute || "";
-            tempInput.value = dupCheck.data.temp || "";
-            humidityInput.value = dupCheck.data.humi || "";
-          } else {
-            // 사용자가 새로 입력 원할 경우 초기화
-            hourSelect.value = "";
-            minuteSelect.value = "";
-            tempInput.value = "";
-            humidityInput.value = "";
-          }
+        if (proceed) {
+          // 기존 데이터 폼에 채우기
+          hourSelect.value = dupCheck.data.hour || "";
+          minuteSelect.value = dupCheck.data.minute || "";
+          tempInput.value = dupCheck.data.temp || "";
+          humidityInput.value = dupCheck.data.humi || "";
+        } else {
+          // 사용자가 새로 입력 원할 경우 초기화
+          hourSelect.value = "";
+          minuteSelect.value = "";
+          tempInput.value = "";
+          humidityInput.value = "";
         }
       }
     }
@@ -304,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 
 </body>
 </html>
