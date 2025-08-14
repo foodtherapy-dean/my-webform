@@ -204,31 +204,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 옵션 변경 시: 필드 표시 + 중복 확인
- groupSelect.addEventListener("change", async () => {
-  const dateVal = dateInput.value;
-  const opt = groupSelect.value;
+  groupSelect.addEventListener("change", async () => {
+    const dateVal = dateInput.value;
+    const opt = groupSelect.value;
 
-  if (dateVal && opt) {
-    // 1. 먼저 중복 체크
-    const dupCheck = await checkDuplicate(dateVal, opt);
+    if (dateVal && opt) {
+      const dupCheck = await checkDuplicate(dateVal, opt);
 
-    if (dupCheck.exists) {
-      const proceed = confirm(
-        `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
-      );
+      if (dupCheck.exists) {
+        const proceed = confirm(
+          `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
+        );
 
-      if (!proceed) {
-        groupSelect.value = ""; // 옵션 초기화
-        updateInputFields();    // 입력창 닫기
-        return; // 여기서 중단
+        if (!proceed) {
+          groupSelect.value = "";
+          updateInputFields();
+          return;
+        }
       }
-      // proceed가 true면 → 계속 입력 가능
     }
-  }
-
-  // 2. 중복이 없거나 계속 입력 선택 시 필드 표시/숨김
-  updateInputFields();
-});
+    updateInputFields();
+  });
 
   // 저장 버튼 클릭 이벤트
   submitBtn.addEventListener("click", async () => {
@@ -267,6 +263,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // 저장 전에 중복 확인 다시 실행
+    const dupCheck = await checkDuplicate(dateInput.value, groupSelect.value);
+    if (dupCheck.exists) {
+      const proceed = confirm(
+        `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${groupSelect.value})의 데이터가 존재합니다.\n덮어쓰시겠습니까?`
+      );
+      if (!proceed) {
+        return; // 저장 중단
+      }
+    }
+
+    // 저장 실행
     const data = {
       date: dateInput.value,
       group: groupSelect.value,
