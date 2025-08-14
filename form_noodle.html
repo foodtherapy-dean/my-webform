@@ -153,10 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec";
 
-  let duplicateFound = false;
-  let checkingDuplicate = false;
-
-  // 오늘 날짜 기본 입력
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
   // 시/분 옵션 채우기
@@ -174,99 +171,100 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
+  // 입력 필드 표시/숨김
   function updateInputFields() {
     const group = groupSelect.value;
     if (group === "시스템ON" || group === "시스템OFF") {
       timeRow.style.display = "flex";
       thRow.style.display = "none";
-      tempInput.value = "";
-      humidityInput.value = "";
     } else if (group === "1차점검" || group === "2차점검") {
       timeRow.style.display = "flex";
       thRow.style.display = "flex";
     } else {
       timeRow.style.display = "none";
       thRow.style.display = "none";
-      hourSelect.value = "";
-      minuteSelect.value = "";
-      tempInput.value = "";
-      humidityInput.value = "";
     }
   }
 
+  // 중복 확인
   async function checkDuplicate(date, group) {
-    checkingDuplicate = true;
-    submitBtn.disabled = true; // 중복확인 전 버튼 비활성화
     try {
       const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
-      const result = await res.json();
-      duplicateFound = result.exists;
-      if (duplicateFound) {
-        const proceed = confirm(
-          `⚠️ 이미 같은 날짜(${date})와 옵션(${group})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`
-        );
+      const data = await res.json();
+
+      if (data.exists) {
+        const proceed = confirm(`⚠️ 이미 같은 날짜(${date})와 옵션(${group})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`);
         if (!proceed) {
           groupSelect.value = "";
           updateInputFields();
-          return;
+          submitBtn.disabled = true;
+          return false;
         }
       }
-      submitBtn.disabled = false; // 중복확인 끝나면 버튼 활성화
+      submitBtn.disabled = false; // 중복없거나 계속 입력 선택 시 활성화
+      return true;
     } catch (err) {
       console.error("중복 확인 오류:", err);
-      alert("중복 확인 중 오류가 발생했습니다.");
+      submitBtn.disabled = true;
+      return false;
     }
-    checkingDuplicate = false;
   }
 
-  // 날짜나 옵션 바뀔 때마다 자동 중복확인
-  [dateInput, groupSelect].forEach(el => {
-    el.addEventListener("change", async () => {
-      if (dateInput.value && groupSelect.value) {
-        await checkDuplicate(dateInput.value, groupSelect.value);
-      } else {
-        submitBtn.disabled = true;
-      }
-      updateInputFields();
-    });
+  // 날짜 변경 시
+  dateInput.addEventListener("change", async () => {
+    if (dateInput.value && groupSelect.value) {
+      await checkDuplicate(dateInput.value, groupSelect.value);
+    } else {
+      submitBtn.disabled = true;
+    }
+    updateInputFields();
   });
 
-  submitBtn.addEventListener("click", async () => {
-    if (checkingDuplicate) {
-      alert("중복 확인이 끝날 때까지 기다려주세요.");
-      return;
+  // 점검 옵션 변경 시
+  groupSelect.addEventListener("change", async () => {
+    // 날짜 제외 나머지 초기화
+    hourSelect.value = "";
+    minuteSelect.value = "";
+    tempInput.value = "";
+    humidityInput.value = "";
+
+    if (dateInput.value && groupSelect.value) {
+      await checkDuplicate(dateInput.value, groupSelect.value);
+    } else {
+      submitBtn.disabled = true;
     }
+    updateInputFields();
+  });
+
+  // 저장 버튼 클릭
+  submitBtn.addEventListener("click", async () => {
+    if (submitBtn.disabled) return; // 중복확인 안되면 차단
+
     if (!groupSelect.value) {
       alert("점검 옵션을 선택하세요.");
-      groupSelect.focus();
       return;
     }
     if (!dateInput.value) {
       alert("날짜를 선택하세요.");
-      dateInput.focus();
       return;
     }
     if (timeRow.style.display !== "none") {
       if (!hourSelect.value) {
         alert("시간(시)을 선택하세요.");
-        hourSelect.focus();
         return;
       }
       if (!minuteSelect.value) {
         alert("시간(분)을 선택하세요.");
-        minuteSelect.focus();
         return;
       }
     }
     if (thRow.style.display !== "none") {
       if (!tempInput.value) {
         alert("온도를 입력하세요.");
-        tempInput.focus();
         return;
       }
       if (!humidityInput.value) {
         alert("습도를 입력하세요.");
-        humidityInput.focus();
         return;
       }
     }
@@ -282,20 +280,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-    })
-    .then(res => res.text())
-    .then(text => {
+    try {
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "noodle=" + encodeURIComponent(JSON.stringify(data))
+      });
+      const text = await res.text();
       alert("서버 응답: " + text);
       dateInput.valueAsDate = new Date();
       groupSelect.value = "";
+      hourSelect.value = "";
+      minuteSelect.value = "";
+      tempInput.value = "";
+      humidityInput.value = "";
+      submitBtn.disabled = true;
       updateInputFields();
-      submitBtn.disabled = true; // 저장 후 다시 비활성화
-    })
-    .catch(err => alert("에러 발생: " + err.message));
+    } catch (err) {
+      alert("에러 발생: " + err.message);
+    }
   });
 
   updateInputFields();
