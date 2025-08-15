@@ -42,6 +42,7 @@ body, html {
   background-color: #4CAF50;
   color: white;
   border: none;
+  border-radius: 0;
   cursor: pointer;
 }
 .inline-row {
@@ -69,25 +70,39 @@ input[type="number"], select, input[type="date"] {
   outline-offset: 0;
   background-color: #fff;
 }
-#loadingMsg {
-  color: blue;
-  font-weight: bold;
-  margin-top: 10px;
-}
+
+/* 중복 메시지 스타일 */
 #duplicateMsg {
-  display:none;
-  position: fixed;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ffcc00;
-  color: #000;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  font-weight:bold;
-  z-index: 9999;
+  display: none;
+  background-color: #ffcccc;
+  color: #900;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #900;
+  border-radius: 6px;
+  font-weight: bold;
 }
+#duplicateMsg button {
+  margin-left: 12px;
+  background-color: #900;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 로딩 메시지 스타일 */
+#loadingMsg {
+  display: none;
+  background-color: #ffe599;
+  color: #333;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
 @media (min-width: 768px) {
   input[type="number"], select, input[type="date"] {
     font-size: 1.4rem;
@@ -103,7 +118,17 @@ input[type="number"], select, input[type="date"] {
 <body>
 <div class="app-container">
   <div class="app-header">건면공정 점검 입력</div>
+
   <div class="app-body">
+    <!-- 로딩 메시지 -->
+    <div id="loadingMsg">중복 확인 중...</div>
+
+    <!-- 중복 메시지 -->
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
+
     <label for="date">날짜</label>
     <input type="date" id="date" required />
 
@@ -116,6 +141,7 @@ input[type="number"], select, input[type="date"] {
       <option value="시스템OFF">시스템OFF</option>
     </select>
 
+    <!-- 시간 입력 -->
     <div class="inline-row" id="timeRow">
       <div>
         <label for="hour">시간 (시)</label>
@@ -127,6 +153,7 @@ input[type="number"], select, input[type="date"] {
       </div>
     </div>
 
+    <!-- 온도 / 습도 입력 -->
     <div class="inline-row" id="thRow">
       <div>
         <label for="temp">온도(℃)</label>
@@ -137,13 +164,10 @@ input[type="number"], select, input[type="date"] {
         <input type="number" id="humidity" step="0.1" min="0" max="100" />
       </div>
     </div>
-
-    <div id="loadingMsg" style="display:none;">중복 확인 중...</div>
-    <div id="duplicateMsg"></div>
   </div>
 
   <div class="app-footer">
-    <button id="submitBtn" disabled>📥 서버로 전송</button>
+    <button id="submitBtn">📥 서버로 전송</button>
   </div>
 </div>
 
@@ -158,22 +182,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById("submitBtn");
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
-  const loadingMsg = document.getElementById("loadingMsg");
+
   const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
+  const loadingMsg = document.getElementById("loadingMsg");
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec";
 
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
+  // 시/분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++){
-      const val = h.toString().padStart(2,"0");
+    for(let h=1; h<=24; h++) {
+      const val = h.toString().padStart(2, "0");
       hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
     minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10){
-      const val = m.toString().padStart(2,"0");
+    for(let m=0; m<=60; m+=10) {
+      const val = m.toString().padStart(2, "0");
       minuteSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
   }
@@ -181,18 +210,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateInputFields() {
     const group = groupSelect.value;
-    if(group==="시스템ON" || group==="시스템OFF"){
-      timeRow.style.display="flex";
-      thRow.style.display="none";
-    } else if(group==="1차점검" || group==="2차점검"){
-      timeRow.style.display="flex";
-      thRow.style.display="flex";
-    } else{
-      timeRow.style.display="none";
-      thRow.style.display="none";
+    if (group === "시스템ON" || group === "시스템OFF") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "none";
+      tempInput.value = "";
+      humidityInput.value = "";
+    } else if (group === "1차점검" || group === "2차점검") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "flex";
+    } else {
+      timeRow.style.display = "none";
+      thRow.style.display = "none";
+      hourSelect.value = "";
+      minuteSelect.value = "";
+      tempInput.value = "";
+      humidityInput.value = "";
     }
   }
 
+  // 확인 버튼 클릭 시 메시지 닫기
+  duplicateConfirmBtn.addEventListener("click", () => {
+    duplicateMsg.style.display = "none";
+  });
+
+  // 중복 확인 함수
   async function checkDuplicate(date, group){
     loadingMsg.style.display = "block";
     submitBtn.disabled = true;
@@ -202,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingMsg.style.display = "none";
 
       if(data.exists){
-        duplicateMsg.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
         duplicateMsg.style.display = "block";
       } else {
         duplicateMsg.style.display = "none";
@@ -210,52 +251,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
       submitBtn.disabled = false;
       return true;
-    }catch(err){
+    } catch(err){
       console.error("중복 확인 오류:",err);
       loadingMsg.style.display="none";
-      duplicateMsg.textContent = "중복 확인 중 오류 발생!";
+      duplicateText.textContent = "중복 확인 중 오류 발생!";
       duplicateMsg.style.display="block";
       submitBtn.disabled = true;
       return false;
     }
   }
 
-  dateInput.addEventListener("change", async ()=>{
-    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
-    if(dateInput.value && groupSelect.value){
+  // 날짜 변경 시
+  dateInput.addEventListener("change", async () => {
+    if (dateInput.value && groupSelect.value) {
       await checkDuplicate(dateInput.value, groupSelect.value);
     } else {
-      submitBtn.disabled=true;
+      submitBtn.disabled = true;
     }
     updateInputFields();
   });
 
-  groupSelect.addEventListener("change", async ()=>{
-    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
-    if(dateInput.value && groupSelect.value){
+  // 점검 옵션 변경 시
+  groupSelect.addEventListener("change", async () => {
+    hourSelect.value = "";
+    minuteSelect.value = "";
+    tempInput.value = "";
+    humidityInput.value = "";
+
+    if (dateInput.value && groupSelect.value) {
       await checkDuplicate(dateInput.value, groupSelect.value);
     } else {
-      submitBtn.disabled=true;
+      submitBtn.disabled = true;
     }
     updateInputFields();
   });
 
-  submitBtn.addEventListener("click", async ()=>{
-    if(!groupSelect.value){ alert("점검 옵션을 선택하세요."); return; }
-    if(!dateInput.value){ alert("날짜를 선택하세요."); return; }
-    if(timeRow.style.display!=="none"){
-      if(!hourSelect.value){ alert("시간(시)을 선택하세요."); return; }
-      if(!minuteSelect.value){ alert("시간(분)을 선택하세요."); return; }
+  // 저장 버튼 클릭
+  submitBtn.addEventListener("click", async () => {
+    if (submitBtn.disabled) return;
+
+    if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
+    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+    if (timeRow.style.display !== "none") {
+      if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
+      if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
     }
-    if(thRow.style.display!=="none"){
-      if(!tempInput.value){ alert("온도를 입력하세요."); return; }
-      if(!humidityInput.value){ alert("습도를 입력하세요."); return; }
+    if (thRow.style.display !== "none") {
+      if (!tempInput.value) { alert("온도를 입력하세요."); return; }
+      if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
     }
 
-    const data={
+    const data = {
       date: dateInput.value,
       group: groupSelect.value,
-      entries:{
+      entries: {
         hour: hourSelect.value,
         minute: minuteSelect.value,
         temp: tempInput.value,
@@ -263,24 +312,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    try{
-      const res = await fetch(scriptUrl,{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:"noodle="+encodeURIComponent(JSON.stringify(data))
+    try {
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "noodle=" + encodeURIComponent(JSON.stringify(data))
       });
       const text = await res.text();
-      alert("서버 응답: "+text);
-
-      // 초기화
-      dateInput.valueAsDate=new Date();
-      groupSelect.value="";
-      hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
-      submitBtn.disabled=true;
-      duplicateMsg.style.display="none";
+      alert("서버 응답: " + text);
+      dateInput.valueAsDate = new Date();
+      groupSelect.value = "";
+      hourSelect.value = "";
+      minuteSelect.value = "";
+      tempInput.value = "";
+      humidityInput.value = "";
+      submitBtn.disabled = true;
       updateInputFields();
-    }catch(err){
-      alert("에러 발생: "+err.message);
+    } catch (err) {
+      alert("에러 발생: " + err.message);
     }
   });
 
