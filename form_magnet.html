@@ -56,7 +56,7 @@ button[type="submit"]:hover {
 
 label {
   display: block;
-  margin-top: 12px;
+  margin-top: 20px; /* 날짜와 점검 옵션 간격 조정 */
   font-weight: bold;
 }
 
@@ -133,6 +133,26 @@ input.selected {
   background-color: #e8f0fe;
   font-weight: bold;
 }
+
+#duplicateMsg {
+  background-color: #ffc107;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: none;
+}
+
+#duplicateConfirmBtn {
+  background-color: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
 </style>
 </head>
 <body>
@@ -154,6 +174,11 @@ input.selected {
         <option value="최종취합">최종취합</option>
       </select>
     </label>
+
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button type="button" id="duplicateConfirmBtn">확인</button>
+    </div>
 
     <div id="subInputs" style="display:none;">
       <label id="timeLabel">시간
@@ -251,8 +276,6 @@ document.getElementById("option").addEventListener("change", async e => {
   }
   if (isSummary) oxValues = {};
 });
-
-
 
 // OX 항목 생성
 const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
