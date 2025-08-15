@@ -77,7 +77,7 @@ input[type="number"], select, input[type="date"] {
   background-color: #ffcccc;
   color: #900;
   padding: 12px;
-  margin-bottom: 10px;
+  margin-top: 6px;
   border: 1px solid #900;
   border-radius: 6px;
   font-weight: bold;
@@ -120,18 +120,11 @@ input[type="number"], select, input[type="date"] {
   <div class="app-header">건면공정 점검 입력</div>
 
   <div class="app-body">
-    <!-- 로딩 메시지 -->
-    <div id="loadingMsg">중복 확인 중...</div>
-
-    <!-- 중복 메시지 -->
-    <div id="duplicateMsg">
-      <span id="duplicateText"></span>
-      <button id="duplicateConfirmBtn">확인</button>
-    </div>
-
+    <!-- 날짜 -->
     <label for="date">날짜</label>
     <input type="date" id="date" required />
 
+    <!-- 점검 옵션 -->
     <label for="group" style="margin-top:10px;">점검 옵션</label>
     <select id="group" required>
       <option value="">선택하세요</option>
@@ -140,6 +133,15 @@ input[type="number"], select, input[type="date"] {
       <option value="2차점검">2차점검</option>
       <option value="시스템OFF">시스템OFF</option>
     </select>
+
+    <!-- 중복 메시지 -->
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
+
+    <!-- 로딩 메시지 -->
+    <div id="loadingMsg">중복 확인 중...</div>
 
     <!-- 시간 입력 -->
     <div class="inline-row" id="timeRow">
@@ -228,12 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 확인 버튼 클릭 시 메시지 닫기
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
   });
 
-  // 중복 확인 함수
   async function checkDuplicate(date, group){
     loadingMsg.style.display = "block";
     submitBtn.disabled = true;
@@ -261,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 날짜 변경 시
   dateInput.addEventListener("change", async () => {
     if (dateInput.value && groupSelect.value) {
       await checkDuplicate(dateInput.value, groupSelect.value);
@@ -271,12 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateInputFields();
   });
 
-  // 점검 옵션 변경 시
   groupSelect.addEventListener("change", async () => {
     hourSelect.value = "";
     minuteSelect.value = "";
     tempInput.value = "";
     humidityInput.value = "";
+    duplicateMsg.style.display = "none"; // 점검옵션 변경 시 경고 사라짐
 
     if (dateInput.value && groupSelect.value) {
       await checkDuplicate(dateInput.value, groupSelect.value);
@@ -286,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateInputFields();
   });
 
-  // 저장 버튼 클릭
   submitBtn.addEventListener("click", async () => {
     if (submitBtn.disabled) return;
 
@@ -320,12 +318,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const text = await res.text();
       alert("서버 응답: " + text);
+
+      // 저장 완료 후 초기화 + 중복 메시지 숨김
       dateInput.valueAsDate = new Date();
       groupSelect.value = "";
       hourSelect.value = "";
       minuteSelect.value = "";
       tempInput.value = "";
       humidityInput.value = "";
+      duplicateMsg.style.display = "none";
       submitBtn.disabled = true;
       updateInputFields();
     } catch (err) {
