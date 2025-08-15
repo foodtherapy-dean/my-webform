@@ -153,6 +153,17 @@ input.selected {
   cursor: pointer;
   margin-top: 10px;
 }
+
+/* 로딩 메시지 스타일 */
+#loadingMsg {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: none; /* 기본적으로 숨겨놓음 */
+}
 </style>
 </head>
 <body>
@@ -179,6 +190,8 @@ input.selected {
       <span id="duplicateText"></span>
       <button type="button" id="duplicateConfirmBtn">확인</button>
     </div>
+
+    <div id="loadingMsg">중복 확인 중...</div>
 
     <div id="subInputs" style="display:none;">
       <label id="timeLabel">시간
@@ -245,6 +258,9 @@ document.getElementById("option").addEventListener("change", async e => {
 
   if (!opt || !dateVal) return; // 날짜나 옵션이 비어있으면 패스
 
+  // 로딩 메시지 보이기
+  document.getElementById("loadingMsg").style.display = "block";
+
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
     const url = "https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec?checkMagnet=" + query;
@@ -252,17 +268,20 @@ document.getElementById("option").addEventListener("change", async e => {
     const res = await fetch(url);
     const result = await res.json();
 
+    // 중복 확인 메시지 처리
     if (result.exists) {
-      const proceed = confirm(`⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.\n그래도 계속 입력하시겠습니까?`);
-      if (!proceed) {
-        e.target.value = ""; // 옵션 선택 해제
-        e.target.focus();
-        return; // 아래 UI 표시 로직 실행 안 함
-      }
+      document.getElementById("duplicateText").innerText = `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.`;
+      document.getElementById("duplicateMsg").style.display = "block";
+    } else {
+      document.getElementById("duplicateMsg").style.display = "none";  // 중복 데이터가 없으면 숨김
     }
+
   } catch (err) {
     console.error("중복 체크 오류:", err);
   }
+
+  // 로딩 메시지 숨기기
+  document.getElementById("loadingMsg").style.display = "none";
 
   // 기존 UI 표시 제어
   const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
@@ -275,6 +294,11 @@ document.getElementById("option").addEventListener("change", async e => {
     timeLabel.style.display = isSummary ? "none" : "block";
   }
   if (isSummary) oxValues = {};
+});
+
+// 중복 확인 확인 버튼
+document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
+  document.getElementById("duplicateMsg").style.display = "none";
 });
 
 // OX 항목 생성
