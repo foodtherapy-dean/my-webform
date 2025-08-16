@@ -3,55 +3,165 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>위생 점검</title>
+<title>위생 점검 폼</title>
 <style>
 html, body {
-  margin: 0; padding: 0; height: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100%;
   font-family: sans-serif;
 }
-.app-container { display: flex; flex-direction: column; height: 100%; }
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .app-header {
   flex: 0 0 auto;
   background-color: #4CAF50;
-  color: white; text-align: center;
-  padding: 16px; font-size: 1.5rem;
+  color: white;
+  text-align: center;
+  padding: 16px;
+  font-size: 1.5rem;
 }
+
 .app-body {
-  flex: 1 1 auto; overflow-y: auto;
-  padding: 16px; box-sizing: border-box;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
   background-color: #f9f9f9;
 }
-.app-footer { flex: 0 0 auto; }
-button[type="submit"] {
-  width: 100%; font-size: 1.4rem;
-  padding: 18px 0;
-  background-color: #28a745; color: white;
-  border: none; border-radius: 0; cursor: pointer;
+
+.app-footer {
+  flex: 0 0 auto;
 }
-button[type="submit"]:hover { background-color: #218838; }
-label { display: block; margin-top: 20px; font-weight: bold; }
+
+button[type="submit"] {
+  width: 100%;
+  font-size: 1.4rem;
+  padding: 18px 0;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background-color: #218838;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
 input, select {
-  width: 100%; padding: 12px; margin-top: 6px;
-  box-sizing: border-box; text-align: center;
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  box-sizing: border-box;
+  text-align: center;
   font-size: 1.1rem;
 }
+
+.inline-row {
+  display: flex;
+  gap: 10px;
+}
+
+.inline-row > div {
+  flex: 1;
+}
+
 .ox-group {
-  display: flex; flex-direction: column; gap: 12px; margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
 }
+
 .ox-set {
-  text-align: center; border: 1px solid #ccc;
-  border-radius: 8px; padding: 10px;
+  flex: 1 1 48%;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
 }
+
 .ox-buttons {
-  display: flex; justify-content: center; gap: 10px; margin-top: 5px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 5px;
 }
+
 .ox-buttons button {
-  flex: 1; padding: 12px; font-size: 1.1rem;
-  background-color: #f0f0f0; border: 1px solid #ccc; color: #333;
-  cursor: pointer; border-radius: 4px;
+  flex: 1;
+  padding: 12px;
+  font-size: 1.1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
 }
+
 .ox-buttons button.selected {
-  background-color: #007bff; color: white; border-color: #0056b3;
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.number-row {
+  display: flex;
+  gap: 10px;
+}
+
+.number-row > div {
+  flex: 1;
+}
+
+/* 선택된 input/select 강조 */
+select.selected,
+input.selected {
+  border: 2px solid #007bff;
+  background-color: #e8f0fe;
+  font-weight: bold;
+}
+
+#duplicateMsg {
+  background-color: #ffc107;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: none;
+}
+
+#duplicateConfirmBtn {
+  background-color: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+#loadingMsg {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: none;
 }
 </style>
 </head>
@@ -59,7 +169,7 @@ input, select {
 <div class="app-container">
   <div class="app-header">위생 점검</div>
 
-  <form id="inspectForm" class="app-body">
+  <form id="washForm" class="app-body">
     <label>날짜
       <input type="date" id="date" name="date" />
     </label>
@@ -74,122 +184,160 @@ input, select {
       </select>
     </label>
 
-    <!-- 하위 항목 표시 영역 -->
-    <div id="oxContainer" class="ox-group"></div>
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button type="button" id="duplicateConfirmBtn">확인</button>
+    </div>
+
+    <div id="loadingMsg">중복 확인 중...</div>
+
+    <!-- 작업전 / 작업중 / 작업후 / 수시점검 -->
+    <div id="subInputs" style="display:none;">
+      <label>개인위생
+        <div class="ox-group">
+          <div class="ox-set">
+            <div>복장구분 보관여부</div>
+            <div class="ox-buttons">
+              <button type="button" class="ox" data-value="O">O</button>
+              <button type="button" class="ox" data-value="X">X</button>
+            </div>
+          </div>
+          <div class="ox-set">
+            <div>건강/장신구/위생복 착용여부</div>
+            <div class="ox-buttons">
+              <button type="button" class="ox" data-value="O">O</button>
+              <button type="button" class="ox" data-value="X">X</button>
+            </div>
+          </div>
+          <div class="ox-set">
+            <div>위생설비 이상/위생처리</div>
+            <div class="ox-buttons">
+              <button type="button" class="ox" data-value="O">O</button>
+              <button type="button" class="ox" data-value="X">X</button>
+            </div>
+          </div>
+        </div>
+      </label>
+
+      <!-- 다른 섹션들... (작업중, 작업후, 수시점검) -->
+      <!-- 여기에 각 섹션을 추가하면 됩니다 -->
+
+    </div>
+    <div id="summaryInputs" style="display:none;">
+      <!-- 수시점검 관련 항목들 -->
+      <label>입고검수
+        <div class="ox-group">
+          <div class="ox-set">
+            <div>원부재료 입고검수 준수여부</div>
+            <div class="ox-buttons">
+              <button type="button" class="ox" data-value="O">O</button>
+              <button type="button" class="ox" data-value="X">X</button>
+            </div>
+          </div>
+        </div>
+      </label>
+    </div>
+
   </form>
 
   <div class="app-footer">
-    <button type="submit" form="inspectForm">저장</button>
+    <button type="submit" form="washForm" onclick="submitForm()">저장</button>
   </div>
 </div>
 
 <script>
-// 날짜 기본값 오늘
+// 날짜 기본값 설정 및 selected 적용
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
+dateInput.classList.add("selected");
 
-// 각 옵션별 항목 정의
-const items = {
-  "작업전": [
-    "개인위생 - 복장구분 보관여부",
-    "개인위생 - 건강/장신구/위생복 착용여부",
-    "개인위생 - 위생설비 이상/위생처리",
-    "방충방서 - 밀폐상태/방충시설",
-    "설비 - 파손,고장 설비유무",
-    "보관 - 보관소 정리정돈 상태"
-  ],
-  "작업중": [
-    "공정관리 - 구역분리 및 오염관리",
-    "공정관리 - 완제품 포장상태",
-    "공정관리 - 반제품 적재기준",
-    "공정관리 - 포장라인 위해요소 여부"
-  ],
-  "작업후": [
-    "방충방서 - 생산부산물 별도구획 보관 및 반출",
-    "청소소독 - 작업장/설비/위생시설",
-    "설비 - 파손/고장 설비 유무",
-    "점검 - CCP점검 상태/개선조치 여부",
-    "보관 - 원부재료 오염방지 보관여부"
-  ],
-  "수시점검": [
-    "입고검수 - 원부재료 입고검수 준수여부"
-  ]
-};
-
-// 선택 시 하위항목 표시
-const optionSelect = document.getElementById("option");
-const oxContainer = document.getElementById("oxContainer");
-let oxValues = {};
-
-optionSelect.addEventListener("change", e => {
-  oxContainer.innerHTML = "";
-  oxValues = {};
+// 점검 옵션 변경 시 입력 필드 표시 제어
+document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
-  if (!opt || !items[opt]) return;
-  items[opt].forEach(label => {
-    const oxSet = document.createElement("div");
-    oxSet.className = "ox-set";
-    oxSet.innerHTML = `
-      <div>${label}</div>
-      <div class="ox-buttons">
-        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>
-    `;
-    oxContainer.appendChild(oxSet);
-  });
+  const dateVal = document.getElementById("date").value;
+
+  if (!opt || !dateVal) return;
+
+  // 로딩 메시지 보이기
+  document.getElementById("loadingMsg").style.display = "block";
+
+  try {
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
+    const url = "YOUR_SCRIPT_URL?checkWash=" + query;
+    
+    const res = await fetch(url);
+    const result = await res.json();
+
+    // 중복 확인 메시지 처리
+    if (result.exists) {
+      document.getElementById("duplicateText").innerText = `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.`;
+      document.getElementById("duplicateMsg").style.display = "block";
+    } else {
+      document.getElementById("duplicateMsg").style.display = "none";
+    }
+
+  } catch (err) {
+    console.error("중복 체크 오류:", err);
+  }
+
+  // 로딩 메시지 숨기기
+  document.getElementById("loadingMsg").style.display = "none";
+
+  // 입력 창 표시 제어
+  const showSub = ["작업전", "작업중", "작업후"].includes(opt);
+  const isSummary = opt === "수시점검";
+  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
 });
 
-// OX 선택 처리
+// 중복 확인 확인 버튼
+document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
+  document.getElementById("duplicateMsg").style.display = "none";
+});
+
+// OX 항목 선택 처리
+let oxValues = {};
 document.addEventListener("click", e => {
   if (e.target.classList.contains("ox")) {
     const btn = e.target;
-    const label = btn.dataset.label;
-    oxValues[label] = btn.dataset.value;
-    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-      b.classList.toggle("selected", b === btn);
+    const value = btn.dataset.value;
+
+    // 해당 항목의 값 업데이트
+    oxValues[btn.closest(".ox-set").querySelector("div").textContent.trim()] = value;
+
+    // 선택된 항목 강조
+    document.querySelectorAll(".ox-set").forEach(set => {
+      set.querySelectorAll(".ox").forEach(b => {
+        b.classList.toggle("selected", b === btn);
+      });
     });
   }
 });
 
-// 저장
-document.getElementById("inspectForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!optionSelect.value) { alert("점검 옵션을 선택하세요"); return; }
-  // 필수 항목 체크
-  for (const label of items[optionSelect.value]) {
-    if (!(label in oxValues)) {
-      alert(`'${label}' 항목을 선택하세요.`);
-      return;
-    }
-  }
-  const data = {
-    date: dateInput.value,
-    option: optionSelect.value,
-    states: oxValues
+// 폼 제출 처리
+async function submitForm() {
+  const form = document.getElementById("washForm");
+  const selectedDate = form.date.value;
+  const selectedOption = form.option.value;
+
+  const states = Object.values(oxValues); // OX 선택된 값을 배열로 변환
+
+  const payload = {
+    date: selectedDate,
+    option: selectedOption,
+    states: states
   };
-  const formData = new FormData();
-  formData.append("inspect", JSON.stringify(data));
 
-  try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec", {
-      method: "POST",
-      body: formData
-    });
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
-      e.target.reset();
-      dateInput.valueAsDate = new Date();
-      oxContainer.innerHTML = "";
-      oxValues = {};
-    } else {
-      alert("❌ 오류:\n" + result);
-    }
-  } catch (err) {
-    alert("❌ 저장 중 오류:\n" + err.message);
-  }
-});
+  const res = await fetch("YOUR_SCRIPT_URL", {
+    method: "POST",
+    body: new URLSearchParams({
+      inspect: JSON.stringify(payload)
+    })
+  });
+
+  const result = await res.text();
+  alert(result); // "✅ 추가 완료..." or "✅ 수정 완료..."
+}
 </script>
 </body>
 </html>
