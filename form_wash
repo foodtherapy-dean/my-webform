@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>점검 웹폼</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h2 { margin-top: 30px; }
+    .section { display: none; margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .ox-buttons { margin: 5px 0; }
+    .ox-buttons button {
+      margin-right: 10px;
+      padding: 5px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .ox-buttons button.active { font-weight: bold; }
+    .ox-buttons button.o { background-color: #4CAF50; color: white; }
+    .ox-buttons button.x { background-color: #f44336; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>점검 웹폼</h1>
+
+  <!-- 날짜 -->
+  <label>날짜: 
+    <input type="date" id="dateInput">
+  </label>
+
+  <br><br>
+
+  <!-- 점검 옵션 선택 -->
+  <label>점검 옵션:</label><br>
+  <select id="optionSelect">
+    <option value="">-- 선택하세요 --</option>
+    <option value="작업전">작업전</option>
+    <option value="작업중">작업중</option>
+    <option value="작업후">작업후</option>
+    <option value="수시점검">수시점검</option>
+  </select>
+
+  <!-- 작업전 -->
+  <div id="section-작업전" class="section">
+    <h2>작업전</h2>
+    <p>개인위생</p>
+    <div class="ox-buttons">복장구분 보관여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">건강/장신구/위생복 착용여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">위생설비 이상/위생처리:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+
+    <p>방충방서</p>
+    <div class="ox-buttons">밀폐상태/방충시설:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+
+    <p>설비</p>
+    <div class="ox-buttons">파손,고장 설비유무:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+
+    <p>보관</p>
+    <div class="ox-buttons">보관소 정리정돈 상태:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <!-- 작업중 -->
+  <div id="section-작업중" class="section">
+    <h2>작업중</h2>
+    <div class="ox-buttons">구역분리 및 오염관리:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">완제품 포장상태:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">반제품 적재기준:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">포장라인 위해요소 여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <!-- 작업후 -->
+  <div id="section-작업후" class="section">
+    <h2>작업후</h2>
+    <div class="ox-buttons">생산부산물 별도구획 보관 및 반출:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">작업장/설비/위생시설 청소소독:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">파손/고장 설비 유무:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">CCP점검 상태/개선조치 여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">원부재료 오염방지 보관여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <!-- 수시점검 -->
+  <div id="section-수시점검" class="section">
+    <h2>수시점검</h2>
+    <div class="ox-buttons">원부재료 입고검수 준수여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <script>
+    // 오늘 날짜 자동 설정
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("dateInput").value = today;
+    });
+
+    // 점검 옵션 변경 시 해당 섹션만 표시
+    document.getElementById("optionSelect").addEventListener("change", function() {
+      document.querySelectorAll(".section").forEach(sec => sec.style.display = "none");
+      const selected = this.value;
+      if (selected) {
+        document.getElementById("section-" + selected).style.display = "block";
+      }
+    });
+
+    // O/X 버튼 토글
+    document.querySelectorAll(".ox-buttons button").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const parent = this.parentNode;
+        parent.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>
