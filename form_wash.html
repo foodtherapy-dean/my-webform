@@ -156,7 +156,6 @@ document.addEventListener("click", e => {
 document.getElementById("inspectForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (!optionSelect.value) { alert("점검 옵션을 선택하세요"); return; }
-
   // 필수 항목 체크
   for (const label of items[optionSelect.value]) {
     if (!(label in oxValues)) {
@@ -164,24 +163,18 @@ document.getElementById("inspectForm").addEventListener("submit", async e => {
       return;
     }
   }
-
-  // 객체(oxValues) → 배열 변환 (항목 순서 보장)
-  const statesArray = items[optionSelect.value].map(label => oxValues[label]);
-
   const data = {
     date: dateInput.value,
     option: optionSelect.value,
-    states: statesArray   // ✅ 이제 배열
+    states: Object.values(oxValues) // OX 값을 배열 형태로 모은다.
   };
+  const formData = new FormData();
+  formData.append("inspect", JSON.stringify(data));
 
-  // JSON 형식으로 전송
   try {
     const response = await fetch("https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ inspect: data }) // JSON으로 감싸서 보냄
+      body: formData
     });
     const result = await response.text();
     if (response.ok) {
