@@ -156,6 +156,7 @@ document.addEventListener("click", e => {
 document.getElementById("inspectForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (!optionSelect.value) { alert("점검 옵션을 선택하세요"); return; }
+
   // 필수 항목 체크
   for (const label of items[optionSelect.value]) {
     if (!(label in oxValues)) {
@@ -163,11 +164,16 @@ document.getElementById("inspectForm").addEventListener("submit", async e => {
       return;
     }
   }
+
+  // 객체(oxValues) → 배열 변환 (항목 순서 보장)
+  const statesArray = items[optionSelect.value].map(label => oxValues[label]);
+
   const data = {
     date: dateInput.value,
     option: optionSelect.value,
-    states: Object.values(oxValues) // OX 값을 배열 형태로 모은다.
+    states: statesArray   // ✅ 이제 배열
   };
+
   const formData = new FormData();
   formData.append("inspect", JSON.stringify(data));
 
