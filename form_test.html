@@ -2,333 +2,145 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>금속검출 점검test</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>점검 웹폼</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-      max-width: 600px;
-      margin: auto;
-    }
-
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      box-sizing: border-box;
-      text-align: center;
-      font-size: 16px;
-    }
-
-    select option:first-child {
-      color: #aaa;
-      font-style: italic;
-    }
-
-    .inline-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .inline-row > div {
-      flex: 1;
-    }
-
-    .ox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .ox-set {
-      flex: 1 1 48%;
-      text-align: center;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-    }
-
-    .ox-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 5px;
-    }
-
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h2 { margin-top: 30px; }
+    .section { display: none; margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .ox-buttons { margin: 5px 0; }
     .ox-buttons button {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #f0f0f0;
-      border: 1px solid #ccc;
-      color: #333;
-      cursor: pointer;
-      transition: background-color 0.3s, color 0.3s;
-      border-radius: 4px;
-    }
-
-    .ox-buttons button.selected {
-      background-color: #007bff;
-      color: white;
-      border-color: #0056b3;
-    }
-
-    /* 🔧 선택된 select/input 요소 강조 */
-    select.selected,
-    input.selected {
-      border: 2px solid #007bff;
-      background-color: #e8f0fe;
-      font-weight: bold;
-    }
-
-    /* 🔧 날짜 입력창 텍스트 확대 */
-    input[type="date"] {
-      font-size: 18px;
-    }
-
-    .number-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .number-row > div {
-      flex: 1;
-    }
-
-    button[type="submit"] {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      font-size: 16px;
-      background-color: #28a745;
-      color: white;
+      margin-right: 10px;
+      padding: 5px 15px;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
     }
-
-    button[type="submit"]:hover {
-      background-color: #218838;
-    }
+    .ox-buttons button.active { font-weight: bold; }
+    .ox-buttons button.o { background-color: #4CAF50; color: white; }
+    .ox-buttons button.x { background-color: #f44336; color: white; }
   </style>
 </head>
 <body>
-  <h2>금속검출 점검test2</h2>
-  <form id="magnetForm">
-    <label>날짜
-      <input type="date" id="date" name="date" />
-    </label>
 
-    <label>점검 옵션
-      <select id="option" name="option" required>
-        <option value="">선택하세요</option>
-        <option value="1차점검">1차점검</option>
-        <option value="2차점검">2차점검</option>
-        <option value="3차점검">3차점검</option>
-        <option value="4차점검">4차점검</option>
-        <option value="최종취합">최종취합</option>
-      </select>
-    </label>
+  <h1>점검 웹폼</h1>
 
-    <div id="subInputs" style="display:none;">
-      <label>시간
-        <input type="time" id="time" name="time" />
-      </label>
+  <!-- 날짜 -->
+  <label>날짜: 
+    <input type="date" id="dateInput">
+  </label>
 
-      <label>제품명
-        <select id="product" name="product">
-          <option value="">선택하세요</option>
-          <option>제품A</option>
-          <option>제품B</option>
-          <option>제품C</option>
-          <option>제품D</option>
-          <option>제품E</option>
-          <option>제품F</option>
-        </select>
-      </label>
+  <br><br>
 
-      <label>검출 상태</label>
-      <div class="ox-group" id="oxContainer">
-        <!-- JS에서 자동 생성 -->
-      </div>
+  <!-- 점검 옵션 선택 -->
+  <label>점검 옵션:</label><br>
+  <select id="optionSelect">
+    <option value="">-- 선택하세요 --</option>
+    <option value="작업전">작업전</option>
+    <option value="작업중">작업중</option>
+    <option value="작업후">작업후</option>
+    <option value="수시점검">수시점검</option>
+  </select>
+
+  <!-- 작업전 -->
+  <div id="section-작업전" class="section">
+    <h2>작업전</h2>
+    <p>개인위생</p>
+    <div class="ox-buttons">복장구분 보관여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">건강/장신구/위생복 착용여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">위생설비 이상/위생처리:
+      <button class="o">O</button><button class="x">X</button>
     </div>
 
-    <div id="summaryInputs" style="display:none;">
-      <label>통과/검출 수량</label>
-      <div class="number-row">
-        <div>
-          <input type="number" name="passCount" placeholder="통과 수량" />
-        </div>
-        <div>
-          <input type="number" name="detectCount" placeholder="검출 수량" />
-        </div>
-      </div>
+    <p>방충방서</p>
+    <div class="ox-buttons">밀폐상태/방충시설:
+      <button class="o">O</button><button class="x">X</button>
     </div>
 
-    <button type="submit">저장</button>
-  </form>
+    <p>설비</p>
+    <div class="ox-buttons">파손,고장 설비유무:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
 
-<script>
-  // 날짜 기본값 설정 및 selected 적용
-  const dateInput = document.getElementById("date");
-  dateInput.valueAsDate = new Date();
-  dateInput.classList.add("selected");
+    <p>보관</p>
+    <div class="ox-buttons">보관소 정리정돈 상태:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
 
-  // select와 time에 선택 시 .selected 적용
-  function applySelectedStyle(selector) {
-    document.querySelectorAll(selector).forEach(el => {
-      el.addEventListener("change", () => {
-        if (el.value) {
-          el.classList.add("selected");
-        } else {
-          el.classList.remove("selected");
-        }
-      });
+  <!-- 작업중 -->
+  <div id="section-작업중" class="section">
+    <h2>작업중</h2>
+    <div class="ox-buttons">구역분리 및 오염관리:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">완제품 포장상태:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">반제품 적재기준:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">포장라인 위해요소 여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <!-- 작업후 -->
+  <div id="section-작업후" class="section">
+    <h2>작업후</h2>
+    <div class="ox-buttons">생산부산물 별도구획 보관 및 반출:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">작업장/설비/위생시설 청소소독:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">파손/고장 설비 유무:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">CCP점검 상태/개선조치 여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+    <div class="ox-buttons">원부재료 오염방지 보관여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <!-- 수시점검 -->
+  <div id="section-수시점검" class="section">
+    <h2>수시점검</h2>
+    <div class="ox-buttons">원부재료 입고검수 준수여부:
+      <button class="o">O</button><button class="x">X</button>
+    </div>
+  </div>
+
+  <script>
+    // 오늘 날짜 자동 설정
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("dateInput").value = today;
     });
-  }
-  applySelectedStyle("select");
-  applySelectedStyle('input[type="time"]');
 
-  // 점검 옵션에 따라 입력 필드 표시 제어
-document.getElementById("option").addEventListener("change", e => {
-  const opt = e.target.value;
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
-  const isSummary = opt === "최종취합";
-
-  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
-  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block"; // ✅ 추가된 부분
-
-  // 최종취합일 경우 oxValues를 비워둡니다
-  if (isSummary) {
-    oxValues = {}; // OX 선택을 비우고
-  }
-});
-
-  // OX 항목 자동 생성
-  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  const oxContainer = document.getElementById("oxContainer");
-
-  oxItems.forEach(label => {
-    const oxSet = document.createElement("div");
-    oxSet.className = "ox-set";
-    oxSet.innerHTML = `
-      <div>${label}</div>
-      <div class="ox-buttons">
-        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>
-    `;
-    oxContainer.appendChild(oxSet);
-  });
-
-  // O/X 버튼 선택 시 .selected 토글
-  let oxValues = {};  // 변수 선언
-  document.addEventListener("click", e => {
-    if (e.target.classList.contains("ox")) {
-      const btn = e.target;
-      const label = btn.dataset.label;
-      oxValues[label] = btn.dataset.value;
-
-      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-        b.classList.toggle("selected", b === btn);
-      });
-    }
-  });
-
-  // 폼 전송 처리
- document.getElementById("magnetForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const form = e.target;
-
-  // 1) 활성화된 input/select 필수 입력 체크
-  const activeInputs = form.querySelectorAll("input, select");
-  for (const input of activeInputs) {
-    // display:none 이거나 비활성화된 input은 체크 안 함
-    if (input.offsetParent === null) continue;  // 부모가 display:none 인 경우 skip
-
-    // required 처리
-    if (!input.value) {
-      alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 꼭 입력해 주세요.`);
-      input.focus();
-      return;
-    }
-  }
-
-   // 2) O/X 버튼 필수 선택 체크 (최종취합 옵션이 아닐 경우에만 체크)
-  const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-  if (form.option.value !== "최종취합") {  // 최종취합이 아니면 OX 체크
-    for (const label of oxItems) {
-      if (!(label in oxValues)) {
-        alert(`검출 상태 '${label}'의 O 또는 X를 반드시 선택해 주세요.`);
-        // 해당 ox-set 영역 버튼 중 첫 번째 버튼에 포커스(임의로)
-        const btn = document.querySelector(`.ox[data-label="${label}"]`);
-        if (btn) btn.focus();
-        return;
+    // 점검 옵션 변경 시 해당 섹션만 표시
+    document.getElementById("optionSelect").addEventListener("change", function() {
+      document.querySelectorAll(".section").forEach(sec => sec.style.display = "none");
+      const selected = this.value;
+      if (selected) {
+        document.getElementById("section-" + selected).style.display = "block";
       }
-    }
-  }
-
-  // 3) 시간 시/분 분리
-  let hour = "";
-  let minute = "";
-  const timeInput = form.querySelector("#time");
-  if (timeInput && timeInput.value) {
-    const timeParts = timeInput.value.split(":");  // "11:00" → ["11", "00"]
-    hour = timeParts[0] || "";
-    minute = timeParts[1] || "";
-  }
-
-  // 4) 데이터 객체 생성
-  const data = {
-    type: "data",
-    date: form.date.value,
-    option: form.option.value,
-    hour: hour,
-    minute: minute,
-    product: form.product.value,
-    passCount: form.querySelector('input[name="passCount"]')?.value || "",
-    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
-    states: oxValues
-  };
-
-  const formData = new FormData();
-  formData.append("test", JSON.stringify(data));
-
-  try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxZQ2Ez1iSC50chMsiztQJarxfXmbXVZ3-_G6aE9I1VJ-79lSrltXl-9cks1KpJ2eucvA/exec", {
-      method: "POST",
-      body: formData
     });
 
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
-      form.reset();
-      dateInput.valueAsDate = new Date();
-      dateInput.classList.add("selected");
-      // 선택된 OX 버튼 초기화
-      oxValues = {};
-      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-    } else {
-      alert("❌ 서버 오류:\n" + result);
-    }
-  } catch (err) {
-    alert("❌ 저장 중 오류 발생:\n" + err.message);
-    console.error("❌ 예외:", err);
-  }
-});
-
-</script>
-
-
+    // O/X 버튼 토글
+    document.querySelectorAll(".ox-buttons button").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const parent = this.parentNode;
+        parent.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+      });
+    });
+  </script>
 </body>
 </html>
