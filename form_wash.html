@@ -231,7 +231,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   const data = {
     date: dateInput.value,
     option: optionSelect.value,
-    states: oxValues, // 선택된 O, X 값 포함
+    states: Object.values(oxValues), // states 배열로 변환
   };
 
   const formData = new FormData();
