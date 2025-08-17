@@ -144,12 +144,9 @@ const items = {
 let oxValues = {};
 
 // 선택 시 하위 항목 표시
-const optionSelect = document.getElementById("option");
-const oxContainer = document.getElementById("oxContainer");
-
 optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
-  oxValues = {};
+  oxValues = {}; // OX 값을 초기화
   const opt = e.target.value;
 
   if (!opt || !items[opt]) return;
@@ -160,7 +157,7 @@ optionSelect.addEventListener("change", async (e) => {
   try {
     // 중복 체크 URL 만들기
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
-    const url = `https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec?checkWash=${query}`;
+    const url = `https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?checkWash=${query}`;
     const res = await fetch(url);
     const result = await res.json();
 
@@ -231,7 +228,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   const data = {
     date: dateInput.value,
     option: optionSelect.value,
-    states: oxValues,
+    states: oxValues, // 선택된 O, X 값 포함
   };
 
   const formData = new FormData();
@@ -246,9 +243,15 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      e.target.reset();
-      oxContainer.innerHTML = "";
-      oxValues = {};
+      e.target.reset(); // 폼 초기화
+      oxContainer.innerHTML = ""; // OX 항목 초기화
+      oxValues = {}; // OX 값 초기화
+
+      // 날짜를 현재 날짜로 초기화
+      dateInput.valueAsDate = new Date();
+
+      // 점검 옵션 초기화
+      optionSelect.value = "";
     } else {
       alert("❌ 오류:\n" + result);
     }
