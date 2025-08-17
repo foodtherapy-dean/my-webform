@@ -149,7 +149,7 @@ const oxContainer = document.getElementById("oxContainer");
 
 optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
-  oxValues = {};
+  oxValues = {}; // OX 값을 초기화
   const opt = e.target.value;
 
   if (!opt || !items[opt]) return;
@@ -231,7 +231,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   const data = {
     date: dateInput.value,
     option: optionSelect.value,
-    states: oxValues,
+    states: oxValues, // 선택된 O, X 값 포함
   };
 
   const formData = new FormData();
@@ -246,9 +246,15 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      e.target.reset();
-      oxContainer.innerHTML = "";
-      oxValues = {};
+      e.target.reset(); // 폼 초기화
+      oxContainer.innerHTML = ""; // OX 항목 초기화
+      oxValues = {}; // OX 값 초기화
+
+      // 날짜를 현재 날짜로 초기화
+      dateInput.valueAsDate = new Date();
+
+      // 점검 옵션 초기화
+      optionSelect.value = "";
     } else {
       alert("❌ 오류:\n" + result);
     }
@@ -257,5 +263,6 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 </body>
 </html>
