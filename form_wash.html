@@ -251,6 +251,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
       oxValues = {};  // OX 값 초기화
       document.getElementById("duplicateMsg").style.display = "none"; // 중복 메시지 숨기기
       optionSelect.value = ""; // 점검 옵션 초기화
+      dateInput.valueAsDate = new Date(); 
     } else {
       alert("❌ 오류:\n" + result);
     }
