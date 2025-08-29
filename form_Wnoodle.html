@@ -20,8 +20,8 @@ body, html {
   background-color: #4CAF50;
   color: white;
   text-align: center;
-  padding: 16px;
-  font-size: 1.6rem;
+  padding: 20px;
+  font-size: 2rem;
   flex: 0 0 auto;
 }
 .app-body {
@@ -36,8 +36,8 @@ body, html {
 }
 #submitBtn {
   width: 100%;
-  font-size: 1.5rem;
-  padding: 20px 0;
+  font-size: 1.8rem;
+  padding: 24px 0;
   background-color: #4CAF50;
   color: white;
   border: none;
@@ -47,49 +47,80 @@ body, html {
 .row {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   background: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  flex-wrap: wrap; /* 모바일에서 자동 줄바꿈 */
 }
 .label {
-  width: 50px;
+  width: 60px;
   font-weight: bold;
+  font-size: 1.4rem;
 }
 .btn {
-  margin: 0 5px;
-  padding: 6px 12px;
-  border-radius: 6px;
+  flex: 1;
+  margin: 0 8px;
+  padding: 14px 0;
+  border-radius: 8px;
   cursor: pointer;
   border: none;
+  font-size: 1.4rem;
+  font-weight: bold;
 }
 .btn-3 { background: #4CAF50; color: white; }
 .btn-2 { background: #2196F3; color: white; }
 .result {
-  margin-left: 10px;
-  min-width: 120px;
+  flex: 1 1 100%;
+  margin-top: 10px;
+  font-size: 1.4rem;
   font-weight: bold;
+  color: #333;
 }
 /* 중복 메시지 */
 #duplicateMsg {
   display: none;
   background-color: #ffcccc;
   color: #900;
-  padding: 12px;
-  margin-top: 6px;
+  padding: 14px;
+  margin-top: 8px;
   border: 1px solid #900;
   border-radius: 6px;
   font-weight: bold;
+  font-size: 1.2rem;
 }
 #duplicateMsg button {
-  margin-left: 12px;
+  margin-left: 14px;
   background-color: #900;
   color: #fff;
   border: none;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 1rem;
+}
+/* 모바일 전용 스타일 */
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .label {
+    width: 100%;
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+  }
+  .btn {
+    width: 100%;
+    margin: 5px 0;
+    font-size: 1.6rem;
+    padding: 16px 0;
+  }
+  .result {
+    font-size: 1.6rem;
+    text-align: center;
+  }
 }
 </style>
 </head>
@@ -100,7 +131,7 @@ body, html {
   <div class="app-body">
     <!-- 날짜 -->
     <label for="date">날짜</label>
-    <input type="date" id="date" required />
+    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:20px;" />
 
     <!-- 1차~10차 -->
     <h3 style="margin-top:20px;">차수별 입력</h3>
@@ -133,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dateInput.valueAsDate = new Date();
 
   // 데이터 저장용
-  const roundData = {};
+  let roundData = {};
 
   // UI 생성
   for (let i = 1; i <= 10; i++) {
