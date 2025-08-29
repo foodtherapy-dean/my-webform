@@ -53,7 +53,7 @@ body, html {
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  flex-wrap: nowrap; /* 한 줄에 고정 */
+  flex-wrap: nowrap;
 }
 .label {
   width: 60px;
@@ -61,22 +61,36 @@ body, html {
   font-size: 1.4rem;
 }
 .btn {
+  flex: 1; /* 버튼이 행에서 꽉 차게 */
   margin: 0 8px;
-  padding: 14px 20px;
+  padding: 16px;
   border-radius: 8px;
   cursor: pointer;
   border: none;
   font-size: 1.4rem;
   font-weight: bold;
+  background: #e0e0e0; /* 기본 회색 */
+  color: #333;
+  transition: background 0.2s, color 0.2s;
 }
-.btn-3 { background: #4CAF50; color: white; }
-.btn-2 { background: #2196F3; color: white; }
+.btn.selected-3 {
+  background: #4CAF50;
+  color: white;
+}
+.btn.selected-2 {
+  background: #2196F3;
+  color: white;
+}
 .result {
-  margin-left: auto; /* 오른쪽 끝으로 밀기 */
+  margin-left: auto;
   font-size: 1.4rem;
   font-weight: bold;
   color: #333;
+  padding-left: 10px;
+  min-width: 120px;
+  text-align: right;
 }
+
 /* 중복 메시지 */
 #duplicateMsg {
   display: none;
@@ -178,13 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     roundsDiv.appendChild(row);
   }
 
-  window.selectOption = function(round, type) {
-    let no, value;
-    if (type === "3포") { no = 60; value = 1; }
-    else { no = 40; value = 0.7; }
-    roundData[round] = { no, value };
-    document.getElementById("result"+round).textContent = `주정 ${value} kg`;
-  }
+  https://chatgpt.com/c/68b14f66-9c28-832c-95b2-bf8868ad1a2d#:~:text=window.selectOption%20%3D%20function(round%2C%20type)%20%7B%0A%20%20let,1%5D.classList.add(%22selected%2D2%22)%3B%0A%20%20%7D%0A%7D
 
   // 중복 확인
   async function checkDuplicate(date) {
