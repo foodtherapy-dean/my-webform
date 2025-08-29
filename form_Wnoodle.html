@@ -1,341 +1,82 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링</title>
-<style>
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: sans-serif;
-}
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.app-header {
-  background-color: #4CAF50;
-  color: white;
-  text-align: center;
-  padding: 16px;
-  font-size: 1.6rem;
-  flex: 0 0 auto;
-}
-.app-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 20px;
-  box-sizing: border-box;
-  background-color: #f9f9f9;
-}
-.app-footer {
-  flex: 0 0 auto;
-  padding: 0;
-}
-#submitBtn {
-  width: 100%;
-  font-size: 1.5rem;
-  padding: 20px 0;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-}
-.inline-row {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-}
-.inline-row > * {
-  flex: 1;
-  padding: 0 5px;
-  box-sizing: border-box;
-}
-.inline-row label {
-  display: block;
-  margin-bottom: 6px;
-}
-input[type="number"], select, input[type="date"] {
-  width: 100%;
-  padding: 14px 16px;
-  font-size: 1.2rem;
-  box-sizing: border-box;
-  height: auto;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  outline-offset: 0;
-  background-color: #fff;
-}
-
-/* 중복 메시지 스타일 */
-#duplicateMsg {
-  display: none;
-  background-color: #ffcccc;
-  color: #900;
-  padding: 12px;
-  margin-top: 6px;
-  border: 1px solid #900;
-  border-radius: 6px;
-  font-weight: bold;
-}
-#duplicateMsg button {
-  margin-left: 12px;
-  background-color: #900;
-  color: #fff;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* 로딩 메시지 스타일 */
-#loadingMsg {
-  display: none;
-  background-color: #ffe599;
-  color: #333;
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-  font-weight: bold;
-}
-
-@media (min-width: 768px) {
-  input[type="number"], select, input[type="date"] {
-    font-size: 1.4rem;
-    padding: 16px 18px;
-  }
-  #submitBtn {
-    font-size: 1.8rem;
-    padding: 22px 0;
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>생면공정 입력폼</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .row { display: flex; align-items: center; margin-bottom: 8px; }
+    .label { width: 40px; font-weight: bold; }
+    .btn { margin: 0 5px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .btn-3 { background: #4CAF50; color: white; }
+    .btn-2 { background: #2196F3; color: white; }
+    .result { margin-left: 10px; min-width: 120px; }
+    #saveBtn { margin-top: 20px; padding: 10px 20px; font-size: 16px; border-radius: 8px; background: #ff9800; color: white; cursor: pointer; }
+  </style>
 </head>
 <body>
-<div class="app-container">
-  <div class="app-header">건면공정 점검 입력</div>
-
-  <div class="app-body">
-    <!-- 날짜 -->
-    <label for="date">날짜</label>
-    <input type="date" id="date" required />
-
-    <!-- 점검 옵션 -->
-    <label for="group" style="margin-top:20px;">점검 옵션</label>
-    <select id="group" required>
-      <option value="">선택하세요</option>
-      <option value="시스템ON">시스템ON</option>
-      <option value="1차점검">1차점검</option>
-      <option value="2차점검">2차점검</option>
-      <option value="시스템OFF">시스템OFF</option>
-    </select>
-
-    <!-- 중복 메시지 -->
-    <div id="duplicateMsg">
-      <span id="duplicateText"></span>
-      <button id="duplicateConfirmBtn">확인</button>
-    </div>
-
-    <!-- 로딩 메시지 -->
-    <div id="loadingMsg">중복 확인 중...</div>
-
-    <!-- 시간 입력 -->
-    <div class="inline-row" id="timeRow">
-      <div>
-        <label for="hour">시간 (시)</label>
-        <select id="hour"></select>
-      </div>
-      <div>
-        <label for="minute">시간 (분)</label>
-        <select id="minute"></select>
-      </div>
-    </div>
-
-    <!-- 온도 / 습도 입력 -->
-    <div class="inline-row" id="thRow">
-      <div>
-        <label for="temp">온도(℃)</label>
-        <input type="number" id="temp" step="0.1" min="0" max="100" />
-      </div>
-      <div>
-        <label for="humidity">습도(%)</label>
-        <input type="number" id="humidity" step="0.1" min="0" max="100" />
-      </div>
-    </div>
+  <h2>생면공정 입력폼</h2>
+  <div>
+    <label>날짜:</label>
+    <input type="date" id="dateInput">
   </div>
+  <hr>
 
-  <div class="app-footer">
-    <button id="submitBtn">📥 서버로 전송</button>
-  </div>
-</div>
+  <div id="rounds"></div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const dateInput = document.getElementById("date");
-  const groupSelect = document.getElementById("group");
-  const hourSelect = document.getElementById("hour");
-  const minuteSelect = document.getElementById("minute");
-  const tempInput = document.getElementById("temp");
-  const humidityInput = document.getElementById("humidity");
-  const submitBtn = document.getElementById("submitBtn");
-  const timeRow = document.getElementById("timeRow");
-  const thRow = document.getElementById("thRow");
+  <button id="saveBtn">저장</button>
 
-  const duplicateMsg = document.getElementById("duplicateMsg");
-  const duplicateText = document.getElementById("duplicateText");
-  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const loadingMsg = document.getElementById("loadingMsg");
+  <script>
+    // 오늘 날짜 자동 세팅
+    document.getElementById("dateInput").valueAsDate = new Date();
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+    const roundsDiv = document.getElementById("rounds");
+    const roundData = {}; // 선택값 저장
 
-  // 오늘 날짜 자동 입력
-  dateInput.valueAsDate = new Date();
-
-  // 시/분 옵션 채우기
-  function fillTimeOptions() {
-    hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
-      const val = h.toString().padStart(2, "0");
-      hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
+    // 1차~10차 버튼 UI 생성
+    for (let i = 1; i <= 10; i++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `
+        <div class="label">${i}차</div>
+        <button class="btn btn-3" onclick="selectOption(${i}, '3포')">3포</button>
+        <button class="btn btn-2" onclick="selectOption(${i}, '2포')">2포</button>
+        <div id="result${i}" class="result"></div>
+      `;
+      roundsDiv.appendChild(row);
     }
-    minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
-      const val = m.toString().padStart(2, "0");
-      minuteSelect.innerHTML += `<option value="${val}">${val}</option>`;
-    }
-  }
-  fillTimeOptions();
 
-  function updateInputFields() {
-    const group = groupSelect.value;
-    if (group === "시스템ON" || group === "시스템OFF") {
-      timeRow.style.display = "flex";
-      thRow.style.display = "none";
-      tempInput.value = "";
-      humidityInput.value = "";
-    } else if (group === "1차점검" || group === "2차점검") {
-      timeRow.style.display = "flex";
-      thRow.style.display = "flex";
-    } else {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      hourSelect.value = "";
-      minuteSelect.value = "";
-      tempInput.value = "";
-      humidityInput.value = "";
-    }
-  }
-
-  duplicateConfirmBtn.addEventListener("click", () => {
-    duplicateMsg.style.display = "none";
-  });
-
-  async function checkDuplicate(date, group){
-    loadingMsg.style.display = "block";
-    submitBtn.disabled = true;
-    try{
-      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-
-      if(data.exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
+    function selectOption(round, type) {
+      let value, ratio;
+      if (type === "3포") {
+        value = 60; ratio = 1;
       } else {
-        duplicateMsg.style.display = "none";
+        value = 40; ratio = 0.7;
       }
-
-      submitBtn.disabled = false;
-      return true;
-    } catch(err){
-      console.error("중복 확인 오류:",err);
-      loadingMsg.style.display="none";
-      duplicateText.textContent = "중복 확인 중 오류 발생!";
-      duplicateMsg.style.display="block";
-      submitBtn.disabled = true;
-      return false;
-    }
-  }
-
-  dateInput.addEventListener("change", async () => {
-    if (dateInput.value && groupSelect.value) {
-      await checkDuplicate(dateInput.value, groupSelect.value);
-    } else {
-      submitBtn.disabled = true;
-    }
-    updateInputFields();
-  });
-
-  groupSelect.addEventListener("change", async () => {
-    hourSelect.value = "";
-    minuteSelect.value = "";
-    tempInput.value = "";
-    humidityInput.value = "";
-    duplicateMsg.style.display = "none"; // 점검옵션 변경 시 경고 사라짐
-
-    if (dateInput.value && groupSelect.value) {
-      await checkDuplicate(dateInput.value, groupSelect.value);
-    } else {
-      submitBtn.disabled = true;
-    }
-    updateInputFields();
-  });
-
-  submitBtn.addEventListener("click", async () => {
-    if (submitBtn.disabled) return;
-
-    if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
-    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
-    if (timeRow.style.display !== "none") {
-      if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
-      if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
-    }
-    if (thRow.style.display !== "none") {
-      if (!tempInput.value) { alert("온도를 입력하세요."); return; }
-      if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
+      roundData[round] = { type, value, ratio };
+      document.getElementById("result" + round).textContent = `주정 ${ratio} kg`;
     }
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        temp: tempInput.value,
-        humidity: humidityInput.value
-      }
-    };
+    // 저장 버튼 클릭 → Apps Script로 전송
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const date = document.getElementById("dateInput").value;
+      if (!date) { alert("날짜를 선택하세요."); return; }
 
-    try {
-      const res = await fetch(scriptUrl, {
+      const data = {
+        date: date,
+        rounds: roundData
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-      });
-      const text = await res.text();
-      alert("서버 응답: " + text);
-
-      // 저장 완료 후 초기화 + 중복 메시지 숨김
-      dateInput.valueAsDate = new Date();
-      groupSelect.value = "";
-      hourSelect.value = "";
-      minuteSelect.value = "";
-      tempInput.value = "";
-      humidityInput.value = "";
-      duplicateMsg.style.display = "none";
-      submitBtn.disabled = true;
-      updateInputFields();
-    } catch (err) {
-      alert("에러 발생: " + err.message);
-    }
-  });
-
-  updateInputFields();
-});
-</script>
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(msg => alert("저장 완료: " + msg))
+      .catch(err => alert("에러 발생: " + err));
+    });
+  </script>
 </body>
 </html>
