@@ -44,26 +44,29 @@ body, html {
   border-radius: 0;
   cursor: pointer;
 }
+
+/* 한 행 레이아웃 고정 */
 .row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  gap: 8px;
   margin-bottom: 12px;
   background: #fff;
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  flex-wrap: nowrap;
+  flex-wrap: nowrap; /* 항상 한 줄 유지 */
 }
 .label {
-  width: 60px;
+  flex: 0 0 60px; /* 고정폭 */
   font-weight: bold;
   font-size: 1.4rem;
+  text-align: left;
 }
 .btn {
-  flex: 1;
-  margin: 0 8px;
-  padding: 16px;
+  flex: 1 1 0;      /* 두 버튼이 남은 공간을 균등 분배 */
+  min-width: 0;     /* 길어져도 줄바꿈 없이 축소 */
+  padding: 16px 12px;
   border-radius: 8px;
   cursor: pointer;
   border: none;
@@ -71,32 +74,22 @@ body, html {
   font-weight: bold;
   background: #e0e0e0; /* 기본 회색 */
   color: #333;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .btn.selected {
-  background: #4CAF50; /* 선택 시 공통 초록 */
+  background: #4CAF50; /* 선택 시 공통 색상 */
   color: white;
+  box-shadow: inset 0 0 0 2px #2e7d32;
 }
-
-/* 모바일 전용 스타일 */
-@media (max-width: 768px) {
-  .row {
-    flex-wrap: wrap;  /* 버튼과 결과가 한 줄에 유지되도록 */
-  }
-  .label {
-    font-size: 1.6rem;
-  }
-  .btn {
-    font-size: 1.6rem;
-    padding: 16px 0;
-  }
-  .result {
-    font-size: 1.6rem;
-    text-align: right;
-    flex: 1; /* 결과가 오른쪽 끝으로 */
-  }
+.result {
+  margin-left: auto;   /* 오른쪽 끝으로 밀기 */
+  flex: 0 0 auto;
+  min-width: 110px;
+  text-align: right;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
 }
-
 
 /* 중복 메시지 */
 #duplicateMsg {
@@ -120,27 +113,13 @@ body, html {
   cursor: pointer;
   font-size: 1rem;
 }
-/* 모바일 전용 스타일 */
+
+/* 모바일 전용: 한 줄 유지하면서 터치 영역 확대 */
 @media (max-width: 768px) {
-  .row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .label {
-    width: 100%;
-    font-size: 1.6rem;
-    margin-bottom: 10px;
-  }
-  .btn {
-    width: 100%;
-    margin: 5px 0;
-    font-size: 1.6rem;
-    padding: 16px 0;
-  }
-  .result {
-    font-size: 1.6rem;
-    text-align: center;
-  }
+  .row { gap: 6px; padding: 14px; }
+  .label { flex-basis: 56px; font-size: 1.6rem; }
+  .btn { font-size: 1.6rem; padding: 16px 8px; }
+  .result { font-size: 1.6rem; min-width: 100px; }
 }
 </style>
 </head>
@@ -190,33 +169,39 @@ document.addEventListener('DOMContentLoaded', () => {
   for (let i = 1; i <= 10; i++) {
     const row = document.createElement("div");
     row.className = "row";
+    row.setAttribute('data-round', i);
+
     row.innerHTML = `
       <div class="label">${i}차</div>
-      <button class="btn btn-3" onclick="selectOption(${i}, '3포')">3포</button>
-      <button class="btn btn-2" onclick="selectOption(${i}, '2포')">2포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '3포')" aria-pressed="false">3포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '2포')" aria-pressed="false">2포</button>
       <div id="result${i}" class="result"></div>
     `;
     roundsDiv.appendChild(row);
   }
 
- window.selectOption = function(round, type) {
-  let no, value;
-  if (type === "3포") { no = 60; value = 1; }
-  else { no = 40; value = 0.7; }
+  // 선택 처리 (보다 견고하게: 해당 행 요소 기준으로 조작)
+  window.selectOption = function(round, type) {
+    const rowEl = roundsDiv.children[round - 1];          // i번째 행
+    const btns = rowEl.querySelectorAll('.btn');          // 해당 행의 두 버튼
 
-  roundData[round] = { no, value };
+    let no, value;
+    if (type === "3포") { no = 60; value = 1; }
+    else { no = 40; value = 0.7; }
 
-  // 결과 텍스트 표시
-  document.getElementById("result"+round).textContent = `주정 ${value} kg`;
+    roundData[round] = { no, value };
+    document.getElementById("result"+round).textContent = `주정 ${value} kg`;
 
-  // 버튼 하이라이트 처리
-  const rowBtns = document.querySelectorAll(`#rounds .row:nth-child(${round}) .btn`);
-  rowBtns.forEach(btn => btn.classList.remove("selected"));
-  if (type === "3포") rowBtns[0].classList.add("selected");
-  else rowBtns[1].classList.add("selected");
-}
-
-
+    // 버튼 하이라이트 토글
+    btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+    if (type === "3포") {
+      btns[0].classList.add('selected');
+      btns[0].setAttribute('aria-pressed','true');
+    } else {
+      btns[1].classList.add('selected');
+      btns[1].setAttribute('aria-pressed','true');
+    }
+  }
 
   // 중복 확인
   async function checkDuplicate(date) {
@@ -247,43 +232,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 저장
   submitBtn.addEventListener("click", async () => {
-  if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
 
-  const noArr = [], valueArr = [];
-  for (let i = 1; i <= 10; i++) {
-    if (roundData[i]) {
-      noArr.push(roundData[i].no);
-      valueArr.push(roundData[i].value);
-    } else {
-      noArr.push("");
-      valueArr.push("");
+    const noArr = [], valueArr = [];
+    for (let i = 1; i <= 10; i++) {
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
     }
-  }
 
-  const data = {
-    date: dateInput.value,
-    no: noArr,
-    value: valueArr
-  };
+    const data = {
+      date: dateInput.value,
+      no: noArr,
+      value: valueArr
+    };
 
-  try {
-    const res = await fetch(scriptUrl, {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" }
-    });
-    const text = await res.text();
-    alert("저장 완료: " + text);
+    try {
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
+      const text = await res.text();
+      alert("저장 완료: " + text);
 
-    // ✅ 저장 성공 후 초기화
-    roundData = {};
-    document.querySelectorAll(".result").forEach(el => el.textContent = "");
-    document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-    dateInput.valueAsDate = new Date();
-  } catch (err) {
-    alert("에러 발생: " + err.message);
-  }
-});
+      // 저장 성공 후 초기화
+      roundData = {};
+      document.querySelectorAll(".result").forEach(el => el.textContent = "");
+      document.querySelectorAll(".btn").forEach(btn => { btn.classList.remove("selected"); btn.setAttribute('aria-pressed','false'); });
+      dateInput.valueAsDate = new Date();
+    } catch (err) {
+      alert("에러 발생: " + err.message);
+    }
+  });
 
   // 초기 중복 확인
   if (dateInput.value) checkDuplicate(dateInput.value);
