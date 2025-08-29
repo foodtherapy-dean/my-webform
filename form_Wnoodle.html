@@ -32,7 +32,7 @@
     document.getElementById("dateInput").valueAsDate = new Date();
 
     const roundsDiv = document.getElementById("rounds");
-    const roundData = {}; // 선택값 저장
+    const roundData = {}; // {1: {no:60, value:1}, ...}
 
     // 1차~10차 버튼 UI 생성
     for (let i = 1; i <= 10; i++) {
@@ -48,24 +48,38 @@
     }
 
     function selectOption(round, type) {
-      let value, ratio;
+      let no, value;
       if (type === "3포") {
-        value = 60; ratio = 1;
+        no = 60; value = 1;
       } else {
-        value = 40; ratio = 0.7;
+        no = 40; value = 0.7;
       }
-      roundData[round] = { type, value, ratio };
-      document.getElementById("result" + round).textContent = `주정 ${ratio} kg`;
+      roundData[round] = { no, value };
+      document.getElementById("result" + round).textContent = `주정 ${value} kg`;
     }
 
-    // 저장 버튼 클릭 → Apps Script로 전송
+    // 저장 버튼 → Apps Script로 전송
     document.getElementById("saveBtn").addEventListener("click", () => {
       const date = document.getElementById("dateInput").value;
       if (!date) { alert("날짜를 선택하세요."); return; }
 
+      // No1~No10, value1~value10 배열 구성
+      const noArr = [];
+      const valueArr = [];
+      for (let i = 1; i <= 10; i++) {
+        if (roundData[i]) {
+          noArr.push(roundData[i].no);
+          valueArr.push(roundData[i].value);
+        } else {
+          noArr.push("");     // 선택 안했으면 빈칸
+          valueArr.push("");
+        }
+      }
+
       const data = {
         date: date,
-        rounds: roundData
+        no: noArr,
+        value: valueArr
       };
 
       fetch("https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec", {
