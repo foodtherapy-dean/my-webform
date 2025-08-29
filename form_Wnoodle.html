@@ -47,12 +47,13 @@ body, html {
 .row {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   margin-bottom: 12px;
   background: #fff;
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  flex-wrap: wrap; /* 모바일에서 자동 줄바꿈 */
+  flex-wrap: nowrap; /* 한 줄에 고정 */
 }
 .label {
   width: 60px;
@@ -60,9 +61,8 @@ body, html {
   font-size: 1.4rem;
 }
 .btn {
-  flex: 1;
   margin: 0 8px;
-  padding: 14px 0;
+  padding: 14px 20px;
   border-radius: 8px;
   cursor: pointer;
   border: none;
@@ -72,8 +72,7 @@ body, html {
 .btn-3 { background: #4CAF50; color: white; }
 .btn-2 { background: #2196F3; color: white; }
 .result {
-  flex: 1 1 100%;
-  margin-top: 10px;
+  margin-left: auto; /* 오른쪽 끝으로 밀기 */
   font-size: 1.4rem;
   font-weight: bold;
   color: #333;
