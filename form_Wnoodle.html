@@ -78,7 +78,7 @@ body, html {
   color: white;
 }
 .btn.selected-2 {
-  background: #2196F3;
+  background: #4CAF50;
   color: white;
 }
 .result {
@@ -204,14 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 버튼 하이라이트 처리
   const row = document.querySelectorAll(`#rounds .row:nth-child(${round}) .btn`);
-  row.forEach(btn => btn.classList.remove("selected-3", "selected-2"));
-
-  if (type === "3포") {
-    row[0].classList.add("selected-3");
-  } else {
-    row[1].classList.add("selected-2");
-  }
+  row.forEach(btn => btn.classList.remove("selected"));
+  if (type === "3포") row[0].classList.add("selected");
+  else row[1].classList.add("selected");
 }
+
 
 
   // 중복 확인
@@ -246,21 +243,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
 
     const noArr = [], valueArr = [];
-    for (let i = 1; i <= 10; i++) {
-      if (roundData[i]) {
-        noArr.push(roundData[i].no);
-        valueArr.push(roundData[i].value);
-      } else {
-        noArr.push("");
-        valueArr.push("");
-      }
-    }
-
-    const data = {
-      date: dateInput.value,
-      no: noArr,
-      value: valueArr
-    };
+    // 초기화
+for (let i = 1; i <= 10; i++) {
+  document.getElementById("result"+i).textContent = "";
+}
+document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+Object.keys(roundData).forEach(k => delete roundData[k]); // roundData 비우기
+dateInput.valueAsDate = new Date();
 
     try {
       const res = await fetch(scriptUrl, {
