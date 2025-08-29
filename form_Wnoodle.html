@@ -1,96 +1,230 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>생면공정 입력폼</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .row { display: flex; align-items: center; margin-bottom: 8px; }
-    .label { width: 40px; font-weight: bold; }
-    .btn { margin: 0 5px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-    .btn-3 { background: #4CAF50; color: white; }
-    .btn-2 { background: #2196F3; color: white; }
-    .result { margin-left: 10px; min-width: 120px; }
-    #saveBtn { margin-top: 20px; padding: 10px 20px; font-size: 16px; border-radius: 8px; background: #ff9800; color: white; cursor: pointer; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>생면공정 입력</title>
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: sans-serif;
+}
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-header {
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 16px;
+  font-size: 1.6rem;
+  flex: 0 0 auto;
+}
+.app-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+}
+.app-footer {
+  flex: 0 0 auto;
+}
+#submitBtn {
+  width: 100%;
+  font-size: 1.5rem;
+  padding: 20px 0;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.label {
+  width: 50px;
+  font-weight: bold;
+}
+.btn {
+  margin: 0 5px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+}
+.btn-3 { background: #4CAF50; color: white; }
+.btn-2 { background: #2196F3; color: white; }
+.result {
+  margin-left: 10px;
+  min-width: 120px;
+  font-weight: bold;
+}
+/* 중복 메시지 */
+#duplicateMsg {
+  display: none;
+  background-color: #ffcccc;
+  color: #900;
+  padding: 12px;
+  margin-top: 6px;
+  border: 1px solid #900;
+  border-radius: 6px;
+  font-weight: bold;
+}
+#duplicateMsg button {
+  margin-left: 12px;
+  background-color: #900;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
-  <h2>생면공정 입력폼</h2>
-  <div>
-    <label>날짜:</label>
-    <input type="date" id="dateInput">
+<div class="app-container">
+  <div class="app-header">생면공정 점검 입력</div>
+
+  <div class="app-body">
+    <!-- 날짜 -->
+    <label for="date">날짜</label>
+    <input type="date" id="date" required />
+
+    <!-- 1차~10차 -->
+    <h3 style="margin-top:20px;">차수별 입력</h3>
+    <div id="rounds"></div>
+
+    <!-- 중복 메시지 -->
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
   </div>
-  <hr>
 
-  <div id="rounds"></div>
+  <div class="app-footer">
+    <button id="submitBtn">📥 저장하기</button>
+  </div>
+</div>
 
-  <button id="saveBtn">저장</button>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const dateInput = document.getElementById("date");
+  const submitBtn = document.getElementById("submitBtn");
+  const roundsDiv = document.getElementById("rounds");
+  const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
 
-  <script>
-    // 오늘 날짜 자동 세팅
-    document.getElementById("dateInput").valueAsDate = new Date();
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
 
-    const roundsDiv = document.getElementById("rounds");
-    const roundData = {}; // {1: {no:60, value:1}, ...}
+  // 오늘 날짜 자동
+  dateInput.valueAsDate = new Date();
 
-    // 1차~10차 버튼 UI 생성
-    for (let i = 1; i <= 10; i++) {
-      const row = document.createElement("div");
-      row.className = "row";
-      row.innerHTML = `
-        <div class="label">${i}차</div>
-        <button class="btn btn-3" onclick="selectOption(${i}, '3포')">3포</button>
-        <button class="btn btn-2" onclick="selectOption(${i}, '2포')">2포</button>
-        <div id="result${i}" class="result"></div>
-      `;
-      roundsDiv.appendChild(row);
-    }
+  // 데이터 저장용
+  const roundData = {};
 
-    function selectOption(round, type) {
-      let no, value;
-      if (type === "3포") {
-        no = 60; value = 1;
+  // UI 생성
+  for (let i = 1; i <= 10; i++) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div class="label">${i}차</div>
+      <button class="btn btn-3" onclick="selectOption(${i}, '3포')">3포</button>
+      <button class="btn btn-2" onclick="selectOption(${i}, '2포')">2포</button>
+      <div id="result${i}" class="result"></div>
+    `;
+    roundsDiv.appendChild(row);
+  }
+
+  window.selectOption = function(round, type) {
+    let no, value;
+    if (type === "3포") { no = 60; value = 1; }
+    else { no = 40; value = 0.7; }
+    roundData[round] = { no, value };
+    document.getElementById("result"+round).textContent = `주정 ${value} kg`;
+  }
+
+  // 중복 확인
+  async function checkDuplicate(date) {
+    try {
+      const res = await fetch(`${scriptUrl}?checkDate=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if (data.exists) {
+        duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
+        duplicateMsg.style.display = "block";
+        submitBtn.disabled = true;
       } else {
-        no = 40; value = 0.7;
+        duplicateMsg.style.display = "none";
+        submitBtn.disabled = false;
       }
-      roundData[round] = { no, value };
-      document.getElementById("result" + round).textContent = `주정 ${value} kg`;
+    } catch (err) {
+      console.error("중복 확인 실패:", err);
+    }
+  }
+
+  dateInput.addEventListener("change", () => {
+    if (dateInput.value) checkDuplicate(dateInput.value);
+  });
+
+  duplicateConfirmBtn.addEventListener("click", () => {
+    duplicateMsg.style.display = "none";
+    submitBtn.disabled = false; // 강제 입력 허용
+  });
+
+  // 저장
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+
+    const noArr = [], valueArr = [];
+    for (let i = 1; i <= 10; i++) {
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
     }
 
-    // 저장 버튼 → Apps Script로 전송
-    document.getElementById("saveBtn").addEventListener("click", () => {
-      const date = document.getElementById("dateInput").value;
-      if (!date) { alert("날짜를 선택하세요."); return; }
+    const data = {
+      date: dateInput.value,
+      no: noArr,
+      value: valueArr
+    };
 
-      // No1~No10, value1~value10 배열 구성
-      const noArr = [];
-      const valueArr = [];
-      for (let i = 1; i <= 10; i++) {
-        if (roundData[i]) {
-          noArr.push(roundData[i].no);
-          valueArr.push(roundData[i].value);
-        } else {
-          noArr.push("");     // 선택 안했으면 빈칸
-          valueArr.push("");
-        }
-      }
-
-      const data = {
-        date: date,
-        no: noArr,
-        value: valueArr
-      };
-
-      fetch("https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec", {
+    try {
+      const res = await fetch(scriptUrl, {
         method: "POST",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.text())
-      .then(msg => alert("저장 완료: " + msg))
-      .catch(err => alert("에러 발생: " + err));
-    });
-  </script>
+      });
+      const text = await res.text();
+      alert("저장 완료: " + text);
+
+      // 초기화
+      roundData = {};
+      document.querySelectorAll(".result").forEach(el => el.textContent = "");
+      dateInput.valueAsDate = new Date();
+    } catch (err) {
+      alert("에러 발생: " + err.message);
+    }
+  });
+
+  // 초기 중복 확인
+  if (dateInput.value) checkDuplicate(dateInput.value);
+});
+</script>
 </body>
 </html>
