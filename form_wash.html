@@ -160,7 +160,7 @@ optionSelect.addEventListener("change", async (e) => {
   try {
     // 중복 체크 URL 만들기
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
-    const url = `https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec?checkWash=${query}`;
+    const url = `https://script.google.com/macros/s/AKfycbwpu99wW6iHA1lYQPuaf8QrfINifu2XXJWUMBCj0l-0x_koTVILtUirwxCp4XULSQ2DsQ/exec?checkWash=${query}`;
     const res = await fetch(url);
     const result = await res.json();
 
