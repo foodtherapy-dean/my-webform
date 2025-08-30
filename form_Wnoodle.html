@@ -1,271 +1,146 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>생면공정 점검</title>
 <style>
-body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f9f9f9;
-}
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-.app-header {
-  flex: 0 0 auto;
-  background-color: #4CAF50;
-  color: white;
-  text-align: center;
-  padding: 16px;
-  font-size: 1.5rem;
-}
-.app-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 16px;
-}
-.app-footer {
-  flex: 0 0 auto;
-  position: sticky;
-  bottom: 0;
-}
-button[type="submit"] {
-  width: 100%;
-  font-size: 1.4rem;
-  padding: 18px 0;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-}
-button[type="submit"]:hover {
-  background-color: #218838;
-}
-label {
-  display: block;
-  margin-top: 20px;
-  font-weight: bold;
-}
-input, select {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  box-sizing: border-box;
-  text-align: center;
-  font-size: 1.1rem;
-}
-.chasu-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-}
-.chasu-btn {
-  flex: 1 1 30%;
-  padding: 12px;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1.1rem;
-}
-.chasu-btn.selected {
-  background: #007bff;
-  color: white;
-  border-color: #0056b3;
-}
-.result-cell {
-  margin-top: 8px;
-  text-align: right;
-  font-weight: bold;
-  color: #333;
-}
-#duplicateMsg {
-  background-color: #ffc107;
-  color: white;
-  padding: 10px;
-  margin-top: 10px;
-  text-align: center;
-  border-radius: 4px;
-  display: none;
-}
-#duplicateMsg button {
-  margin: 6px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-#duplicateProceed { background: #007bff; color: white; }
-#duplicateCancel { background: #dc3545; color: white; }
+body { font-family:sans-serif; margin:0; background:#f9f9f9; }
+.app-container { display:flex; flex-direction:column; height:100vh; }
+.app-header { background:#4CAF50; color:#fff; text-align:center; padding:14px; font-size:1.3rem; }
+.app-body { flex:1; overflow-y:auto; padding:12px; }
+.app-footer { position:sticky; bottom:0; }
+button[type=submit] { width:100%; font-size:1.3rem; padding:16px 0; background:#28a745; color:#fff; border:none; cursor:pointer; }
+button[type=submit]:hover { background:#218838; }
+.row { display:flex; align-items:center; margin:8px 0; gap:8px; }
+.label { width:50px; font-weight:bold; }
+.btn { flex:1; padding:12px; font-size:1.1rem; border:1px solid #ccc; border-radius:8px; background:#eee; cursor:pointer; }
+.btn.selected { background:#007bff; color:white; border-color:#0056b3; }
+.result { flex:1; text-align:right; font-weight:bold; color:#333; }
+#duplicateMsg { background:#ffc107; color:#000; padding:10px; margin:10px 0; text-align:center; border-radius:4px; display:none; }
+#duplicateMsg button { margin:6px; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; }
+#duplicateProceed { background:#007bff; color:#fff; }
+#duplicateCancel { background:#dc3545; color:#fff; }
 </style>
 </head>
 <body>
 <div class="app-container">
   <div class="app-header">생면공정 점검</div>
-
-  <form id="saengmyeonForm" class="app-body">
-    <label>날짜
-      <input type="date" id="date" name="date" required />
-    </label>
-
-    <label>차수 선택</label>
-    <div class="chasu-row" id="chasuContainer"></div>
-    <div id="resultArea" class="result-cell"></div>
-
+  <div class="app-body">
+    <label>날짜</label>
+    <input type="date" id="date" required>
+    <div id="rounds"></div>
     <div id="duplicateMsg">
       <div id="duplicateText"></div>
       <button type="button" id="duplicateProceed">진행</button>
       <button type="button" id="duplicateCancel">취소</button>
     </div>
-  </form>
-
+  </div>
   <div class="app-footer">
-    <button type="submit" form="saengmyeonForm">저장</button>
+    <button id="submitBtn">저장</button>
   </div>
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+document.addEventListener("DOMContentLoaded", () => {
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+  const dateInput = document.getElementById("date");
+  const roundsDiv = document.getElementById("rounds");
+  const submitBtn = document.getElementById("submitBtn");
+  const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const duplicateProceed = document.getElementById("duplicateProceed");
+  const duplicateCancel = document.getElementById("duplicateCancel");
 
-// 날짜 기본값
-const dateInput = document.getElementById("date");
-dateInput.valueAsDate = new Date();
+  dateInput.valueAsDate = new Date();
+  let roundData = {};
 
-// 차수 버튼 생성
-const chasuLabels = ["1차(3포)", "2차(2포)", "3차(3포)", "4차(2포)", "5차(3포)", "6차(2포)", "7차(3포)", "8차(2포)", "9차(3포)", "10차(2포)"];
-const chasuContainer = document.getElementById("chasuContainer");
-let selectedChasu = null;
-let selectedResult = "";
+  // 차수별 UI 생성
+  for (let i = 1; i <= 10; i++) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.dataset.round = i;
+    row.innerHTML = `
+      <div class="label">${i}차</div>
+      <button class="btn" type="button" data-type="3포">3포</button>
+      <button class="btn" type="button" data-type="2포">2포</button>
+      <div class="result" id="result${i}"></div>
+    `;
+    roundsDiv.appendChild(row);
 
-chasuLabels.forEach((label, idx) => {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "chasu-btn";
-  btn.textContent = label;
-  btn.dataset.chasu = idx + 1;
-  btn.addEventListener("click", () => {
-    // 선택 취소
-    if (btn.classList.contains("selected")) {
-      btn.classList.remove("selected");
-      selectedChasu = null;
-      selectedResult = "";
-      document.getElementById("resultArea").innerText = "";
-      return;
+    // 버튼 이벤트
+    row.querySelectorAll(".btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.type;
+        const no = (type === "3포" ? 60 : 40);
+        const value = (type === "3포" ? 1 : 0.7);
+        roundData[i] = { no, value };
+
+        row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        document.getElementById("result"+i).textContent = `주정 ${value} kg`;
+      });
+    });
+  }
+
+  // 저장
+  submitBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    if (!dateInput.value) { alert("날짜를 선택하세요"); return; }
+
+    const noArr = [], valueArr = [];
+    for (let i=1;i<=10;i++){
+      noArr.push(roundData[i]?.no || "");
+      valueArr.push(roundData[i]?.value || "");
     }
 
-    // 다른 버튼 해제
-    document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
+    const payload = { date: dateInput.value, no: noArr, value: valueArr };
 
-    selectedChasu = idx + 1;
-    selectedResult = (label.includes("3포") ? "주정 1kg" : "주정 0.7kg");
-    document.getElementById("resultArea").innerText = `${label} → ${selectedResult}`;
+    try {
+      // 중복 확인
+      const res = await fetch(`${scriptUrl}?checkDate=${encodeURIComponent(dateInput.value)}`);
+      const data = await res.json();
+      if (data.exists) {
+        duplicateText.textContent = `⚠️ ${dateInput.value} 에 이미 데이터가 있습니다. 진행할까요?`;
+        duplicateMsg.style.display = "block";
+
+        duplicateProceed.onclick = () => {
+          duplicateMsg.style.display = "none";
+          sendData(payload, true);
+        };
+        duplicateCancel.onclick = () => {
+          duplicateMsg.style.display = "none";
+          resetForm();
+        };
+      } else {
+        sendData(payload, false);
+      }
+    } catch (err) {
+      alert("중복 확인 실패: "+err.message);
+    }
   });
-  chasuContainer.appendChild(btn);
-});
 
-// 중복 확인 메시지
-const duplicateMsg = document.getElementById("duplicateMsg");
-const duplicateText = document.getElementById("duplicateText");
-const duplicateProceed = document.getElementById("duplicateProceed");
-const duplicateCancel = document.getElementById("duplicateCancel");
-
-// 폼 제출
-document.getElementById("saengmyeonForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-
-  if (!selectedChasu) {
-    alert("차수를 선택하세요.");
-    return;
-  }
-
-  const dateVal = dateInput.value;
-  if (!dateVal) {
-    alert("날짜를 입력하세요.");
-    return;
-  }
-
-  // 🔹 1차 미선택 시 이후 차수 불가
-  if (selectedChasu > 1) {
-    const missing = [];
-    for (let i = 1; i < selectedChasu; i++) {
-      // 실제로 체크했는지 검증 로직 필요 (예제에서는 단순히 선택값만 확인)
-      if (i !== selectedChasu) missing.push(`${i}차`);
-    }
-    if (missing.length > 0 && !document.querySelector(`.chasu-btn[data-chasu="1"]`).classList.contains("selected")) {
-      alert(`⚠️ ${missing.join(", ")} 차수가 체크되지 않았습니다.\n최초 1차는 반드시 선택해야 합니다.`);
-      return;
+  async function sendData(payload, update){
+    try {
+      const res = await fetch(scriptUrl, {
+        method:"POST",
+        body: new URLSearchParams({ saengmyeon: JSON.stringify({ ...payload, update }) })
+      });
+      const text = await res.text();
+      alert("저장 완료: "+text);
+      resetForm();
+    } catch(err) {
+      alert("저장 오류: "+err.message);
     }
   }
 
-  // 🔹 저장 전 중복 체크
-  try {
-    const query = encodeURIComponent(dateVal);
-    const res = await fetch(`${scriptUrl}?checkDate=${query}`);
-    const result = await res.json();
-
-    if (result.exists) {
-      duplicateText.innerText = `⚠️ 이미 같은 날짜(${dateVal})에 데이터가 존재합니다. 진행하시겠습니까?`;
-      duplicateMsg.style.display = "block";
-
-      duplicateProceed.onclick = () => {
-        duplicateMsg.style.display = "none";
-        saveData(true);
-      };
-      duplicateCancel.onclick = () => {
-        duplicateMsg.style.display = "none";
-        document.getElementById("saengmyeonForm").reset();
-        document.getElementById("resultArea").innerText = "";
-        document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
-        selectedChasu = null;
-        selectedResult = "";
-      };
-    } else {
-      saveData(false);
-    }
-  } catch (err) {
-    alert("중복 확인 오류: " + err.message);
+  function resetForm(){
+    roundData = {};
+    document.querySelectorAll(".result").forEach(r=>r.textContent="");
+    document.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
+    dateInput.valueAsDate = new Date();
   }
 });
-
-// 🔹 실제 저장 함수
-async function saveData(update) {
-  const data = {
-    type: "saengmyeon",
-    date: dateInput.value,
-    chasu: selectedChasu,
-    result: selectedResult,
-    update
-  };
-
-  const formData = new FormData();
-  formData.append("saengmyeon", JSON.stringify(data));
-
-  try {
-    const response = await fetch(scriptUrl, { method: "POST", body: formData });
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
-      document.getElementById("saengmyeonForm").reset();
-      document.getElementById("resultArea").innerText = "";
-      document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
-      selectedChasu = null;
-      selectedResult = "";
-      dateInput.valueAsDate = new Date();
-    } else {
-      alert("❌ 서버 오류:\n" + result);
-    }
-  } catch (err) {
-    alert("❌ 저장 중 오류:\n" + err.message);
-  }
-}
 </script>
 </body>
 </html>
