@@ -47,12 +47,13 @@ body, html {
 .row {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   margin-bottom: 12px;
   background: #fff;
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  flex-wrap: wrap; /* 모바일에서 자동 줄바꿈 */
+  flex-wrap: nowrap;
 }
 .label {
   width: 60px;
@@ -60,24 +61,36 @@ body, html {
   font-size: 1.4rem;
 }
 .btn {
-  flex: 1;
+  flex: 1; /* 버튼이 행에서 꽉 차게 */
   margin: 0 8px;
-  padding: 14px 0;
+  padding: 16px;
   border-radius: 8px;
   cursor: pointer;
   border: none;
   font-size: 1.4rem;
   font-weight: bold;
+  background: #e0e0e0; /* 기본 회색 */
+  color: #333;
+  transition: background 0.2s, color 0.2s;
 }
-.btn-3 { background: #4CAF50; color: white; }
-.btn-2 { background: #2196F3; color: white; }
+.btn.selected-3 {
+  background: #4CAF50;
+  color: white;
+}
+.btn.selected-2 {
+  background: #4CAF50;
+  color: white;
+}
 .result {
-  flex: 1 1 100%;
-  margin-top: 10px;
+  margin-left: auto;
   font-size: 1.4rem;
   font-weight: bold;
   color: #333;
+  padding-left: 10px;
+  min-width: 120px;
+  text-align: right;
 }
+
 /* 중복 메시지 */
 #duplicateMsg {
   display: none;
@@ -179,13 +192,22 @@ document.addEventListener('DOMContentLoaded', () => {
     roundsDiv.appendChild(row);
   }
 
-  window.selectOption = function(round, type) {
-    let no, value;
-    if (type === "3포") { no = 60; value = 1; }
-    else { no = 40; value = 0.7; }
-    roundData[round] = { no, value };
-    document.getElementById("result"+round).textContent = `주정 ${value} kg`;
-  }
+ window.selectOption = function(round, type) {
+  let no, value;
+  if (type === "3포") { no = 60; value = 1; }
+  else { no = 40; value = 0.7; }
+
+  roundData[round] = { no, value };
+
+  // 결과 텍스트 표시
+  document.getElementById("result"+round).textContent = `주정 ${value} kg`;
+
+  // 버튼 하이라이트 처리
+  const row = document.querySelectorAll(`#rounds .row:nth-child(${round}) .btn`);
+  row.forEach(btn => btn.classList.remove("selected"));
+  if (type === "3포") row[0].classList.add("selected");
+  else row[1].classList.add("selected");
+}
 
   // 중복 확인
   async function checkDuplicate(date) {
