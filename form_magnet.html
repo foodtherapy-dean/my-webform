@@ -263,7 +263,7 @@ document.getElementById("option").addEventListener("change", async e => {
 
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-    const url = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec?checkMagnet=" + query;
+    const url = "https://script.google.com/macros/s/AKfycbwpu99wW6iHA1lYQPuaf8QrfINifu2XXJWUMBCj0l-0x_koTVILtUirwxCp4XULSQ2DsQ/exec?checkMagnet=" + query;
     
     const res = await fetch(url);
     const result = await res.json();
