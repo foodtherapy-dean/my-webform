@@ -157,7 +157,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateText = document.getElementById("duplicateText");
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbwpu99wW6iHA1lYQPuaf8QrfINifu2XXJWUMBCj0l-0x_koTVILtUirwxCp4XULSQ2DsQ/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+
+  // --- 보조: 로딩 표시 요소를 동적으로 추가 (date 입력 바로 옆에 표시)
+  let loadingDiv = document.getElementById("saengLoading");
+  if (!loadingDiv) {
+    loadingDiv = document.createElement("div");
+    loadingDiv.id = "saengLoading";
+    loadingDiv.style.display = "none";
+    loadingDiv.style.marginTop = "8px";
+    loadingDiv.style.padding = "8px";
+    loadingDiv.style.background = "#007bff";
+    loadingDiv.style.color = "#fff";
+    loadingDiv.style.borderRadius = "6px";
+    loadingDiv.style.fontWeight = "bold";
+    loadingDiv.textContent = "중복 확인 중...";
+    // insert after date input
+    if (dateInput && dateInput.parentNode) {
+      dateInput.parentNode.insertBefore(loadingDiv, dateInput.nextSibling);
+    } else {
+      document.querySelector('.app-body').prepend(loadingDiv);
+    }
+  }
 
   // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
@@ -165,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 데이터 저장용
   let roundData = {};
 
-  // UI 생성
+  // UI 생성: 1~10차
   for (let i = 1; i <= 10; i++) {
     const row = document.createElement("div");
     row.className = "row";
@@ -180,10 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
     roundsDiv.appendChild(row);
   }
 
-  // 버튼 선택 처리
+  // 선택 처리 (해당 행 요소 기준으로 조작)
   window.selectOption = function(round, type) {
-    const rowEl = roundsDiv.children[round - 1];
-    const btns = rowEl.querySelectorAll('.btn');
+    const rowEl = roundsDiv.children[round - 1];          // i번째 행
+    const btns = rowEl.querySelectorAll('.btn');          // 해당 행의 두 버튼
 
     let no, value;
     if (type === "3포") { no = 60; value = 1; }
@@ -192,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     roundData[round] = { no, value };
     document.getElementById("result"+round).textContent = `주정 ${value} kg`;
 
-    // 버튼 색상 토글
+    // 버튼 하이라이트 토글 (선택 버튼만 selected)
     btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
     if (type === "3포") {
       btns[0].classList.add('selected');
@@ -203,12 +224,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 중복 확인
+  // --- 중복 확인 함수 (서버와 통신, 로딩/메시지 표시 처리)
+  let lastCheckedDate = null;
   async function checkDuplicate(date) {
+    if (!date) return;
+    lastCheckedDate = date;
+
+    // UI: 로딩 표시
+    loadingDiv.style.display = "block";
+    duplicateMsg.style.display = "none";
+    submitBtn.disabled = true;
+
     try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const query = encodeURIComponent(JSON.stringify({ date }));
+      const url = `${scriptUrl}?checkSaengmyeon=${query}`;
+
+      const res = await fetch(url);
+      // 서버응답이 JSON 형식이 아니거나 파싱 실패해도 catch로 이동함
       const data = await res.json();
-      if (data.exists) {
+
+      // 요청-응답 순서 보장: 사용자가 다른 날짜를 이미 바꿨다면 최신 체크 결과가 아니므로 무시
+      if (lastCheckedDate !== date) {
+        // 무시: 다른 체크가 진행중
+        return;
+      }
+
+      if (data && data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
         submitBtn.disabled = true;
@@ -217,26 +258,66 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = false;
       }
     } catch (err) {
-      console.error("중복 확인 실패:", err);
+      console.error("생면공정 중복 확인 오류:", err);
+      // 중복확인 실패 시에는 사용자가 저장 못하도록 하거나 허용할 수 있음 — 여기선 경고는 띄우고 저장은 허용하지 않음
+      duplicateText.textContent = "중복 확인 중 오류가 발생했습니다. 네트워크를 확인하세요.";
+      duplicateMsg.style.display = "block";
+      submitBtn.disabled = true;
+    } finally {
+      loadingDiv.style.display = "none";
     }
   }
 
+  // date 변경 시 즉시 중복 확인
   dateInput.addEventListener("change", () => {
     if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
+  // duplicate confirm (사용자 강제 저장 허용)
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
-    submitBtn.disabled = false; // 강제 저장 허용
+    submitBtn.disabled = false;
   });
 
-  // 저장
+  // --- 저장(제출) 처리
   submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value) { 
-      alert("날짜를 선택하세요."); 
-      return; 
+    if (!dateInput.value) {
+      alert("날짜를 선택하세요.");
+      return;
     }
 
+    // 1) 차수 연속성 검사: 선택된 차수들에 대해 앞차수들 체크
+    // roundData의 키들을 숫자 배열로
+    const selectedRounds = Object.keys(roundData).map(x => parseInt(x,10)).sort((a,b)=>a-b);
+
+    // 반드시 1차가 선택되어야 함
+    if (!selectedRounds.includes(1)) {
+      alert("최초 1차는 반드시 선택되어야 합니다.");
+      return;
+    }
+
+    // 누락된 앞차수 검사: 예를 들어 3차가 선택되었으면 1~2차가 모두 선택되어야 함
+    const missing = new Set();
+    for (const r of selectedRounds) {
+      for (let k = 1; k < r; k++) {
+        if (!selectedRounds.includes(k)) missing.add(k);
+      }
+    }
+    if (missing.size > 0) {
+      // 정렬해서 메시지 만들기
+      const arr = Array.from(missing).sort((a,b)=>a-b);
+      const txt = arr.map(n => `${n}차`).join(", ");
+      alert(`${txt} 체크가 안되어 있습니다. 앞차수를 먼저 선택해 주세요.`);
+      return;
+    }
+
+    // 2) 서버 중복 메시지 표시 상태 확인: 만약 duplicateMsg 보이는 상태면 저장 불가(단, 사용자가 확인 버튼 눌러 강제 저장 허용 가능)
+    if (duplicateMsg.style.display === "block" && submitBtn.disabled) {
+      alert("같은 날짜 데이터가 존재합니다. 계속하려면 중복 알림에서 확인을 눌러주세요.");
+      return;
+    }
+
+    // 수집 및 전송
     const noArr = [], valueArr = [];
     for (let i = 1; i <= 10; i++) {
       if (roundData[i]) {
@@ -255,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
+      // FormData 방식 (기존과 호환)
       const res = await fetch(scriptUrl, {
         method: "POST",
         body: new URLSearchParams({
@@ -265,14 +347,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await res.text();
       alert("저장 완료: " + text);
 
-      // 초기화
+      // 저장 성공 시 초기화
       Object.keys(roundData).forEach(k => delete roundData[k]);
       document.querySelectorAll(".result").forEach(el => el.textContent = "");
       document.querySelectorAll(".btn").forEach(btn => {
         btn.classList.remove("selected");
-        btn.setAttribute("aria-pressed","false");
+        btn.setAttribute('aria-pressed','false');
       });
       dateInput.valueAsDate = new Date();
+
+      // 저장 후 즉시 중복 체크 (새로운 오늘 날짜에 대해)
+      if (dateInput.value) checkDuplicate(dateInput.value);
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
