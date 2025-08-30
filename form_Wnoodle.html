@@ -293,40 +293,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 저장 버튼 → 중복 확인 먼저 실행
-submitBtn.addEventListener("click", async () => {
-  if (!dateInput.value) {
-    alert("날짜를 선택하세요.");
-    return;
-  }
-  if (!validateRounds()) return;
-
-  try {
-    // 🔹 checkSaengmyeon 파라미터에 JSON 전달
-    const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`);
-    const data = await res.json();
-
-    if (data.exists) {
-      duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
-      duplicateMsg.style.display = "block";
-      // 진행 버튼 → 강제 저장
-      duplicateConfirmBtn.onclick = () => saveData(true);
-      // 취소 버튼 → 전체 초기화
-      duplicateCancelBtn.onclick = () => {
-        Object.keys(roundData).forEach(k => delete roundData[k]);
-        document.querySelectorAll(".result").forEach(el => el.textContent = "");
-        document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-        duplicateMsg.style.display = "none";
-      };
-    } else {
-      // 중복 없으면 바로 저장
-      saveData(false);
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) {
+      alert("날짜를 선택하세요.");
+      return;
     }
-  } catch (err) {
-    alert("중복 확인 실패: " + err.message);
-  }
-});
+    if (!validateRounds()) return;
+
+    try {
+      const res = await fetch(`${scriptUrl}?checkDate=${encodeURIComponent(dateInput.value)}`);
+      const data = await res.json();
+
+      if (data.exists) {
+        duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
+        duplicateMsg.style.display = "block";
+        // 진행 버튼 → 강제 저장
+        duplicateConfirmBtn.onclick = () => saveData(true);
+        // 취소 버튼 → 전체 초기화
+        duplicateCancelBtn.onclick = () => {
+          Object.keys(roundData).forEach(k => delete roundData[k]);
+          document.querySelectorAll(".result").forEach(el => el.textContent = "");
+          document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+          duplicateMsg.style.display = "none";
+        };
+      } else {
+        // 중복 없으면 바로 저장
+        saveData(false);
+      }
+    } catch (err) {
+      alert("중복 확인 실패: " + err.message);
+    }
+  });
 });
 </script>
+
 
 
 </body>
