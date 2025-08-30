@@ -3,272 +3,267 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>생면공정 입력폼</title>
+<title>생면공정 점검</title>
 <style>
-  body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #f9f9f9;
-  }
-  .container {
-    max-width: 600px;
-    margin: auto;
-    padding: 16px;
-  }
-  label {
-    font-weight: bold;
-    display: block;
-    margin-top: 16px;
-  }
-  input[type="date"], input[type="number"] {
-    width: 100%;
-    padding: 12px;
-    font-size: 1.2rem;
-    margin-top: 6px;
-    box-sizing: border-box;
-    text-align: center;
-  }
-  .round-row {
-    margin-top: 16px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 12px;
-    background: #fff;
-  }
-  .round-header {
-    font-weight: bold;
-    margin-bottom: 8px;
-    cursor: pointer;
-  }
-  .btn-group {
-    display: flex;
-    gap: 10px;
-  }
-  .btn {
-    flex: 1;
-    padding: 16px;
-    font-size: 1.2rem;
-    background: #eee;
-    border: 1px solid #ccc;
-    cursor: pointer;
-    border-radius: 8px;
-    text-align: center;
-  }
-  .btn.selected {
-    background: #007bff;
-    color: #fff;
-    border-color: #0056b3;
-  }
-  .result-input {
-    margin-top: 8px;
-  }
-  .result-input input {
-    width: 100%;
-    padding: 12px;
-    font-size: 1.2rem;
-    text-align: center;
-  }
-  .submit-btn {
-    width: 100%;
-    font-size: 1.4rem;
-    padding: 18px;
-    margin-top: 20px;
-    background: #28a745;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 8px;
-  }
-  .submit-btn:hover {
-    background: #218838;
-  }
-  #duplicateMsg {
-    background: #ffc107;
-    color: #000;
-    padding: 12px;
-    margin-top: 12px;
-    border-radius: 8px;
-    display: none;
-    text-align: center;
-  }
-  #duplicateMsg button {
-    margin: 8px;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  #duplicateConfirmBtn {
-    background: #007bff;
-    color: #fff;
-  }
-  #duplicateCancelBtn {
-    background: #6c757d;
-    color: #fff;
-  }
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f9f9f9;
+}
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.app-header {
+  flex: 0 0 auto;
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 16px;
+  font-size: 1.5rem;
+}
+.app-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+}
+.app-footer {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+}
+button[type="submit"] {
+  width: 100%;
+  font-size: 1.4rem;
+  padding: 18px 0;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+button[type="submit"]:hover {
+  background-color: #218838;
+}
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: bold;
+}
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 1.1rem;
+}
+.chasu-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.chasu-btn {
+  flex: 1 1 30%;
+  padding: 12px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+.chasu-btn.selected {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+.result-cell {
+  margin-top: 8px;
+  text-align: right;
+  font-weight: bold;
+  color: #333;
+}
+#duplicateMsg {
+  background-color: #ffc107;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+  text-align: center;
+  border-radius: 4px;
+  display: none;
+}
+#duplicateMsg button {
+  margin: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#duplicateProceed { background: #007bff; color: white; }
+#duplicateCancel { background: #dc3545; color: white; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h2>생면공정 입력</h2>
-  <label>날짜
-    <input type="date" id="date" />
-  </label>
+<div class="app-container">
+  <div class="app-header">생면공정 점검</div>
 
-  <div id="roundsContainer"></div>
+  <form id="saengmyeonForm" class="app-body">
+    <label>날짜
+      <input type="date" id="date" name="date" required />
+    </label>
 
-  <button class="submit-btn" id="submitBtn">저장</button>
+    <label>차수 선택</label>
+    <div class="chasu-row" id="chasuContainer"></div>
+    <div id="resultArea" class="result-cell"></div>
 
-  <div id="duplicateMsg">
-    <span id="duplicateText"></span><br/>
-    <button id="duplicateConfirmBtn">진행</button>
-    <button id="duplicateCancelBtn">취소</button>
+    <div id="duplicateMsg">
+      <div id="duplicateText"></div>
+      <button type="button" id="duplicateProceed">진행</button>
+      <button type="button" id="duplicateCancel">취소</button>
+    </div>
+  </form>
+
+  <div class="app-footer">
+    <button type="submit" form="saengmyeonForm">저장</button>
   </div>
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec"; // Apps Script 웹앱 URL 넣으세요
-const roundsContainer = document.getElementById("roundsContainer");
-const submitBtn = document.getElementById("submitBtn");
-const duplicateMsg = document.getElementById("duplicateMsg");
-const duplicateText = document.getElementById("duplicateText");
-const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
+const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+
+// 날짜 기본값
 const dateInput = document.getElementById("date");
-
-let roundData = {}; // { round: {no: 60|40, value: number}}
-
 dateInput.valueAsDate = new Date();
 
-// 1차~10차 UI 생성
-for (let i = 1; i <= 10; i++) {
-  const row = document.createElement("div");
-  row.className = "round-row";
+// 차수 버튼 생성
+const chasuLabels = ["1차(3포)", "2차(2포)", "3차(3포)", "4차(2포)", "5차(3포)", "6차(2포)", "7차(3포)", "8차(2포)", "9차(3포)", "10차(2포)"];
+const chasuContainer = document.getElementById("chasuContainer");
+let selectedChasu = null;
+let selectedResult = "";
 
-  const header = document.createElement("div");
-  header.className = "round-header";
-  header.textContent = `${i}차`;
-  header.dataset.round = i;
-  // 클릭시 초기화
-  header.addEventListener("click", () => {
-    delete roundData[i];
-    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-    row.querySelector("input").value = "";
-  });
-  row.appendChild(header);
-
-  const btnGroup = document.createElement("div");
-  btnGroup.className = "btn-group";
-
-  ["60", "40"].forEach(val => {
-    const btn = document.createElement("div");
-    btn.className = "btn";
-    btn.textContent = val;
-    btn.addEventListener("click", () => {
-      row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      if (!roundData[i]) roundData[i] = {};
-      roundData[i].no = val;
-    });
-    btnGroup.appendChild(btn);
-  });
-  row.appendChild(btnGroup);
-
-  const resultDiv = document.createElement("div");
-  resultDiv.className = "result-input";
-  resultDiv.innerHTML = `<input type="number" placeholder="결과값" />`;
-  resultDiv.querySelector("input").addEventListener("input", e => {
-    if (!roundData[i]) roundData[i] = {};
-    roundData[i].value = e.target.value;
-  });
-  row.appendChild(resultDiv);
-
-  roundsContainer.appendChild(row);
-}
-
-// 차수 연속성 체크
-function validateRounds() {
-  for (let i = 1; i <= 10; i++) {
-    if (roundData[i]) {
-      for (let j = 1; j < i; j++) {
-        if (!roundData[j]) {
-          alert(`${j}차수가 체크되지 않았습니다.`);
-          return false;
-        }
-      }
+chasuLabels.forEach((label, idx) => {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "chasu-btn";
+  btn.textContent = label;
+  btn.dataset.chasu = idx + 1;
+  btn.addEventListener("click", () => {
+    // 선택 취소
+    if (btn.classList.contains("selected")) {
+      btn.classList.remove("selected");
+      selectedChasu = null;
+      selectedResult = "";
+      document.getElementById("resultArea").innerText = "";
+      return;
     }
-  }
-  if (!roundData[1]) {
-    alert("최초 1차는 반드시 선택되어야 합니다.");
-    return false;
-  }
-  return true;
-}
 
-// 저장 버튼 클릭
-submitBtn.addEventListener("click", async () => {
-  if (!dateInput.value) {
-    alert("날짜를 선택하세요.");
+    // 다른 버튼 해제
+    document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+
+    selectedChasu = idx + 1;
+    selectedResult = (label.includes("3포") ? "주정 1kg" : "주정 0.7kg");
+    document.getElementById("resultArea").innerText = `${label} → ${selectedResult}`;
+  });
+  chasuContainer.appendChild(btn);
+});
+
+// 중복 확인 메시지
+const duplicateMsg = document.getElementById("duplicateMsg");
+const duplicateText = document.getElementById("duplicateText");
+const duplicateProceed = document.getElementById("duplicateProceed");
+const duplicateCancel = document.getElementById("duplicateCancel");
+
+// 폼 제출
+document.getElementById("saengmyeonForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  if (!selectedChasu) {
+    alert("차수를 선택하세요.");
     return;
   }
-  if (!validateRounds()) return;
 
+  const dateVal = dateInput.value;
+  if (!dateVal) {
+    alert("날짜를 입력하세요.");
+    return;
+  }
+
+  // 🔹 1차 미선택 시 이후 차수 불가
+  if (selectedChasu > 1) {
+    const missing = [];
+    for (let i = 1; i < selectedChasu; i++) {
+      // 실제로 체크했는지 검증 로직 필요 (예제에서는 단순히 선택값만 확인)
+      if (i !== selectedChasu) missing.push(`${i}차`);
+    }
+    if (missing.length > 0 && !document.querySelector(`.chasu-btn[data-chasu="1"]`).classList.contains("selected")) {
+      alert(`⚠️ ${missing.join(", ")} 차수가 체크되지 않았습니다.\n최초 1차는 반드시 선택해야 합니다.`);
+      return;
+    }
+  }
+
+  // 🔹 저장 전 중복 체크
   try {
-    // ✅ 중복 확인 요청
-    const res = await fetch(
-      `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`
-    );
-    const data = await res.json();
+    const query = encodeURIComponent(dateVal);
+    const res = await fetch(`${scriptUrl}?checkDate=${query}`);
+    const result = await res.json();
 
-    if (data.exists) {
-      duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
+    if (result.exists) {
+      duplicateText.innerText = `⚠️ 이미 같은 날짜(${dateVal})에 데이터가 존재합니다. 진행하시겠습니까?`;
       duplicateMsg.style.display = "block";
 
-      duplicateConfirmBtn.onclick = () => {
+      duplicateProceed.onclick = () => {
         duplicateMsg.style.display = "none";
         saveData(true);
       };
-
-      duplicateCancelBtn.onclick = () => {
-        roundData = {};
-        document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-        document.querySelectorAll(".result-input input").forEach(inp => inp.value = "");
+      duplicateCancel.onclick = () => {
         duplicateMsg.style.display = "none";
+        document.getElementById("saengmyeonForm").reset();
+        document.getElementById("resultArea").innerText = "";
+        document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
+        selectedChasu = null;
+        selectedResult = "";
       };
     } else {
       saveData(false);
     }
   } catch (err) {
-    alert("❌ 중복 확인 실패: " + err.message);
+    alert("중복 확인 오류: " + err.message);
   }
 });
 
-async function saveData(isUpdate) {
-  const payload = {
+// 🔹 실제 저장 함수
+async function saveData(update) {
+  const data = {
+    type: "saengmyeon",
     date: dateInput.value,
-    data: roundData,
-    update: isUpdate
+    chasu: selectedChasu,
+    result: selectedResult,
+    update
   };
 
   const formData = new FormData();
-  formData.append("saengmyeon", JSON.stringify(payload));
+  formData.append("saengmyeon", JSON.stringify(data));
 
   try {
-    const res = await fetch(scriptUrl, {
-      method: "POST",
-      body: formData
-    });
-    const text = await res.text();
-    alert("✅ 저장 완료\n" + text);
-
-    // 초기화
-    roundData = {};
-    document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-    document.querySelectorAll(".result-input input").forEach(inp => inp.value = "");
-    dateInput.valueAsDate = new Date();
+    const response = await fetch(scriptUrl, { method: "POST", body: formData });
+    const result = await response.text();
+    if (response.ok) {
+      alert("✅ 저장 완료:\n" + result);
+      document.getElementById("saengmyeonForm").reset();
+      document.getElementById("resultArea").innerText = "";
+      document.querySelectorAll(".chasu-btn").forEach(b => b.classList.remove("selected"));
+      selectedChasu = null;
+      selectedResult = "";
+      dateInput.valueAsDate = new Date();
+    } else {
+      alert("❌ 서버 오류:\n" + result);
+    }
   } catch (err) {
-    alert("❌ 저장 실패: " + err.message);
+    alert("❌ 저장 중 오류:\n" + err.message);
   }
 }
 </script>
