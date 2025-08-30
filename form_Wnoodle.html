@@ -1,3 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>생면공정 입력</title>
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: sans-serif;
+}
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-header {
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  font-size: 2rem;
+  flex: 0 0 auto;
+}
+.app-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+}
+.app-footer {
+  flex: 0 0 auto;
+}
+#submitBtn {
+  width: 100%;
+  font-size: 1.8rem;
+  padding: 24px 0;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* 한 행 레이아웃 고정 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  flex-wrap: nowrap; /* 항상 한 줄 유지 */
+}
+.label {
+  flex: 0 0 60px; /* 고정폭 */
+  font-weight: bold;
+  font-size: 1.4rem;
+  text-align: left;
+}
+.btn {
+  flex: 1 1 0;      /* 두 버튼이 남은 공간을 균등 분배 */
+  min-width: 0;     /* 길어져도 줄바꿈 없이 축소 */
+  padding: 16px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: bold;
+  background: #e0e0e0; /* 기본 회색 */
+  color: #333;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.btn.selected {
+  background: #4CAF50; /* 선택 시 공통 색상 */
+  color: white;
+  box-shadow: inset 0 0 0 2px #2e7d32;
+}
+.result {
+  margin-left: auto;   /* 오른쪽 끝으로 밀기 */
+  flex: 0 0 auto;
+  min-width: 110px;
+  text-align: right;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 중복 메시지 */
+#duplicateMsg {
+  display: none;
+  background-color: #ffcccc;
+  color: #900;
+  padding: 14px;
+  margin-top: 8px;
+  border: 1px solid #900;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+#duplicateMsg button {
+  margin-left: 14px;
+  background-color: #900;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* 모바일 전용: 한 줄 유지하면서 터치 영역 확대 */
+@media (max-width: 768px) {
+  .row { gap: 6px; padding: 14px; }
+  .label { flex-basis: 56px; font-size: 1.6rem; }
+  .btn { font-size: 1.6rem; padding: 16px 8px; }
+  .result { font-size: 1.6rem; min-width: 100px; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-header">생면공정 점검 입력</div>
+
+  <div class="app-body">
+    <!-- 날짜 -->
+    <label for="date">날짜</label>
+    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:20px;" />
+
+    <!-- 1차~10차 -->
+    <h3 style="margin-top:20px;">차수별 입력</h3>
+    <div id="rounds"></div>
+
+    <!-- 중복 메시지 -->
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
+  </div>
+
+  <div class="app-footer">
+    <button id="submitBtn">📥 저장하기</button>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById("date");
@@ -176,3 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
+
+</body>
+</html>
