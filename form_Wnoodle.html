@@ -2,298 +2,212 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>생면공정 입력</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>생면공정 입력폼</title>
 <style>
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: sans-serif;
-}
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.app-header {
-  background-color: #4CAF50;
-  color: white;
-  text-align: center;
-  padding: 20px;
-  font-size: 2rem;
-  flex: 0 0 auto;
-}
-.app-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 20px;
-  box-sizing: border-box;
-  background-color: #f9f9f9;
-}
-.app-footer {
-  flex: 0 0 auto;
-}
-#submitBtn {
-  width: 100%;
-  font-size: 1.8rem;
-  padding: 24px 0;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-/* 한 행 레이아웃 고정 */
-.row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  background: #fff;
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  flex-wrap: nowrap; /* 항상 한 줄 유지 */
-}
-.label {
-  flex: 0 0 60px; /* 고정폭 */
-  font-weight: bold;
-  font-size: 1.4rem;
-  text-align: left;
-}
-.btn {
-  flex: 1 1 0;      /* 두 버튼이 남은 공간을 균등 분배 */
-  min-width: 0;     /* 길어져도 줄바꿈 없이 축소 */
-  padding: 16px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-  font-size: 1.4rem;
-  font-weight: bold;
-  background: #e0e0e0; /* 기본 회색 */
-  color: #333;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
-.btn.selected {
-  background: #4CAF50; /* 선택 시 공통 색상 */
-  color: white;
-  box-shadow: inset 0 0 0 2px #2e7d32;
-}
-.result {
-  margin-left: auto;   /* 오른쪽 끝으로 밀기 */
-  flex: 0 0 auto;
-  min-width: 110px;
-  text-align: right;
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #333;
-}
-
-/* 중복 메시지 */
-#duplicateMsg {
-  display: none;
-  background-color: #ffcccc;
-  color: #900;
-  padding: 14px;
-  margin-top: 8px;
-  border: 1px solid #900;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-#duplicateMsg button {
-  margin-left: 14px;
-  background-color: #900;
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-/* 모바일 전용: 한 줄 유지하면서 터치 영역 확대 */
-@media (max-width: 768px) {
-  .row { gap: 6px; padding: 14px; }
-  .label { flex-basis: 56px; font-size: 1.6rem; }
-  .btn { font-size: 1.6rem; padding: 16px 8px; }
-  .result { font-size: 1.6rem; min-width: 100px; }
-}
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f9f9f9;
+  }
+  .container {
+    max-width: 600px;
+    margin: auto;
+    padding: 16px;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin-top: 16px;
+  }
+  input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.2rem;
+    margin-top: 6px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .round-row {
+    margin-top: 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+  }
+  .round-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .btn-group {
+    display: flex;
+    gap: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 16px;
+    font-size: 1.2rem;
+    background: #eee;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .btn.selected {
+    background: #007bff;
+    color: #fff;
+    border-color: #0056b3;
+  }
+  .result-input {
+    margin-top: 8px;
+  }
+  .result-input input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  .submit-btn {
+    width: 100%;
+    font-size: 1.4rem;
+    padding: 18px;
+    margin-top: 20px;
+    background: #28a745;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .submit-btn:hover {
+    background: #218838;
+  }
+  #duplicateMsg {
+    background: #ffc107;
+    color: #000;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    display: none;
+    text-align: center;
+  }
+  #duplicateMsg button {
+    margin: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #duplicateConfirmBtn {
+    background: #007bff;
+    color: #fff;
+  }
+  #duplicateCancelBtn {
+    background: #6c757d;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
-<div class="app-container">
-  <div class="app-header">생면공정 점검 입력</div>
+<div class="container">
+  <h2>생면공정 입력</h2>
+  <label>날짜
+    <input type="date" id="date" />
+  </label>
 
-  <div class="app-body">
-    <!-- 날짜 -->
-    <label for="date">날짜</label>
-    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:20px;" />
+  <div id="roundsContainer"></div>
 
-    <!-- 1차~10차 -->
-    <h3 style="margin-top:20px;">차수별 입력</h3>
-    <div id="rounds"></div>
+  <button class="submit-btn" id="submitBtn">저장</button>
 
-    <!-- 중복 메시지 -->
-    <div id="duplicateMsg">
-      <span id="duplicateText"></span>
-      <button id="duplicateConfirmBtn">확인</button>
-    </div>
-  </div>
-
-  <div class="app-footer">
-    <button id="submitBtn">📥 저장하기</button>
+  <div id="duplicateMsg">
+    <span id="duplicateText"></span><br/>
+    <button id="duplicateConfirmBtn">진행</button>
+    <button id="duplicateCancelBtn">취소</button>
   </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const dateInput = document.getElementById("date");
-  const submitBtn = document.getElementById("submitBtn");
-  const roundsDiv = document.getElementById("rounds");
-  const duplicateMsg = document.getElementById("duplicateMsg");
-  const duplicateText = document.getElementById("duplicateText");
-  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const duplicateCancelBtn = document.createElement("button");
+const scriptUrl = "YOUR_SCRIPT_URL_HERE"; // Apps Script 웹앱 URL 넣으세요
+const roundsContainer = document.getElementById("roundsContainer");
+const submitBtn = document.getElementById("submitBtn");
+const duplicateMsg = document.getElementById("duplicateMsg");
+const duplicateText = document.getElementById("duplicateText");
+const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
+const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
+const dateInput = document.getElementById("date");
 
-  duplicateCancelBtn.textContent = "취소";
-  duplicateCancelBtn.type = "button";
-  duplicateCancelBtn.id = "duplicateCancelBtn";
-  duplicateCancelBtn.style.marginLeft = "10px";
-  duplicateMsg.appendChild(duplicateCancelBtn);
+let roundData = {}; // { round: {no: 60|40, value: number}}
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
+dateInput.valueAsDate = new Date();
 
-  // 오늘 날짜 자동
-  dateInput.valueAsDate = new Date();
+// 1차~10차 UI 생성
+for (let i = 1; i <= 10; i++) {
+  const row = document.createElement("div");
+  row.className = "round-row";
 
-  // 데이터 저장용
-  let roundData = {};
-
-  // UI 생성
-  for (let i = 1; i <= 10; i++) {
-    const row = document.createElement("div");
-    row.className = "row";
-    row.setAttribute('data-round', i);
-
-    row.innerHTML = `
-      <div class="label" style="cursor:pointer;">${i}차</div>
-      <button class="btn" type="button" onclick="selectOption(${i}, '3포')" aria-pressed="false">3포</button>
-      <button class="btn" type="button" onclick="selectOption(${i}, '2포')" aria-pressed="false">2포</button>
-      <div id="result${i}" class="result"></div>
-    `;
-    roundsDiv.appendChild(row);
-  }
-
-  // 선택 처리
-  window.selectOption = function(round, type) {
-    const rowEl = roundsDiv.children[round - 1];
-    const btns = rowEl.querySelectorAll('.btn');
-
-    let no, value;
-    if (type === "3포") { no = 60; value = 1; }
-    else { no = 40; value = 0.7; }
-
-    roundData[round] = { no, value };
-    document.getElementById("result"+round).textContent = `주정 ${value} kg`;
-
-    btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
-    if (type === "3포") {
-      btns[0].classList.add('selected');
-      btns[0].setAttribute('aria-pressed','true');
-    } else {
-      btns[1].classList.add('selected');
-      btns[1].setAttribute('aria-pressed','true');
-    }
-  }
-
-  // 행 라벨 클릭 → 해당 차수 초기화
-  roundsDiv.addEventListener("click", (e) => {
-    if (e.target.classList.contains("label")) {
-      const round = e.target.parentElement.getAttribute("data-round");
-      delete roundData[round];
-      const rowEl = e.target.parentElement;
-      rowEl.querySelectorAll(".btn").forEach(btn => {
-        btn.classList.remove("selected");
-        btn.setAttribute("aria-pressed","false");
-      });
-      rowEl.querySelector(".result").textContent = "";
-    }
+  const header = document.createElement("div");
+  header.className = "round-header";
+  header.textContent = `${i}차`;
+  header.dataset.round = i;
+  // 클릭시 초기화
+  header.addEventListener("click", () => {
+    delete roundData[i];
+    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+    row.querySelector("input").value = "";
   });
+  row.appendChild(header);
 
-  // 필수 차수 확인
-  function validateRounds() {
-    if (!roundData[1]) {
-      alert("⚠️ 1차는 반드시 선택해야 합니다.");
-      return false;
-    }
-    for (let i = 1; i <= 10; i++) {
-      if (!roundData[i]) {
-        // 뒤에 차수가 선택된 경우 확인
-        for (let j = i+1; j <= 10; j++) {
-          if (roundData[j]) {
-            alert(`⚠️ ${i}차수가 비어 있습니다. 먼저 ${i}차를 선택하세요.`);
-            return false;
-          }
+  const btnGroup = document.createElement("div");
+  btnGroup.className = "btn-group";
+
+  ["60", "40"].forEach(val => {
+    const btn = document.createElement("div");
+    btn.className = "btn";
+    btn.textContent = val;
+    btn.addEventListener("click", () => {
+      row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      if (!roundData[i]) roundData[i] = {};
+      roundData[i].no = val;
+    });
+    btnGroup.appendChild(btn);
+  });
+  row.appendChild(btnGroup);
+
+  const resultDiv = document.createElement("div");
+  resultDiv.className = "result-input";
+  resultDiv.innerHTML = `<input type="number" placeholder="결과값" />`;
+  resultDiv.querySelector("input").addEventListener("input", e => {
+    if (!roundData[i]) roundData[i] = {};
+    roundData[i].value = e.target.value;
+  });
+  row.appendChild(resultDiv);
+
+  roundsContainer.appendChild(row);
+}
+
+// 차수 연속성 체크
+function validateRounds() {
+  for (let i = 1; i <= 10; i++) {
+    if (roundData[i]) {
+      for (let j = 1; j < i; j++) {
+        if (!roundData[j]) {
+          alert(`${j}차수가 체크되지 않았습니다.`);
+          return false;
         }
       }
     }
-    return true;
   }
-
-  // 저장 로직
-  async function saveData(force = false) {
-    if (!dateInput.value) { 
-      alert("날짜를 선택하세요."); 
-      return; 
-    }
-
-    if (!validateRounds()) return;
-
-    const noArr = [], valueArr = [];
-    for (let i = 1; i <= 10; i++) {
-      if (roundData[i]) {
-        noArr.push(roundData[i].no);
-        valueArr.push(roundData[i].value);
-      } else {
-        noArr.push("");
-        valueArr.push("");
-      }
-    }
-
-    const payload = {
-      date: dateInput.value,
-      no: noArr,
-      value: valueArr
-    };
-
-    try {
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        body: new URLSearchParams({
-          saengmyeon: JSON.stringify(payload),
-          force: force ? "1" : "0"  // 강제 저장 여부
-        })
-      });
-
-      const text = await res.text();
-      alert("저장 완료: " + text);
-
-      // 초기화
-      Object.keys(roundData).forEach(k => delete roundData[k]);
-      document.querySelectorAll(".result").forEach(el => el.textContent = "");
-      document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-      dateInput.valueAsDate = new Date();
-      duplicateMsg.style.display = "none";
-    } catch (err) {
-      alert("에러 발생: " + err.message);
-    }
+  if (!roundData[1]) {
+    alert("최초 1차는 반드시 선택되어야 합니다.");
+    return false;
   }
+  return true;
+}
 
-  // 저장 버튼 → 중복 확인 먼저 실행
-  submitBtn.addEventListener("click", async () => {
+// 저장 버튼 클릭
+submitBtn.addEventListener("click", async () => {
   if (!dateInput.value) {
     alert("날짜를 선택하세요.");
     return;
@@ -301,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!validateRounds()) return;
 
   try {
-    // ✅ 파라미터 이름을 checkSaengmyeon 으로 맞춤
+    // ✅ 중복 확인 요청
     const res = await fetch(
       `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`
     );
@@ -311,31 +225,52 @@ document.addEventListener('DOMContentLoaded', () => {
       duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
       duplicateMsg.style.display = "block";
 
-      // 진행 → 덮어쓰기
       duplicateConfirmBtn.onclick = () => {
         duplicateMsg.style.display = "none";
         saveData(true);
       };
 
-      // 취소 → 전체 초기화
       duplicateCancelBtn.onclick = () => {
-        Object.keys(roundData).forEach(k => delete roundData[k]);
-        document.querySelectorAll(".result").forEach(el => el.textContent = "");
+        roundData = {};
         document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+        document.querySelectorAll(".result-input input").forEach(inp => inp.value = "");
         duplicateMsg.style.display = "none";
       };
     } else {
-      // 중복 없으면 바로 저장
       saveData(false);
     }
   } catch (err) {
     alert("❌ 중복 확인 실패: " + err.message);
   }
 });
-});
 
+async function saveData(isUpdate) {
+  const payload = {
+    date: dateInput.value,
+    data: roundData,
+    update: isUpdate
+  };
+
+  const formData = new FormData();
+  formData.append("saengmyeon", JSON.stringify(payload));
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: "POST",
+      body: formData
+    });
+    const text = await res.text();
+    alert("✅ 저장 완료\n" + text);
+
+    // 초기화
+    roundData = {};
+    document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+    document.querySelectorAll(".result-input input").forEach(inp => inp.value = "");
+    dateInput.valueAsDate = new Date();
+  } catch (err) {
+    alert("❌ 저장 실패: " + err.message);
+  }
+}
 </script>
-
-
 </body>
 </html>
