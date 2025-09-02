@@ -5,43 +5,138 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>생면공정 입력</title>
 <style>
-body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
-.app-container { display:flex; flex-direction:column; height:100%; }
-.app-header { background:#4CAF50; color:#fff; text-align:center; padding:20px; font-size:2rem; flex:0 0 auto; }
-.app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
-.app-footer { flex:0 0 auto; }
-#submitBtn { width:100%; font-size:1.8rem; padding:24px 0; background:#4CAF50; color:#fff; border:none; border-radius:0; cursor:pointer; }
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: sans-serif;
+}
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-header {
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  font-size: 2rem;
+  flex: 0 0 auto;
+}
+.app-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f9f9f9;
+}
+.app-footer {
+  flex: 0 0 auto;
+}
+#submitBtn {
+  width: 100%;
+  font-size: 1.8rem;
+  padding: 24px 0;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
 
 /* 한 행 레이아웃 고정 */
-.row { display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex-wrap:nowrap; }
-.label { flex:0 0 60px; font-weight:bold; font-size:1.4rem; text-align:left; cursor:pointer; }
-.btn { flex:1 1 0; min-width:0; padding:16px 12px; border-radius:8px; cursor:pointer; border:none; font-size:1.4rem; font-weight:bold; background:#e0e0e0; color:#333; transition:background .2s,color .2s,box-shadow .2s; }
-.btn.selected { background:#4CAF50; color:#fff; box-shadow:inset 0 0 0 2px #2e7d32; }
-.result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.4rem; font-weight:bold; color:#333; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  flex-wrap: nowrap; /* 항상 한 줄 유지 */
+}
+.label {
+  flex: 0 0 60px; /* 고정폭 */
+  font-weight: bold;
+  font-size: 1.4rem;
+  text-align: left;
+}
+.btn {
+  flex: 1 1 0;      /* 두 버튼이 남은 공간을 균등 분배 */
+  min-width: 0;     /* 길어져도 줄바꿈 없이 축소 */
+  padding: 16px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: bold;
+  background: #e0e0e0; /* 기본 회색 */
+  color: #333;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.btn.selected {
+  background: #4CAF50; /* 선택 시 공통 색상 */
+  color: white;
+  box-shadow: inset 0 0 0 2px #2e7d32;
+}
+.result {
+  margin-left: auto;   /* 오른쪽 끝으로 밀기 */
+  flex: 0 0 auto;
+  min-width: 110px;
+  text-align: right;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+}
 
 /* 중복 메시지 */
-#duplicateMsg { display:none; background:#ffcccc; color:#900; padding:14px; margin-top:8px; border:1px solid #900; border-radius:6px; font-weight:bold; font-size:1.2rem; }
-#duplicateMsg button { margin-left:14px; background:#900; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:1rem; }
+#duplicateMsg {
+  display: none;
+  background-color: #ffcccc;
+  color: #900;
+  padding: 14px;
+  margin-top: 8px;
+  border: 1px solid #900;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+#duplicateMsg button {
+  margin-left: 14px;
+  background-color: #900;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
 
-@media (max-width:768px){
-  .row{ gap:6px; padding:14px; }
-  .label{ flex-basis:56px; font-size:1.6rem; }
-  .btn{ font-size:1.6rem; padding:16px 8px; }
-  .result{ font-size:1.6rem; min-width:100px; }
+/* 모바일 전용: 한 줄 유지하면서 터치 영역 확대 */
+@media (max-width: 768px) {
+  .row { gap: 6px; padding: 14px; }
+  .label { flex-basis: 56px; font-size: 1.6rem; }
+  .btn { font-size: 1.6rem; padding: 16px 8px; }
+  .result { font-size: 1.6rem; min-width: 100px; }
 }
 </style>
 </head>
 <body>
 <div class="app-container">
-  <div class="app-header">생면공정 점검 입력5</div>
+  <div class="app-header">생면공정 점검 입력2</div>
 
   <div class="app-body">
+    <!-- 날짜 -->
     <label for="date">날짜</label>
     <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:20px;" />
 
+    <!-- 1차~10차 -->
     <h3 style="margin-top:20px;">차수별 입력</h3>
     <div id="rounds"></div>
 
+    <!-- 중복 메시지 -->
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
@@ -69,22 +164,22 @@ document.addEventListener('DOMContentLoaded', () => {
   duplicateCancelBtn.style.marginLeft = "10px";
   duplicateMsg.appendChild(duplicateCancelBtn);
 
-  // ✅ 배포된 Web App의 /exec 주소
-  const scriptUrl = "https://script.google.com/macros/s/AKfycby6scdrbRY9MFhOSU7_2z5rjzGrZSr_THBYt_vIW217cjzyiksTmMpDkfhLphNwx4GdrA/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
 
   // 오늘 날짜 자동
   dateInput.valueAsDate = new Date();
 
   // 데이터 저장용
-  const roundData = {};
+  let roundData = {};
 
-  // UI 생성: 1~10차
+  // UI 생성
   for (let i = 1; i <= 10; i++) {
     const row = document.createElement("div");
     row.className = "row";
-    row.dataset.round = String(i);
+    row.setAttribute('data-round', i);
+
     row.innerHTML = `
-      <div class="label">${i}차</div>
+      <div class="label" style="cursor:pointer;">${i}차</div>
       <button class="btn" type="button" onclick="selectOption(${i}, '3포')" aria-pressed="false">3포</button>
       <button class="btn" type="button" onclick="selectOption(${i}, '2포')" aria-pressed="false">2포</button>
       <div id="result${i}" class="result"></div>
@@ -105,104 +200,133 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById("result"+round).textContent = `주정 ${value} kg`;
 
     btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
-    if (type === "3포") { btns[0].classList.add('selected'); btns[0].setAttribute('aria-pressed','true'); }
-    else { btns[1].classList.add('selected'); btns[1].setAttribute('aria-pressed','true'); }
-  };
+    if (type === "3포") {
+      btns[0].classList.add('selected');
+      btns[0].setAttribute('aria-pressed','true');
+    } else {
+      btns[1].classList.add('selected');
+      btns[1].setAttribute('aria-pressed','true');
+    }
+  }
 
-  // 라벨 클릭 → 해당 차수 초기화
+  // 행 라벨 클릭 → 해당 차수 초기화
   roundsDiv.addEventListener("click", (e) => {
     if (e.target.classList.contains("label")) {
-      const round = e.target.parentElement.dataset.round;
+      const round = e.target.parentElement.getAttribute("data-round");
       delete roundData[round];
       const rowEl = e.target.parentElement;
-      rowEl.querySelectorAll(".btn").forEach(btn => { btn.classList.remove("selected"); btn.setAttribute("aria-pressed","false"); });
+      rowEl.querySelectorAll(".btn").forEach(btn => {
+        btn.classList.remove("selected");
+        btn.setAttribute("aria-pressed","false");
+      });
       rowEl.querySelector(".result").textContent = "";
     }
   });
 
   // 필수 차수 확인
   function validateRounds() {
-    if (!roundData[1]) { alert("⚠️ 1차는 반드시 선택해야 합니다."); return false; }
+    if (!roundData[1]) {
+      alert("⚠️ 1차는 반드시 선택해야 합니다.");
+      return false;
+    }
     for (let i = 1; i <= 10; i++) {
       if (!roundData[i]) {
+        // 뒤에 차수가 선택된 경우 확인
         for (let j = i+1; j <= 10; j++) {
-          if (roundData[j]) { alert(`⚠️ ${i}차수가 비어 있습니다. 먼저 ${i}차를 선택하세요.`); return false; }
+          if (roundData[j]) {
+            alert(`⚠️ ${i}차수가 비어 있습니다. 먼저 ${i}차를 선택하세요.`);
+            return false;
+          }
         }
       }
     }
     return true;
   }
 
-  // 저장 로직 (✅ JSON POST로 변경)
+  // 저장 로직
   async function saveData(force = false) {
-    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+    if (!dateInput.value) { 
+      alert("날짜를 선택하세요."); 
+      return; 
+    }
+
     if (!validateRounds()) return;
 
     const noArr = [], valueArr = [];
     for (let i = 1; i <= 10; i++) {
-      if (roundData[i]) { noArr.push(roundData[i].no); valueArr.push(roundData[i].value); }
-      else { noArr.push(""); valueArr.push(""); }
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
     }
 
-    const payload = { date: dateInput.value, no: noArr, value: valueArr };
+    const payload = {
+      date: dateInput.value,
+      no: noArr,
+      value: valueArr
+    };
 
     try {
       const res = await fetch(scriptUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Apps Script doPost에서 e.postData.contents로 받도록
-        body: JSON.stringify({ saengmyeon: payload, force: force ? 1 : 0 })
+        body: new URLSearchParams({
+          saengmyeon: JSON.stringify(payload),
+          force: force ? "1" : "0"  // 강제 저장 여부
+        })
       });
 
       const text = await res.text();
-      alert("저장 결과: " + text);
+      alert("저장 완료: " + text);
 
-      // 초기화 (날짜는 유지하려면 아래 한 줄 삭제)
+      // 초기화
       Object.keys(roundData).forEach(k => delete roundData[k]);
       document.querySelectorAll(".result").forEach(el => el.textContent = "");
       document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+      dateInput.valueAsDate = new Date();
       duplicateMsg.style.display = "none";
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
   }
 
-  // 저장 버튼 → 중복 확인 먼저 실행
-submitBtn.addEventListener("click", async () => {
-  if (!dateInput.value) {
-    alert("날짜를 선택하세요.");
-    return;
-  }
-  if (!validateRounds()) return;
-
-  try {
-    // ✅ 서버와 파라미터 이름 맞춤
-    const res = await fetch(
-      `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`
-    );
-
-    const data = await res.json();
-
-    if (data.exists) {
-      duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
-      duplicateMsg.style.display = "block";
-      // 진행 버튼 → 강제 저장
-      duplicateConfirmBtn.onclick = () => saveData(true);
-      // 취소 버튼 → 전체 초기화
-      duplicateCancelBtn.onclick = () => {
-        Object.keys(roundData).forEach(k => delete roundData[k]);
-        document.querySelectorAll(".result").forEach(el => el.textContent = "");
-        document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-        duplicateMsg.style.display = "none";
-      };
-    } else {
-      // 중복 없으면 바로 저장
-      saveData(false);
+  // 저장 버튼 → 중복 확인 먼저 실행 (수정된 부분)
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) {
+      alert("날짜를 선택하세요.");
+      return;
     }
-  } catch (err) {
-    alert("중복 확인 실패: " + err.message);
-  }
-});
+    if (!validateRounds()) return;
+
+    try {
+      // ✅ 수정: checkSaengmyeon으로 요청
+      const res = await fetch(
+        `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`
+      );
+      const data = await res.json();
+
+      if (data.exists) {
+        duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
+        duplicateMsg.style.display = "block";
+        // 진행 버튼 → 강제 저장
+        duplicateConfirmBtn.onclick = () => saveData(true);
+        // 취소 버튼 → 전체 초기화
+        duplicateCancelBtn.onclick = () => {
+          Object.keys(roundData).forEach(k => delete roundData[k]);
+          document.querySelectorAll(".result").forEach(el => el.textContent = "");
+          document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
+          duplicateMsg.style.display = "none";
+        };
+      } else {
+        // 중복 없으면 바로 저장
+        saveData(false);
+      }
+    } catch (err) {
+      alert("중복 확인 실패: " + err.message);
+    }
+  });
 });
 </script>
 </body>
