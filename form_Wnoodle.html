@@ -31,7 +31,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 </head>
 <body>
 <div class="app-container">
-  <div class="app-header">생면공정 점검 입력1</div>
+  <div class="app-header">생면공정 점검 입력2</div>
 
   <div class="app-body">
     <label for="date">날짜</label>
@@ -60,31 +60,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec";
 
-  // 오늘 날짜 자동
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
   // 데이터 저장용
-  const roundData = {};
+  let roundData = {};
 
   // UI 생성
   for (let i = 1; i <= 10; i++) {
     const row = document.createElement("div");
     row.className = "row";
-    row.dataset.round = String(i);
+    row.setAttribute('data-round', i);
+
     row.innerHTML = `
       <div class="label">${i}차</div>
-      <button class="btn" type="button" onclick="selectOption(${i}, '3포')">3포</button>
-      <button class="btn" type="button" onclick="selectOption(${i}, '2포')">2포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '3포')" aria-pressed="false">3포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '2포')" aria-pressed="false">2포</button>
       <div id="result${i}" class="result"></div>
     `;
     roundsDiv.appendChild(row);
   }
 
-  // 선택 처리
+  // 버튼 선택 처리
   window.selectOption = function(round, type) {
     const rowEl = roundsDiv.children[round - 1];
     const btns = rowEl.querySelectorAll('.btn');
@@ -96,101 +96,96 @@ document.addEventListener('DOMContentLoaded', () => {
     roundData[round] = { no, value };
     document.getElementById("result"+round).textContent = `주정 ${value} kg`;
 
-    btns.forEach(b => b.classList.remove('selected'));
-    if (type === "3포") btns[0].classList.add('selected'); else btns[1].classList.add('selected');
-  };
-
-  // 라벨 클릭 → 초기화
-  roundsDiv.addEventListener("click", (e) => {
-    if (e.target.classList.contains("label")) {
-      const round = e.target.parentElement.dataset.round;
-      delete roundData[round];
-      const rowEl = e.target.parentElement;
-      rowEl.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-      rowEl.querySelector(".result").textContent = "";
+    // 버튼 색상 토글
+    btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+    if (type === "3포") {
+      btns[0].classList.add('selected');
+      btns[0].setAttribute('aria-pressed','true');
+    } else {
+      btns[1].classList.add('selected');
+      btns[1].setAttribute('aria-pressed','true');
     }
-  });
-
-  // 필수 차수 확인
-  function validateRounds() {
-    if (!roundData[1]) { alert("⚠️ 1차는 반드시 선택해야 합니다."); return false; }
-    for (let i = 1; i <= 10; i++) {
-      if (!roundData[i]) {
-        for (let j = i+1; j <= 10; j++) {
-          if (roundData[j]) { alert(`⚠️ ${i}차수가 비어 있습니다. 먼저 ${i}차부터 선택하세요.`); return false; }
-        }
-      }
-    }
-    return true;
   }
 
- // 저장 로직 (프리플라이트 회피: URLSearchParams 사용)
-async function saveData(force = false) {
-  if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
-  if (!validateRounds()) return;
-
-  const noArr = [], valueArr = [];
-  for (let i = 1; i <= 10; i++) {
-    if (roundData[i]) { noArr.push(roundData[i].no); valueArr.push(roundData[i].value); }
-    else { noArr.push(""); valueArr.push(""); }
-  }
-
-  const payload = { date: dateInput.value, no: noArr, value: valueArr };
-
-  try {
-    // URLSearchParams로 전송 -> application/x-www-form-urlencoded (SIMPLE request, no preflight)
-    const form = new URLSearchParams();
-    form.append('saengmyeon', JSON.stringify(payload));
-    form.append('force', force ? '1' : '0');
-
-    const res = await fetch(scriptUrl, {
-      method: 'POST',
-      body: form
-      // !! DO NOT set headers manually here
-    });
-
-    const text = await res.text();
-    alert("저장 결과: " + text);
-
-    // 초기화
-    Object.keys(roundData).forEach(k => delete roundData[k]);
-    document.querySelectorAll(".result").forEach(el => el.textContent = "");
-    document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-    duplicateMsg.style.display = "none";
-    dateInput.valueAsDate = new Date();
-  } catch (err) {
-    alert("에러 발생: " + err.message);
-  }
-}
-
-  // 저장 버튼 → 중복 확인 후 저장
-  submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
-    if (!validateRounds()) return;
-
+  // 중복 확인
+  async function checkDuplicate(date) {
     try {
-      // 단순 문자열로 GET
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(dateInput.value)}`);
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
-
       if (data.exists) {
-        duplicateText.textContent = `⚠️ ${dateInput.value} 데이터가 이미 존재합니다.`;
+        duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
-        duplicateConfirmBtn.onclick = () => saveData(true);
-        duplicateCancelBtn.onclick = () => {
-          Object.keys(roundData).forEach(k => delete roundData[k]);
-          document.querySelectorAll(".result").forEach(el => el.textContent = "");
-          document.querySelectorAll(".btn").forEach(btn => btn.classList.remove("selected"));
-          duplicateMsg.style.display = "none";
-        };
+        submitBtn.disabled = true;
       } else {
-        saveData(false);
+        duplicateMsg.style.display = "none";
+        submitBtn.disabled = false;
       }
     } catch (err) {
-      alert("중복 확인 실패: " + err.message);
+      console.error("중복 확인 실패:", err);
+    }
+  }
+
+  dateInput.addEventListener("change", () => {
+    if (dateInput.value) checkDuplicate(dateInput.value);
+  });
+
+  duplicateConfirmBtn.addEventListener("click", () => {
+    duplicateMsg.style.display = "none";
+    submitBtn.disabled = false; // 강제 저장 허용
+  });
+
+  // 저장
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) { 
+      alert("날짜를 선택하세요."); 
+      return; 
+    }
+
+    const noArr = [], valueArr = [];
+    for (let i = 1; i <= 10; i++) {
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
+    }
+
+    const payload = {
+      date: dateInput.value,
+      no: noArr,
+      value: valueArr
+    };
+
+    try {
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        body: new URLSearchParams({
+          saengmyeon: JSON.stringify(payload)
+        })
+      });
+
+      const text = await res.text();
+      alert("저장 완료: " + text);
+
+      // 초기화
+      Object.keys(roundData).forEach(k => delete roundData[k]);
+      document.querySelectorAll(".result").forEach(el => el.textContent = "");
+      document.querySelectorAll(".btn").forEach(btn => {
+        btn.classList.remove("selected");
+        btn.setAttribute("aria-pressed","false");
+      });
+      dateInput.valueAsDate = new Date();
+    } catch (err) {
+      alert("에러 발생: " + err.message);
     }
   });
+
+  // 페이지 로드 시 최초 중복 확인
+  if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
+
 </body>
 </html>
