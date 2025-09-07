@@ -184,7 +184,6 @@ input[type="number"], select, input[type="date"] {
         <input type="number" id="count" min="0" />
       </div>
     </div>
-
   </div>
 
   <div class="app-footer">
@@ -207,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById("submitBtn");
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
-
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
@@ -239,30 +237,18 @@ document.addEventListener('DOMContentLoaded', () => {
       timeRow.style.display = "flex";
       thRow.style.display = "none";
       productRow.style.display = "none";
-      tempInput.value = "";
-      humidityInput.value = "";
-      productSelect.value = "";
-      countInput.value = "";
     } else if (group === "1차점검" || group === "2차점검") {
       timeRow.style.display = "flex";
       thRow.style.display = "flex";
       productRow.style.display = "none";
     } else if (group === "생산제품") {
-      timeRow.style.display = "flex";
-      thRow.style.display = "none";
+      timeRow.style.display = "none";   // ✅ 시간/분 숨김
+      thRow.style.display = "none";     // ✅ 온습도 숨김
       productRow.style.display = "flex";
-      tempInput.value = "";
-      humidityInput.value = "";
     } else {
       timeRow.style.display = "none";
       thRow.style.display = "none";
       productRow.style.display = "none";
-      hourSelect.value = "";
-      minuteSelect.value = "";
-      tempInput.value = "";
-      humidityInput.value = "";
-      productSelect.value = "";
-      countInput.value = "";
     }
   }
 
@@ -270,64 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
     duplicateMsg.style.display = "none";
   });
 
-  async function checkDuplicate(date, group){
-    loadingMsg.style.display = "block";
-    submitBtn.disabled = true;
-    try{
-      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-
-      if(data.exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
-      } else {
-        duplicateMsg.style.display = "none";
-      }
-
-      submitBtn.disabled = false;
-      return true;
-    } catch(err){
-      console.error("중복 확인 오류:",err);
-      loadingMsg.style.display="none";
-      duplicateText.textContent = "중복 확인 중 오류 발생!";
-      duplicateMsg.style.display="block";
-      submitBtn.disabled = true;
-      return false;
-    }
-  }
-
-  dateInput.addEventListener("change", async () => {
-    if (dateInput.value && groupSelect.value) {
-      await checkDuplicate(dateInput.value, groupSelect.value);
-    } else {
-      submitBtn.disabled = true;
-    }
-    updateInputFields();
-  });
-
-  groupSelect.addEventListener("change", async () => {
-    hourSelect.value = "";
-    minuteSelect.value = "";
-    tempInput.value = "";
-    humidityInput.value = "";
-    productSelect.value = "";
-    countInput.value = "";
-    duplicateMsg.style.display = "none"; // 점검옵션 변경 시 경고 사라짐
-
-    if (dateInput.value && groupSelect.value) {
-      await checkDuplicate(dateInput.value, groupSelect.value);
-    } else {
-      submitBtn.disabled = true;
-    }
-    updateInputFields();
-  });
-
+  // 저장 버튼 클릭
   submitBtn.addEventListener("click", async () => {
-    if (submitBtn.disabled) return;
-
     if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
     if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+
     if (timeRow.style.display !== "none") {
       if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
       if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
@@ -363,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await res.text();
       alert("서버 응답: " + text);
 
-      // 저장 완료 후 초기화 + 중복 메시지 숨김
+      // 저장 완료 후 초기화
       dateInput.valueAsDate = new Date();
       groupSelect.value = "";
       hourSelect.value = "";
@@ -372,14 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
       humidityInput.value = "";
       productSelect.value = "";
       countInput.value = "";
-      duplicateMsg.style.display = "none";
-      submitBtn.disabled = true;
       updateInputFields();
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
   });
 
+  groupSelect.addEventListener("change", updateInputFields);
   updateInputFields();
 });
 </script>
