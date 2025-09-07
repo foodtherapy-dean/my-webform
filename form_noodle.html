@@ -256,59 +256,65 @@ document.addEventListener('DOMContentLoaded', () => {
     duplicateMsg.style.display = "none";
   });
 
-  submitBtn.addEventListener("click", async () => {
-    if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
-    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+  // 저장 버튼 클릭
+submitBtn.addEventListener("click", async () => {
+  // 필수 체크
+  if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
+  if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
 
-    if (timeRow.style.display !== "none") {
-      if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
-      if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
-    }
-    if (thRow.style.display !== "none") {
-      if (!tempInput.value) { alert("온도를 입력하세요."); return; }
-      if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
-    }
-    if (productRow.style.display !== "none") {
-      if (!productSelect.value) { alert("생산제품을 선택하세요."); return; }
-      if (!countInput.value && countInput.value !== "0") { alert("수량을 입력하세요."); return; }
-    }
+  if (timeRow.style.display !== "none") {
+    if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
+    if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
+  }
+  if (thRow.style.display !== "none") {
+    if (!tempInput.value) { alert("온도를 입력하세요."); return; }
+    if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
+  }
+  if (productRow.style.display !== "none") {
+    // ✅ disabled 상태면 value가 안 넘어감 → 강제 value 확인
+    productSelect.disabled = false;
+    countInput.disabled = false;
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
-        hour: String(hourSelect.value || ""),
-        minute: String(minuteSelect.value || ""),
-        temp: String(tempInput.value || ""),
-        humidity: String(humidityInput.value || ""),
-        product: String(productSelect.value || ""),
-        count: String(countInput.value || "")
-      }
-    };
+    if (!productSelect.value) { alert("생산제품을 선택하세요."); return; }
+    if (!countInput.value) { alert("수량을 입력하세요."); return; }
+  }
 
-    try {
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-      });
-      const text = await res.text();
-      alert("서버 응답: " + text);
-
-      // 초기화
-      dateInput.valueAsDate = new Date();
-      groupSelect.value = "";
-      hourSelect.value = "";
-      minuteSelect.value = "";
-      tempInput.value = "";
-      humidityInput.value = "";
-      productSelect.value = "";
-      countInput.value = "";
-      updateInputFields();
-    } catch (err) {
-      alert("에러 발생: " + err.message);
+  const data = {
+    date: dateInput.value,
+    group: groupSelect.value,
+    entries: {
+      hour: hourSelect.value,
+      minute: minuteSelect.value,
+      temp: tempInput.value,
+      humi: humidityInput.value,    // Apps Script와 동일 key
+      product: productSelect.value,
+      count: countInput.value
     }
-  });
+  };
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
+    });
+    const text = await res.text();
+    alert("서버 응답: " + text);
+
+    // 초기화
+    dateInput.valueAsDate = new Date();
+    groupSelect.value = "";
+    hourSelect.value = "";
+    minuteSelect.value = "";
+    tempInput.value = "";
+    humidityInput.value = "";
+    productSelect.value = "";
+    countInput.value = "";
+    updateInputFields();
+  } catch (err) {
+    alert("에러 발생: " + err.message);
+  }
+});
 
   groupSelect.addEventListener("change", updateInputFields);
   updateInputFields();
