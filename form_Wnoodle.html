@@ -45,7 +45,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
       <button id="duplicateConfirmBtn">확인</button>
       <button id="duplicateCancelBtn">취소</button>
     </div>
-    <h3 style="margin-top:20px;">차수별 입력</h3>
+    <h3 id="roundsTitle" style="margin-top:20px;">차수별 입력</h3>
     <div id="rounds"></div>
   </div>
 
@@ -118,8 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if(data && data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
+        roundsDiv.style.display = "none";
+        document.getElementById("roundsTitle").style.display = "none"; // 숨김
       } else {
         roundsDiv.style.display = "block";
+        document.getElementById("roundsTitle").style.display = "block"; // 보이기
         submitBtn.disabled = false;
       }
     } catch(err) {
@@ -136,12 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     roundsDiv.style.display = "block";
+    document.getElementById("roundsTitle").style.display = "block"; // 보이기
     submitBtn.disabled = false;
   });
 
   duplicateCancelBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     roundsDiv.style.display = "none";
+    document.getElementById("roundsTitle").style.display = "none"; // 숨김
     dateInput.valueAsDate = new Date();
   });
 
