@@ -18,8 +18,11 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .btn.selected { background:#4CAF50; color:#fff; box-shadow:inset 0 0 0 2px #2e7d32; }
 .result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.4rem; font-weight:bold; color:#333; }
 
+#loadingMsg { display:none; margin:10px 0; font-size:1.2rem; color:#555; font-weight:bold; }
 #duplicateMsg { display:none; background:#ffcccc; color:#900; padding:14px; margin-top:8px; border:1px solid #900; border-radius:6px; font-weight:bold; font-size:1.2rem; }
 #duplicateMsg button { margin-left:14px; background:#900; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:1rem; }
+
+.disabled { pointer-events:none; opacity:0.4; }
 
 @media (max-width:768px){
   .row{ gap:6px; padding:14px; }
@@ -35,15 +38,15 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 
   <div class="app-body">
     <label for="date">날짜</label>
-    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:20px;" />
+    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
+    <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
       <button id="duplicateCancelBtn">취소</button>
     </div>
     <h3 style="margin-top:20px;">차수별 입력</h3>
-    <div id="rounds"></div>
-
+    <div id="rounds" class="disabled"></div>
   </div>
 
   <div class="app-footer">
@@ -59,8 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
+  const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
+  const loadingMsg = document.getElementById("loadingMsg");
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzS7NO6wduZ9-71n0MaYT_SV7T4n5PwBLEduC595rzVL4OkV2E-mo2B42lJpCRLLAGlug/exec";
+  const scriptUrl = "YOUR_SCRIPT_URL"; // Apps Script URL
 
   // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
@@ -76,10 +81,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     row.innerHTML = `
       <div class="label">${i}차</div>
-      <button class="btn" type="button" onclick="selectOption(${i}, '3포')" aria-pressed="false">3포</button>
-      <button class="btn" type="button" onclick="selectOption(${i}, '2포')" aria-pressed="false">2포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '3포')">3포</button>
+      <button class="btn" type="button" onclick="selectOption(${i}, '2포')">2포</button>
       <div id="result${i}" class="result"></div>
     `;
+
+    // 라벨 클릭 → 초기화
+    row.querySelector(".label").addEventListener("click", () => {
+      delete roundData[i];
+      row.querySelectorAll(".btn").forEach(btn => {
+        btn.classList.remove("selected");
+        btn.setAttribute("aria-pressed","false");
+      });
+      document.getElementById("result"+i).textContent = "";
+    });
+
     roundsDiv.appendChild(row);
   }
 
@@ -95,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     roundData[round] = { no, value };
     document.getElementById("result"+round).textContent = `주정 ${value} kg`;
 
-    // 버튼 색상 토글
     btns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
     if (type === "3포") {
       btns[0].classList.add('selected');
@@ -108,18 +123,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 중복 확인
   async function checkDuplicate(date) {
+    loadingMsg.style.display = "block";
+    duplicateMsg.style.display = "none";
+    roundsDiv.classList.add("disabled");
+
     try {
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
+      loadingMsg.style.display = "none";
+
       if (data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
         submitBtn.disabled = true;
       } else {
         duplicateMsg.style.display = "none";
+        roundsDiv.classList.remove("disabled");
         submitBtn.disabled = false;
       }
     } catch (err) {
+      loadingMsg.style.display = "none";
       console.error("중복 확인 실패:", err);
     }
   }
@@ -130,14 +153,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
-    submitBtn.disabled = false; // 강제 저장 허용
+    roundsDiv.classList.remove("disabled");
+    submitBtn.disabled = false;
+  });
+
+  duplicateCancelBtn.addEventListener("click", () => {
+    duplicateMsg.style.display = "none";
+    roundsDiv.classList.add("disabled");
+    dateInput.valueAsDate = new Date(); // 날짜 리프레시
   });
 
   // 저장
   submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value) { 
-      alert("날짜를 선택하세요."); 
-      return; 
+    if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
+
+    // 유효성 검사: 1차 필수 + 중간 공백 불가
+    if (!roundData[1]) {
+      alert("⚠️ 1차 입력은 반드시 필요합니다.");
+      return;
+    }
+    for (let i = 1; i <= 10; i++) {
+      if (!roundData[i] && roundData[i+1]) {
+        alert(`⚠️ ${i}차가 비어있습니다. 차수는 연속적으로 입력해야 합니다.`);
+        return;
+      }
     }
 
     const noArr = [], valueArr = [];
@@ -151,31 +190,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const payload = {
-      date: dateInput.value,
-      no: noArr,
-      value: valueArr
-    };
+    const payload = { date: dateInput.value, no: noArr, value: valueArr };
 
     try {
       const res = await fetch(scriptUrl, {
         method: "POST",
-        body: new URLSearchParams({
-          saengmyeon: JSON.stringify(payload)
-        })
+        body: new URLSearchParams({ saengmyeon: JSON.stringify(payload) })
       });
 
       const text = await res.text();
       alert("저장 완료: " + text);
 
       // 초기화
-      Object.keys(roundData).forEach(k => delete roundData[k]);
+      roundData = {};
       document.querySelectorAll(".result").forEach(el => el.textContent = "");
       document.querySelectorAll(".btn").forEach(btn => {
         btn.classList.remove("selected");
         btn.setAttribute("aria-pressed","false");
       });
       dateInput.valueAsDate = new Date();
+      checkDuplicate(dateInput.value);
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
@@ -185,6 +219,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
-
 </body>
 </html>
