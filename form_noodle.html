@@ -206,10 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById("submitBtn");
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
-  const duplicateMsg = document.getElementById("duplicateMsg");
-  const duplicateText = document.getElementById("duplicateText");
-  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const loadingMsg = document.getElementById("loadingMsg");
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbzS7NO6wduZ9-71n0MaYT_SV7T4n5PwBLEduC595rzVL4OkV2E-mo2B42lJpCRLLAGlug/exec";
 
@@ -219,13 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 시/분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++) {
-      const val = h.toString().padStart(2, "0");
+    for(let h=1; h<=24; h++){
+      const val = h.toString().padStart(2,"0");
       hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
     minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<=60; m+=10) {
-      const val = m.toString().padStart(2, "0");
+    for(let m=0; m<=50; m+=10){
+      const val = m.toString().padStart(2,"0");
       minuteSelect.innerHTML += `<option value="${val}">${val}</option>`;
     }
   }
@@ -233,88 +229,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateInputFields() {
     const group = groupSelect.value;
-    if (group === "시스템ON" || group === "시스템OFF") {
-      timeRow.style.display = "flex";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
-    } else if (group === "1차점검" || group === "2차점검") {
-      timeRow.style.display = "flex";
-      thRow.style.display = "flex";
-      productRow.style.display = "none";
-    } else if (group === "생산제품") {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      productRow.style.display = "flex";
-    } else {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
+    if(group==="시스템ON"||group==="시스템OFF"){
+      timeRow.style.display="flex";
+      thRow.style.display="none";
+      productRow.style.display="none";
+    }else if(group==="1차점검"||group==="2차점검"){
+      timeRow.style.display="flex";
+      thRow.style.display="flex";
+      productRow.style.display="none";
+    }else if(group==="생산제품"){
+      timeRow.style.display="none";
+      thRow.style.display="none";
+      productRow.style.display="flex";
+    }else{
+      timeRow.style.display="none";
+      thRow.style.display="none";
+      productRow.style.display="none";
     }
   }
 
-  duplicateConfirmBtn.addEventListener("click", () => {
-    duplicateMsg.style.display = "none";
+  submitBtn.addEventListener("click", async () => {
+    if(!groupSelect.value){alert("점검 옵션을 선택하세요.");return;}
+    if(!dateInput.value){alert("날짜를 선택하세요.");return;}
+    if(timeRow.style.display!=="none"){
+      if(!hourSelect.value){alert("시간(시)을 선택하세요.");return;}
+      if(!minuteSelect.value){alert("시간(분)을 선택하세요.");return;}
+    }
+    if(thRow.style.display!=="none"){
+      if(!tempInput.value){alert("온도를 입력하세요.");return;}
+      if(!humidityInput.value){alert("습도를 입력하세요.");return;}
+    }
+    if(productRow.style.display!=="none"){
+      if(!productSelect.value){alert("생산제품을 선택하세요.");return;}
+      if(!countInput.value){alert("수량을 입력하세요.");return;}
+    }
+
+    // ⚠️ product/count 값 강제로 포함
+    const entries = {
+      hour: hourSelect.value || "",
+      minute: minuteSelect.value || "",
+      temp: tempInput.value || "",
+      humi: humidityInput.value || "",
+      product: productSelect.value || "",
+      count: countInput.value || ""
+    };
+
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: entries
+    };
+
+    try{
+      const res = await fetch(scriptUrl,{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"noodle="+encodeURIComponent(JSON.stringify(data))
+      });
+      const text = await res.text();
+      alert("서버 응답: "+text);
+
+      // 초기화
+      dateInput.valueAsDate = new Date();
+      groupSelect.value = "";
+      hourSelect.value = "";
+      minuteSelect.value = "";
+      tempInput.value = "";
+      humidityInput.value = "";
+      productSelect.value = "";
+      countInput.value = "";
+      updateInputFields();
+
+    }catch(err){
+      alert("에러 발생: "+err.message);
+    }
   });
-
-  // 저장 버튼 클릭
-submitBtn.addEventListener("click", async () => {
-  // 필수 체크
-  if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
-  if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
-
-  if (timeRow.style.display !== "none") {
-    if (!hourSelect.value) { alert("시간(시)을 선택하세요."); return; }
-    if (!minuteSelect.value) { alert("시간(분)을 선택하세요."); return; }
-  }
-  if (thRow.style.display !== "none") {
-    if (!tempInput.value) { alert("온도를 입력하세요."); return; }
-    if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
-  }
-  if (productRow.style.display !== "none") {
-    // ✅ disabled 상태면 value가 안 넘어감 → 강제 value 확인
-    productSelect.disabled = false;
-    countInput.disabled = false;
-
-    if (!productSelect.value) { alert("생산제품을 선택하세요."); return; }
-    if (!countInput.value) { alert("수량을 입력하세요."); return; }
-  }
-
-  const data = {
-    date: dateInput.value,
-    group: groupSelect.value,
-    entries: {
-      hour: hourSelect.value,
-      minute: minuteSelect.value,
-      temp: tempInput.value,
-      humi: humidityInput.value,    // Apps Script와 동일 key
-      product: productSelect.value,
-      count: countInput.value
-    }
-  };
-
-  try {
-    const res = await fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "noodle=" + encodeURIComponent(JSON.stringify(data))
-    });
-    const text = await res.text();
-    alert("서버 응답: " + text);
-
-    // 초기화
-    dateInput.valueAsDate = new Date();
-    groupSelect.value = "";
-    hourSelect.value = "";
-    minuteSelect.value = "";
-    tempInput.value = "";
-    humidityInput.value = "";
-    productSelect.value = "";
-    countInput.value = "";
-    updateInputFields();
-  } catch (err) {
-    alert("에러 발생: " + err.message);
-  }
-});
 
   groupSelect.addEventListener("change", updateInputFields);
   updateInputFields();
