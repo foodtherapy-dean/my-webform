@@ -242,8 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
       thRow.style.display = "flex";
       productRow.style.display = "none";
     } else if (group === "생산제품") {
-      timeRow.style.display = "none";   // ✅ 시간/분 숨김
-      thRow.style.display = "none";     // ✅ 온습도 숨김
+      timeRow.style.display = "none";
+      thRow.style.display = "none";
       productRow.style.display = "flex";
     } else {
       timeRow.style.display = "none";
@@ -256,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
     duplicateMsg.style.display = "none";
   });
 
-  // 저장 버튼 클릭
   submitBtn.addEventListener("click", async () => {
     if (!groupSelect.value) { alert("점검 옵션을 선택하세요."); return; }
     if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
@@ -271,19 +270,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (productRow.style.display !== "none") {
       if (!productSelect.value) { alert("생산제품을 선택하세요."); return; }
-      if (!countInput.value) { alert("수량을 입력하세요."); return; }
+      if (!countInput.value && countInput.value !== "0") { alert("수량을 입력하세요."); return; }
     }
 
     const data = {
       date: dateInput.value,
       group: groupSelect.value,
       entries: {
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        temp: tempInput.value,
-        humidity: humidityInput.value,
-        product: productSelect.value,
-        count: countInput.value
+        hour: String(hourSelect.value || ""),
+        minute: String(minuteSelect.value || ""),
+        temp: String(tempInput.value || ""),
+        humidity: String(humidityInput.value || ""),
+        product: String(productSelect.value || ""),
+        count: String(countInput.value || "")
       }
     };
 
@@ -296,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await res.text();
       alert("서버 응답: " + text);
 
-      // 저장 완료 후 초기화
+      // 초기화
       dateInput.valueAsDate = new Date();
       groupSelect.value = "";
       hourSelect.value = "";
@@ -315,5 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 </body>
 </html>
