@@ -132,6 +132,7 @@ input[type="number"], select, input[type="date"] {
       <option value="1차점검">1차점검</option>
       <option value="2차점검">2차점검</option>
       <option value="시스템OFF">시스템OFF</option>
+      <option value="생산제품">생산제품</option>
     </select>
 
     <!-- 중복 메시지 -->
@@ -166,6 +167,24 @@ input[type="number"], select, input[type="date"] {
         <input type="number" id="humidity" step="0.1" min="0" max="100" />
       </div>
     </div>
+
+    <!-- 생산제품 / 수량 입력 -->
+    <div class="inline-row" id="productRow" style="display:none;">
+      <div>
+        <label for="product">생산제품</label>
+        <select id="product">
+          <option value="">선택하세요</option>
+          <option value="일반국수">일반국수</option>
+          <option value="치자국수">치자국수</option>
+          <option value="메밀국수">메밀국수</option>
+        </select>
+      </div>
+      <div>
+        <label for="count">수량</label>
+        <input type="number" id="count" min="0" />
+      </div>
+    </div>
+
   </div>
 
   <div class="app-footer">
@@ -181,6 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const minuteSelect = document.getElementById("minute");
   const tempInput = document.getElementById("temp");
   const humidityInput = document.getElementById("humidity");
+  const productRow = document.getElementById("productRow");
+  const productSelect = document.getElementById("product");
+  const countInput = document.getElementById("count");
+
   const submitBtn = document.getElementById("submitBtn");
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
@@ -215,18 +238,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (group === "시스템ON" || group === "시스템OFF") {
       timeRow.style.display = "flex";
       thRow.style.display = "none";
+      productRow.style.display = "none";
       tempInput.value = "";
       humidityInput.value = "";
+      productSelect.value = "";
+      countInput.value = "";
     } else if (group === "1차점검" || group === "2차점검") {
       timeRow.style.display = "flex";
       thRow.style.display = "flex";
+      productRow.style.display = "none";
+    } else if (group === "생산제품") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "none";
+      productRow.style.display = "flex";
+      tempInput.value = "";
+      humidityInput.value = "";
     } else {
       timeRow.style.display = "none";
       thRow.style.display = "none";
+      productRow.style.display = "none";
       hourSelect.value = "";
       minuteSelect.value = "";
       tempInput.value = "";
       humidityInput.value = "";
+      productSelect.value = "";
+      countInput.value = "";
     }
   }
 
@@ -275,6 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
     minuteSelect.value = "";
     tempInput.value = "";
     humidityInput.value = "";
+    productSelect.value = "";
+    countInput.value = "";
     duplicateMsg.style.display = "none"; // 점검옵션 변경 시 경고 사라짐
 
     if (dateInput.value && groupSelect.value) {
@@ -298,6 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!tempInput.value) { alert("온도를 입력하세요."); return; }
       if (!humidityInput.value) { alert("습도를 입력하세요."); return; }
     }
+    if (productRow.style.display !== "none") {
+      if (!productSelect.value) { alert("생산제품을 선택하세요."); return; }
+      if (!countInput.value) { alert("수량을 입력하세요."); return; }
+    }
 
     const data = {
       date: dateInput.value,
@@ -306,7 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
         hour: hourSelect.value,
         minute: minuteSelect.value,
         temp: tempInput.value,
-        humidity: humidityInput.value
+        humidity: humidityInput.value,
+        product: productSelect.value,
+        count: countInput.value
       }
     };
 
@@ -326,6 +370,8 @@ document.addEventListener('DOMContentLoaded', () => {
       minuteSelect.value = "";
       tempInput.value = "";
       humidityInput.value = "";
+      productSelect.value = "";
+      countInput.value = "";
       duplicateMsg.style.display = "none";
       submitBtn.disabled = true;
       updateInputFields();
