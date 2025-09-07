@@ -22,7 +22,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 #duplicateMsg { display:none; background:#ffcccc; color:#900; padding:14px; margin-top:8px; border:1px solid #900; border-radius:6px; font-weight:bold; font-size:1.2rem; }
 #duplicateMsg button { margin-left:14px; background:#900; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:1rem; }
 
-.disabled { pointer-events:none; opacity:0.4; }
+#rounds { display:none; } /* 기본 숨김 */
 
 @media (max-width:768px){
   .row{ gap:6px; padding:14px; }
@@ -46,7 +46,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
       <button id="duplicateCancelBtn">취소</button>
     </div>
     <h3 style="margin-top:20px;">차수별 입력</h3>
-    <div id="rounds" class="disabled"></div>
+    <div id="rounds"></div>
   </div>
 
   <div class="app-footer">
@@ -125,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
-    roundsDiv.classList.add("disabled");
+    roundsDiv.style.display = "none";
+    submitBtn.disabled = true;
 
     try {
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
@@ -135,10 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
-        submitBtn.disabled = true;
       } else {
-        duplicateMsg.style.display = "none";
-        roundsDiv.classList.remove("disabled");
+        roundsDiv.style.display = "block";
         submitBtn.disabled = false;
       }
     } catch (err) {
@@ -153,13 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
-    roundsDiv.classList.remove("disabled");
+    roundsDiv.style.display = "block";
     submitBtn.disabled = false;
   });
 
   duplicateCancelBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
-    roundsDiv.classList.add("disabled");
+    roundsDiv.style.display = "none";
     dateInput.valueAsDate = new Date(); // 날짜 리프레시
   });
 
@@ -167,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) { alert("날짜를 선택하세요."); return; }
 
-    // 유효성 검사: 1차 필수 + 중간 공백 불가
     if (!roundData[1]) {
       alert("⚠️ 1차 입력은 반드시 필요합니다.");
       return;
