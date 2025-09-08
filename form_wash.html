@@ -238,7 +238,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   formData.append("inspect", JSON.stringify(data));
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbzuT-_RAwyZvrq8GmRmHcR8G3LI8u4xiqOw4SmMEqVOfOeJ-kNH5BCaS6nKsjK3WyDBtA/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzrgWtcHkc3r0JeiKZ_Sy4pHrfGjqVakqQ8XYrJdg5ZLfINBuoWUXw8O98EKxe0bMKJag/exec", {
       method: "POST",
       body: formData,
     });
