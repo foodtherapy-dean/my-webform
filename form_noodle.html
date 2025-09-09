@@ -22,7 +22,7 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
 </head>
 <body>
 <div class="app-container">
-  <div class="app-header">건면공정 점검 입력1</div>
+  <div class="app-header">건면공정 점검 입력2</div>
 
   <div class="app-body">
     <!-- 날짜 -->
@@ -212,17 +212,30 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!countInput.value){ alert("수량 입력"); return; }
     }
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
+    // ✅ entries 항상 배열로 보내기
+    let entries;
+    if(productRow.style.display !== "none") {
+      // 생산제품
+      entries = [{
+        product: productSelect.value,
+        count: countInput.value
+      }];
+    } else {
+      // 점검옵션
+      entries = [{
         hour: hourSelect.value,
         minute: minuteSelect.value,
         temp: tempInput.value,
         humidity: humidityInput.value,
-        product: productSelect.value,
-        count: countInput.value
-      }
+        product: productSelect.value || "",
+        count: countInput.value || ""
+      }];
+    }
+
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: entries
     };
 
     try {
@@ -242,5 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 </body>
 </html>
