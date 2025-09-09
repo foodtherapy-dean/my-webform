@@ -148,9 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
       thRow.style.display = "flex";
       productRow.style.display = "none";
     } else if (g === "생산제품") {
-      timeRow.style.display = "none";   // ✅ 수정: 시/분 안보이게
+      timeRow.style.display = "none";  
       thRow.style.display = "none";
-      productRow.style.display = "flex"; // ✅ 제품명/수량만 보이게
+      productRow.style.display = "flex";
     } else {
       timeRow.style.display = "none";
       thRow.style.display = "none";
@@ -215,17 +215,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!countInput.value){ alert("수량 입력"); return; }
     }
 
-    const data = {
-      date: dateInput.value,
-      group: groupSelect.value,
-      entries: {
+    // ✅ entries를 항상 배열로 보내도록 수정
+    let entries;
+    if(productRow.style.display !== "none") {
+      entries = [{
+        product: productSelect.value,
+        count: countInput.value
+      }];
+    } else {
+      entries = [{
         hour: hourSelect.value,
         minute: minuteSelect.value,
         temp: tempInput.value,
         humidity: humidityInput.value,
-        product: productSelect.value,
-        count: countInput.value
-      }
+        product: productSelect.value || "",
+        count: countInput.value || ""
+      }];
+    }
+
+    const data = {
+      date: dateInput.value,
+      group: groupSelect.value,
+      entries: entries
     };
 
     try {
@@ -245,5 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
+
 </body>
 </html>
