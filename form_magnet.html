@@ -251,7 +251,7 @@ function applySelectedStyle(selector) {
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
 
-// 점검 옵션 변경 시 입력 필드 표시 제어
+// 점검 옵션 변경 시 입력 필드 표시 제어 + 중복 체크
 document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
   const dateVal = document.getElementById("date").value;
@@ -263,7 +263,7 @@ document.getElementById("option").addEventListener("change", async e => {
 
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-    const url = "https://script.google.com/macros/s/AKfycbwunNiel0oi2bDxa4_qpq-wU_MLFdx87AocWOKPffLpgyp-Zd_91wbOvVDoT84nsxl55A/exec?checkMagnet=" + query;
+    const url = "https://script.google.com/macros/s/AKfycbwU2blbxsSYJT43ARbvmfcAFbQeF2MfDaKTAtajlz40Dk6ucG-uzUoVs8tiP62f9gq1Dw/exec?checkMagnet=" + query;
     
     const res = await fetch(url);
     const result = await res.json();
@@ -331,6 +331,43 @@ document.addEventListener("click", e => {
   }
 });
 
+
+// ✅ 옵션 입력 순서 검증 로직 추가
+async function validateOptionSequence(dateVal, opt) {
+  try {
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+    const url = "https://script.google.com/macros/s/AKfycbwU2blbxsSYJT43ARbvmfcAFbQeF2MfDaKTAtajlz40Dk6ucG-uzUoVs8tiP62f9gq1Dw/exec?getMagnet=" + query;
+
+    const res = await fetch(url);
+    const result = await res.json();
+    const existingOptions = result.options || []; // 이미 저장된 옵션 배열 (예: ["1차점검", "2차점검"])
+
+    // 순서 검증
+    if (opt === "2차점검" && !existingOptions.includes("1차점검")) {
+      alert("⚠️ 1차점검이 먼저 입력되어야 2차점검을 저장할 수 있습니다.");
+      return false;
+    }
+    if (opt === "3차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검"))) {
+      alert("⚠️ 1차, 2차점검이 모두 입력되어야 3차점검을 저장할 수 있습니다.");
+      return false;
+    }
+    if (opt === "4차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검") || !existingOptions.includes("3차점검"))) {
+      alert("⚠️ 1차, 2차, 3차점검이 모두 입력되어야 4차점검을 저장할 수 있습니다.");
+      return false;
+    }
+    if (opt === "최종취합" && !existingOptions.includes("1차점검")) {
+      alert("⚠️ 최종취합은 1차점검이 저장된 이후에만 입력할 수 있습니다.");
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("순서 검증 오류:", err);
+    return true; // 오류 시엔 저장을 막지 않음
+  }
+}
+
+
 // 폼 제출 처리
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
   e.preventDefault();
@@ -358,6 +395,10 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
+  // ✅ 옵션 입력 순서 검증 추가
+  const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
+  if (!isValidSequence) return;
+
   // 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
@@ -380,7 +421,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   formData.append("magnet", JSON.stringify(data));
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbztDgFjZxFOLnyOl0SyZRuvpVLdfxZ-lwTEoBzYt0NVc_UyBdE4B45t2mDGy7dGiC0DNQ/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbwunNiel0oi2bDxa4_qpq-wU_MLFdx87AocWOKPffLpgyp-Zd_91wbOvVDoT84nsxl55A/exec", {
       method: "POST",
       body: formData
     });
@@ -404,5 +445,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 });
 </script>
+
 </body>
 </html>
