@@ -256,9 +256,8 @@ document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
   const dateVal = document.getElementById("date").value;
 
-  if (!opt || !dateVal) return; // 날짜나 옵션이 비어있으면 패스
+  if (!opt || !dateVal) return;
 
-  // 로딩 메시지 보이기
   document.getElementById("loadingMsg").style.display = "block";
 
   try {
@@ -268,41 +267,36 @@ document.getElementById("option").addEventListener("change", async e => {
     const res = await fetch(url);
     const result = await res.json();
 
-    // 중복 확인 메시지 처리
     if (result.exists) {
       document.getElementById("duplicateText").innerText = `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${opt})의 데이터가 존재합니다.`;
       document.getElementById("duplicateMsg").style.display = "block";
     } else {
-      document.getElementById("duplicateMsg").style.display = "none";  // 중복 데이터가 없으면 숨김
+      document.getElementById("duplicateMsg").style.display = "none";
     }
 
   } catch (err) {
     console.error("중복 체크 오류:", err);
   }
 
-  // 로딩 메시지 숨기기
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 기존 UI 표시 제어
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
+  const showSub = ["1차점검","2차점검","3차점검","4차점검","최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
   document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
   document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
   const timeLabel = document.getElementById("timeLabel");
-  if (timeLabel) {
-    timeLabel.style.display = isSummary ? "none" : "block";
-  }
+  if (timeLabel) timeLabel.style.display = isSummary ? "none" : "block";
   if (isSummary) oxValues = {};
 });
 
 // 중복 확인 확인 버튼
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
-  location.reload(); // ⚡ 중복 경고 닫으면 새로고침
+  location.reload(); // 닫으면 새로고침
 });
 
 // OX 항목 생성
-const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+const oxItems = ["Fe","Sus","제품","제품+Fe","제품+Sus"];
 const oxContainer = document.getElementById("oxContainer");
 oxItems.forEach(label => {
   const oxSet = document.createElement("div");
@@ -324,49 +318,36 @@ document.addEventListener("click", e => {
     const btn = e.target;
     const label = btn.dataset.label;
     oxValues[label] = btn.dataset.value;
-
-    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => {
-      b.classList.toggle("selected", b === btn);
-    });
+    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => b.classList.toggle("selected", b === btn));
   }
 });
 
-// ✅ 옵션 입력 순서 검증 로직 추가
+// 옵션 입력 순서 검증 (누락 차수만 메시지)
 async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     const url = "https://script.google.com/macros/s/AKfycbwU2blbxsSYJT43ARbvmfcAFbQeF2MfDaKTAtajlz40Dk6ucG-uzUoVs8tiP62f9gq1Dw/exec?getMagnet=" + query;
-
     const res = await fetch(url);
     const result = await res.json();
-    const existingOptions = result.options || []; // 이미 저장된 옵션 배열
+    const existingOptions = result.options || [];
 
-    // 순서 검증
-    if (opt === "2차점검" && !existingOptions.includes("1차점검")) {
-      alert("⚠️ 1차점검이 먼저 입력되어야 2차점검을 저장할 수 있습니다.");
-      location.reload();
-      return false;
-    }
-    if (opt === "3차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검"))) {
-      alert("⚠️ 1차, 2차점검이 모두 입력되어야 3차점검을 저장할 수 있습니다.");
-      location.reload();
-      return false;
-    }
-    if (opt === "4차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검") || !existingOptions.includes("3차점검"))) {
-      alert("⚠️ 1차, 2차, 3차점검이 모두 입력되어야 4차점검을 저장할 수 있습니다.");
-      location.reload();
-      return false;
-    }
-    if (opt === "최종취합" && !existingOptions.includes("1차점검")) {
-      alert("⚠️ 최종취합은 1차점검이 저장된 이후에만 입력할 수 있습니다.");
-      location.reload();
-      return false;
-    }
+    const requiredBefore = [];
+    if (opt === "2차점검") requiredBefore.push("1차점검");
+    if (opt === "3차점검") requiredBefore.push("1차점검","2차점검");
+    if (opt === "4차점검") requiredBefore.push("1차점검","2차점검","3차점검");
+    if (opt === "최종취합") requiredBefore.push("1차점검");
 
+    const missing = requiredBefore.filter(o => !existingOptions.includes(o));
+    if (missing.length > 0) {
+      alert("⚠️ 누락된 차수: " + missing.join(", ") + "을(를) 먼저 입력하세요.");
+      location.reload();
+      return false;
+    }
     return true;
+
   } catch (err) {
     console.error("순서 검증 오류:", err);
-    return true; // 오류 시엔 저장을 막지 않음
+    return true;
   }
 }
 
@@ -375,7 +356,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   e.preventDefault();
   const form = e.target;
 
-  // 활성화된 input/select 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
@@ -386,7 +366,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // OX 선택 필수 체크 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
@@ -397,16 +376,12 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // ✅ 옵션 입력 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) return;
 
-  // 시간 분리
   const timeInput = form.querySelector("#time");
-  let hour = "", minute = "";
-  if (timeInput && timeInput.value) {
-    [hour, minute] = timeInput.value.split(":");
-  }
+  let hour="", minute="";
+  if (timeInput && timeInput.value) [hour,minute] = timeInput.value.split(":");
 
   const data = {
     type: "data",
@@ -427,11 +402,10 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
       method: "POST",
       body: formData
     });
-
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      location.reload(); // ⚡ 저장 성공 후 무조건 새로고침
+      location.reload();
     } else {
       alert("❌ 서버 오류:\n" + result);
       location.reload();
@@ -442,6 +416,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 });
 </script>
+
 
 
 </body>
