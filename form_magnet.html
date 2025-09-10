@@ -298,7 +298,7 @@ document.getElementById("option").addEventListener("change", async e => {
 
 // 중복 확인 확인 버튼
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
-  document.getElementById("duplicateMsg").style.display = "none";
+  location.reload(); // ⚡ 중복 경고 닫으면 새로고침
 });
 
 // OX 항목 생성
@@ -331,7 +331,6 @@ document.addEventListener("click", e => {
   }
 });
 
-
 // ✅ 옵션 입력 순서 검증 로직 추가
 async function validateOptionSequence(dateVal, opt) {
   try {
@@ -340,23 +339,27 @@ async function validateOptionSequence(dateVal, opt) {
 
     const res = await fetch(url);
     const result = await res.json();
-    const existingOptions = result.options || []; // 이미 저장된 옵션 배열 (예: ["1차점검", "2차점검"])
+    const existingOptions = result.options || []; // 이미 저장된 옵션 배열
 
     // 순서 검증
     if (opt === "2차점검" && !existingOptions.includes("1차점검")) {
       alert("⚠️ 1차점검이 먼저 입력되어야 2차점검을 저장할 수 있습니다.");
+      location.reload();
       return false;
     }
     if (opt === "3차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검"))) {
       alert("⚠️ 1차, 2차점검이 모두 입력되어야 3차점검을 저장할 수 있습니다.");
+      location.reload();
       return false;
     }
     if (opt === "4차점검" && (!existingOptions.includes("1차점검") || !existingOptions.includes("2차점검") || !existingOptions.includes("3차점검"))) {
       alert("⚠️ 1차, 2차, 3차점검이 모두 입력되어야 4차점검을 저장할 수 있습니다.");
+      location.reload();
       return false;
     }
     if (opt === "최종취합" && !existingOptions.includes("1차점검")) {
       alert("⚠️ 최종취합은 1차점검이 저장된 이후에만 입력할 수 있습니다.");
+      location.reload();
       return false;
     }
 
@@ -366,7 +369,6 @@ async function validateOptionSequence(dateVal, opt) {
     return true; // 오류 시엔 저장을 막지 않음
   }
 }
-
 
 // 폼 제출 처리
 document.getElementById("magnetForm").addEventListener("submit", async function(e) {
@@ -395,7 +397,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // ✅ 옵션 입력 순서 검증 추가
+  // ✅ 옵션 입력 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) return;
 
@@ -429,22 +431,18 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      form.reset();
-      dateInput.valueAsDate = new Date();
-      dateInput.classList.add("selected");
-      form.option.value = "";
-      oxValues = {};
-      document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-      document.getElementById("subInputs").style.display = "none";
-      document.getElementById("summaryInputs").style.display = "none";
+      location.reload(); // ⚡ 저장 성공 후 무조건 새로고침
     } else {
       alert("❌ 서버 오류:\n" + result);
+      location.reload();
     }
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
+    location.reload();
   }
 });
 </script>
+
 
 </body>
 </html>
