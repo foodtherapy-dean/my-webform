@@ -142,6 +142,7 @@ const items = {
 };
 
 let oxValues = {};
+let existingOptions = []; // 현재 날짜에 이미 저장된 옵션 목록
 
 // 선택 시 하위 항목 표시
 const optionSelect = document.getElementById("option");
@@ -151,32 +152,34 @@ optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
   oxValues = {};
   const opt = e.target.value;
-
   if (!opt || !items[opt]) return;
 
-  // 로딩 메시지 보이기
   document.getElementById("loadingMsg").style.display = "block";
-
   try {
-    // 중복 체크 URL 만들기
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
-    const url = `https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?checkWash=${query}`;
+    // 현재 날짜에 입력된 옵션 목록 불러오기
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
+    const url = `https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec?getWash=${query}`;
     const res = await fetch(url);
     const result = await res.json();
+    existingOptions = result.options || [];
 
-    // 중복 확인 메시지
-    if (result.exists) {
-      document.getElementById("duplicateText").innerText = `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${opt})의 데이터가 존재합니다.`;
+    // 중복 체크
+    const query2 = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
+    const url2 = `https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec?checkWash=${query2}`;
+    const res2 = await fetch(url2);
+    const result2 = await res2.json();
+
+    if (result2.exists) {
+      document.getElementById("duplicateText").innerText =
+        `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${opt})의 데이터가 존재합니다.`;
       document.getElementById("duplicateMsg").style.display = "block";
     } else {
       document.getElementById("duplicateMsg").style.display = "none";
     }
 
   } catch (err) {
-    console.error("중복 체크 오류:", err);
+    console.error("중복/순서 체크 오류:", err);
   }
-
-  // 로딩 메시지 숨기기
   document.getElementById("loadingMsg").style.display = "none";
 
   // 항목 표시
@@ -206,22 +209,49 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// 중복 확인 확인 버튼
+// 중복 확인창 닫기
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
   document.getElementById("duplicateMsg").style.display = "none";
 });
 
+// ✅ 순서 검증 함수
+function validateOrder(opt) {
+  if (opt === "수시점검") return { ok: true };
+
+  const order = ["작업전", "작업중", "작업후"];
+  const idx = order.indexOf(opt);
+
+  if (idx > 0) {
+    const required = order.slice(0, idx).filter(o => !existingOptions.includes(o));
+    if (required.length > 0) {
+      return {
+        ok: false,
+        missing: required
+      };
+    }
+  }
+  return { ok: true };
+}
+
 // 폼 제출 처리
 document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const opt = optionSelect.value;
 
-  if (!optionSelect.value) {
+  if (!opt) {
     alert("점검 옵션을 선택하세요");
     return;
   }
 
+  // 순서 검증
+  const orderCheck = validateOrder(opt);
+  if (!orderCheck.ok) {
+    alert(`⚠️ 누락된 옵션: ${orderCheck.missing.join(", ")} 먼저 입력해야 ${opt}을(를) 저장할 수 있습니다.`);
+    return;
+  }
+
   // 필수 항목 체크
-  for (const label of items[optionSelect.value]) {
+  for (const label of items[opt]) {
     if (!(label in oxValues)) {
       alert(`'${label}' 항목을 선택하세요.`);
       return;
@@ -230,7 +260,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
 
   const data = {
     date: dateInput.value,
-    option: optionSelect.value,
+    option: opt,
     states: Object.values(oxValues),
   };
 
@@ -242,16 +272,16 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
       method: "POST",
       body: formData,
     });
-
     const result = await response.text();
+
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      e.target.reset();  // 입력창 초기화
-      oxContainer.innerHTML = "";  // OX 버튼 초기화
-      oxValues = {};  // OX 값 초기화
-      document.getElementById("duplicateMsg").style.display = "none"; // 중복 메시지 숨기기
-      optionSelect.value = ""; // 점검 옵션 초기화
-      dateInput.valueAsDate = new Date(); 
+      e.target.reset();
+      oxContainer.innerHTML = "";
+      oxValues = {};
+      optionSelect.value = "";
+      dateInput.valueAsDate = new Date();
+      document.getElementById("duplicateMsg").style.display = "none";
     } else {
       alert("❌ 오류:\n" + result);
     }
@@ -260,6 +290,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 
 
 </body>
