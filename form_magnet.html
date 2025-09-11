@@ -240,6 +240,12 @@ const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
+// 📌 날짜 변경 시 폼 초기화 (날짜만 유지)
+dateInput.addEventListener("change", () => {
+  resetForm(document.getElementById("magnetForm"), dateInput.value);
+  dateInput.classList.add("selected");
+});
+
 // select, time 입력 시 selected 클래스 적용
 function applySelectedStyle(selector) {
   document.querySelectorAll(selector).forEach(el => {
@@ -262,7 +268,9 @@ document.getElementById("option").addEventListener("change", async e => {
 
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-    const url = "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?checkMagnet=" + query;
+    const url =
+      "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?checkMagnet=" +
+      query;
 
     const res = await fetch(url);
     const result = res.ok ? await res.json() : {};
@@ -281,7 +289,7 @@ document.getElementById("option").addEventListener("change", async e => {
   document.getElementById("loadingMsg").style.display = "none";
 
   // 입력 UI 표시 제어
-  const showSub = ["1차점검","2차점검","3차점검","4차점검","최종취합"].includes(opt);
+  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
   document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
@@ -329,17 +337,20 @@ document.addEventListener("click", e => {
 async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-    const url = "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?getMagnet=" + query;
+    const url =
+      "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?getMagnet=" +
+      query;
 
     let existingOptions = [];
     try {
       const res = await fetch(url);
       if (res.ok) existingOptions = (await res.json()).options || [];
-    } catch(e) {
+    } catch (e) {
       console.error("서버 fetch 오류:", e);
       existingOptions = [];
     }
 
+    // 최종취합 처리: 1차점검만 있으면 OK
     if (opt === "최종취합") {
       if (!existingOptions.includes("1차점검")) {
         alert("⚠️ 최종취합은 1차점검이 먼저 입력되어야 합니다.");
@@ -348,6 +359,7 @@ async function validateOptionSequence(dateVal, opt) {
       return true;
     }
 
+    // 2~4차점검: 누락된 모든 차수 체크
     const requiredMap = {
       "2차점검": ["1차점검"],
       "3차점검": ["1차점검", "2차점검"],
@@ -356,10 +368,15 @@ async function validateOptionSequence(dateVal, opt) {
     if (opt in requiredMap) {
       const missing = requiredMap[opt].filter(req => !existingOptions.includes(req));
       if (missing.length > 0) {
-        alert(`⚠️ 누락된 차수: ${missing.join(", ")}이(가) 먼저 입력되어야 ${opt}를 저장할 수 있습니다.`);
+        alert(
+          `⚠️ 누락된 차수: ${missing.join(
+            ", "
+          )}이(가) 먼저 입력되어야 ${opt}를 저장할 수 있습니다.`
+        );
         return false;
       }
     }
+
     return true;
   } catch (err) {
     console.error("순서 검증 오류:", err);
@@ -369,7 +386,7 @@ async function validateOptionSequence(dateVal, opt) {
 }
 
 // ====== 폼 제출 처리 ======
-document.getElementById("magnetForm").addEventListener("submit", async function(e) {
+document.getElementById("magnetForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   const form = e.target;
 
@@ -384,6 +401,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
+  // OX 필수 체크 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
@@ -394,21 +412,26 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
+  // 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
-    resetForm(form, form.date.value);
+    resetForm(form, form.date.value); // 📌 날짜 유지 초기화
     return;
   }
 
+  // 시간 분리
   const timeInput = form.querySelector("#time");
-  let hour = "", minute = "";
+  let hour = "",
+    minute = "";
   if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
 
+  // 데이터 구성
   const data = {
     type: "data",
     date: form.date.value,
     option: form.option.value,
-    hour, minute,
+    hour,
+    minute,
     product: form.product.value,
     passCount: form.querySelector('input[name="passCount"]')?.value || "",
     detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
@@ -419,10 +442,13 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   formData.append("magnet", JSON.stringify(data));
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec", {
-      method: "POST",
-      body: formData
-    });
+    const response = await fetch(
+      "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
 
     const result = await response.text();
     if (response.ok) {
@@ -433,7 +459,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
   } finally {
-    resetForm(form, form.date.value);
+    resetForm(form, new Date().toISOString().split("T")[0]); // 저장 후 오늘 날짜 유지
   }
 });
 
@@ -441,8 +467,9 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
 function resetForm(form, keepDate) {
   const savedDate = keepDate || dateInput.value;
   form.reset();
-  dateInput.value = savedDate;  // 📌 선택한 날짜 유지
+  dateInput.value = savedDate; // 📌 날짜 유지
   dateInput.classList.add("selected");
+  form.option.value = "";
   oxValues = {};
   document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
   document.getElementById("subInputs").style.display = "none";
