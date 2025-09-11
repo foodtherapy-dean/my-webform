@@ -254,7 +254,7 @@ applySelectedStyle('input[type="time"]');
 // 점검 옵션 변경 시 입력 필드 표시 제어 + 중복 체크
 document.getElementById("option").addEventListener("change", async e => {
   const opt = e.target.value;
-  const dateVal = dateInput.value;
+  const dateVal = document.getElementById("date").value;
 
   if (!opt || !dateVal) return;
 
@@ -322,11 +322,12 @@ document.addEventListener("click", e => {
   }
 });
 
-// ✅ 옵션 입력 순서 검증 (누락 차수 확인, 최종취합은 1차만 확인)
+// ✅ 옵션 입력 순서 검증 (모든 누락 차수 확인)
 async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     const url = "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?getMagnet=" + query;
+
     const res = await fetch(url);
     const result = await res.json();
     const existingOptions = result.options || [];
@@ -335,7 +336,7 @@ async function validateOptionSequence(dateVal, opt) {
       "2차점검": ["1차점검"],
       "3차점검": ["1차점검", "2차점검"],
       "4차점검": ["1차점검", "2차점검", "3차점검"],
-      "최종취합": ["1차점검"] // 1차점검만 확인
+      "최종취합": ["1차점검", "2차점검", "3차점검", "4차점검"]
     };
 
     if (opt in requiredMap) {
@@ -377,14 +378,12 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
     resetForm(form);
     return;
   }
 
-  // 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
   if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
@@ -435,6 +434,7 @@ function resetForm(form) {
   document.getElementById("duplicateMsg").style.display = "none";
 }
 </script>
+
 
 
 
