@@ -340,7 +340,6 @@ async function validateOptionSequence(dateVal, opt) {
       existingOptions = [];
     }
 
-    // 최종취합 처리: 1차점검만 있으면 OK
     if (opt === "최종취합") {
       if (!existingOptions.includes("1차점검")) {
         alert("⚠️ 최종취합은 1차점검이 먼저 입력되어야 합니다.");
@@ -349,7 +348,6 @@ async function validateOptionSequence(dateVal, opt) {
       return true;
     }
 
-    // 2~4차점검: 누락된 모든 차수 체크
     const requiredMap = {
       "2차점검": ["1차점검"],
       "3차점검": ["1차점검", "2차점검"],
@@ -362,7 +360,6 @@ async function validateOptionSequence(dateVal, opt) {
         return false;
       }
     }
-
     return true;
   } catch (err) {
     console.error("순서 검증 오류:", err);
@@ -387,7 +384,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // OX 필수 체크 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
@@ -398,19 +394,16 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     }
   }
 
-  // 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
-    resetForm(form);
+    resetForm(form, form.date.value);
     return;
   }
 
-  // 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
   if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
 
-  // 데이터 구성
   const data = {
     type: "data",
     date: form.date.value,
@@ -440,16 +433,16 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
   } finally {
-    resetForm(form);
+    resetForm(form, form.date.value);
   }
 });
 
 // ====== 폼 초기화 함수 ======
-function resetForm(form) {
+function resetForm(form, keepDate) {
+  const savedDate = keepDate || dateInput.value;
   form.reset();
-  dateInput.valueAsDate = new Date();
+  dateInput.value = savedDate;  // 📌 선택한 날짜 유지
   dateInput.classList.add("selected");
-  form.option.value = "";
   oxValues = {};
   document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
   document.getElementById("subInputs").style.display = "none";
