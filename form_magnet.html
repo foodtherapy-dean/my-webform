@@ -239,9 +239,12 @@ input.selected {
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
+
+// ✅ 날짜 변경 시 전체 초기화 (날짜는 유지)
 dateInput.addEventListener("change", () => {
-  resetForm(document.getElementById("magnetForm"));
+  resetForm(document.getElementById("magnetForm"), false);
 });
+
 // select, time 입력 시 selected 효과
 function applySelectedStyle(selector) {
   document.querySelectorAll(selector).forEach(el => {
@@ -382,7 +385,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
 
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
-    resetForm(form);
+    resetForm(form, false);
     return;
   }
 
@@ -419,15 +422,19 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
   } finally {
-    resetForm(form);
+    resetForm(form); // 저장 후는 오늘 날짜로 초기화
   }
 });
 
-// ✅ 폼 초기화 함수
-function resetForm(form) {
+// ✅ 폼 초기화 함수 (날짜 초기화 여부 제어)
+function resetForm(form, resetDate = true) {
   form.reset();
-  dateInput.valueAsDate = new Date();
-  dateInput.classList.add("selected");
+
+  if (resetDate) {
+    dateInput.valueAsDate = new Date();
+    dateInput.classList.add("selected");
+  }
+
   form.option.value = "";
   oxValues = {};
   document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
@@ -436,7 +443,6 @@ function resetForm(form) {
   document.getElementById("duplicateMsg").style.display = "none";
 }
 </script>
-
 
 </body>
 </html>
