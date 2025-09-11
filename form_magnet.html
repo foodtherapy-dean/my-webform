@@ -324,9 +324,14 @@ document.addEventListener("click", e => {
 async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-    const url = "https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec?getMagnet=" + query;
+    const url = "https://script.google.com/macros/s/YOUR_REAL_DEPLOY_ID/exec?getMagnet=" + query;
+
     const res = await fetch(url);
-    const result = await res.json();
+    if (!res.ok) throw new Error("서버 응답 오류");
+    
+    let result = {};
+    try { result = await res.json(); } catch(e) { result = {}; }
+
     const existingOptions = result.options || [];
 
     if (opt === "최종취합") {
@@ -339,8 +344,8 @@ async function validateOptionSequence(dateVal, opt) {
 
     const requiredMap = {
       "2차점검": ["1차점검"],
-      "3차점검": ["1차점검", "2차점검"],
-      "4차점검": ["1차점검", "2차점검", "3차점검"]
+      "3차점검": ["1차점검","2차점검"],
+      "4차점검": ["1차점검","2차점검","3차점검"]
     };
 
     if (opt in requiredMap) {
@@ -354,7 +359,7 @@ async function validateOptionSequence(dateVal, opt) {
     return true;
   } catch (err) {
     console.error(err);
-    alert("⚠️ 순서 검증 중 오류 발생. 저장을 중단합니다.");
+    alert("⚠️ 순서 검증 중 오류 발생. 서버와 연결 상태를 확인해주세요.");
     return false;
   }
 }
