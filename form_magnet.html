@@ -329,6 +329,7 @@ async function validateOptionSequence(dateVal, opt) {
     const result = await res.json();
 
     const existingOptions = (result.options || []).map(o => String(o).trim());
+    console.log("📌 기존 옵션:", existingOptions);
 
     const order = ["1차점검","2차점검","3차점검","4차점검","최종취합"];
     const currentIndex = order.indexOf(opt);
@@ -341,10 +342,9 @@ async function validateOptionSequence(dateVal, opt) {
       }
     }
     return true;
-
   } catch (err) {
-    console.error(err);
-    return true;
+    console.error("validateOptionSequence 오류:", err);
+    return false; // 에러가 나면 저장도 막음
   }
 }
 
@@ -377,7 +377,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
 
   // 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
-  if (!isValidSequence) return;
+  if (!isValidSequence) return false; 
 
   // 시간 분리
   const timeInput = form.querySelector("#time");
