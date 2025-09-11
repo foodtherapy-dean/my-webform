@@ -376,8 +376,8 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
   }
 
   // 순서 검증
-  const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
-  if (!isValidSequence) return false; 
+const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
+if (!isValidSequence) return false;
 
   // 시간 분리
   const timeInput = form.querySelector("#time");
