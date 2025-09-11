@@ -360,7 +360,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
     if (!input.value) {
       alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 입력하세요.`);
       input.focus();
-      return;
+      return; // 🚨 즉시 중단
     }
   }
 
@@ -370,16 +370,18 @@ document.getElementById("magnetForm").addEventListener("submit", async function(
       if (!(label in oxValues)) {
         alert(`검출 상태 '${label}'의 O 또는 X를 선택하세요.`); 
         document.querySelector(`.ox[data-label="${label}"]`)?.focus(); 
-        return;
+        return; // 🚨 즉시 중단
       }
     }
   }
 
   // 순서 검증
-const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
-if (!isValidSequence) return false;
+  const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
+  if (!isValidSequence) {
+    return; // 🚨 즉시 중단 (이게 핵심!)
+  }
 
-  // 시간 분리
+  // 👉 여기부터는 저장 로직
   const timeInput = form.querySelector("#time");
   let hour="", minute="";
   if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
