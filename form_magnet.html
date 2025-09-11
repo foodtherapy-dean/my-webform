@@ -240,9 +240,13 @@ const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
-// ✅ 날짜 변경 시 전체 초기화 (날짜는 유지)
-dateInput.addEventListener("change", () => {
-  resetForm(document.getElementById("magnetForm"), false);
+// 날짜는 오늘 날짜로 다시 지정
+    dateInput.valueAsDate = new Date();
+    dateInput.classList.add("selected");
+
+    // 선택 스타일 초기화
+    document.querySelectorAll("select, input").forEach(el => {
+      el.classList.remove("selected");
 });
 
 // select, time 입력 시 selected 효과
