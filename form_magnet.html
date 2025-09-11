@@ -323,20 +323,22 @@ document.addEventListener("click", e => {
 });
 
 // ✅ 옵션 입력 순서 검증 (모든 누락 차수 확인)
+// ✅ 옵션 입력 순서 검증 (모든 누락 차수 확인)
 async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-    const url = "https://script.google.com/macros/s/AKfycbymv885vawGF_1pgz2IP6R5DHxrV-BGWsjHxg9PF3k2OvxIpmJXdQ4eIpUmho_VIb9AIg/exec?getMagnet=" + query;
+    const url = "https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec?getMagnet=" + query;
 
     const res = await fetch(url);
     const result = await res.json();
     const existingOptions = result.options || [];
 
+    // 각 옵션별 필수 차수 설정
     const requiredMap = {
       "2차점검": ["1차점검"],
       "3차점검": ["1차점검", "2차점검"],
       "4차점검": ["1차점검", "2차점검", "3차점검"],
-      "최종취합": ["1차점검", "2차점검", "3차점검", "4차점검"]
+      "최종취합": ["1차점검"]  // ← 여기만 1차점검만 확인
     };
 
     if (opt in requiredMap) {
@@ -346,10 +348,11 @@ async function validateOptionSequence(dateVal, opt) {
         return false;
       }
     }
+
     return true;
   } catch (err) {
     console.error("순서 검증 오류:", err);
-    return true;
+    return true; // 오류 시 저장 막지 않음
   }
 }
 
