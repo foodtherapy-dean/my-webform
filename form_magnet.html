@@ -239,7 +239,9 @@ input.selected {
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
-
+dateInput.addEventListener("change", () => {
+  resetForm(document.getElementById("magnetForm"));
+});
 // select, time 입력 시 selected 효과
 function applySelectedStyle(selector) {
   document.querySelectorAll(selector).forEach(el => {
