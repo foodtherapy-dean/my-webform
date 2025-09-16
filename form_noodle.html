@@ -195,6 +195,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 }
   groupSelect.addEventListener("change", async () => {
+    // 옵션 바꿀 때마다 기존 입력값 초기화
+  hourSelect.value = "";
+  minuteSelect.value = "";
+  tempInput.value = "";
+  humidityInput.value = "";
+  productSelect.value = "";
+  countInput.value = "";
+
     if(dateInput.value && groupSelect.value){
       await checkDuplicate(dateInput.value, groupSelect.value);
     }
