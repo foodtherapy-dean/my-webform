@@ -163,28 +163,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function checkDuplicate(date, group){
-    loadingMsg.style.display = "block";
-    submitBtn.disabled = true;
-    try{
-      const res = await fetch(`${scriptUrl}?checkNoodle=`+encodeURIComponent(JSON.stringify({date,group})));
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-      if(data.exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
-      } else {
-        duplicateMsg.style.display = "none";
-      }
-      submitBtn.disabled = false;
-      return true;
-    } catch(err){
-      loadingMsg.style.display="none";
-      duplicateText.textContent="중복 확인 오류!";
-      duplicateMsg.style.display="block";
-      return false;
-    }
-  }
+  loadingMsg.style.display = "block";
+  submitBtn.disabled = true;
+  try{
+    const res = await fetch(`${scriptUrl}?checkNoodle=`+encodeURIComponent(JSON.stringify({date,group})));
+    const data = await res.json();
+    loadingMsg.style.display = "none";
 
+    if(data.exists){
+      duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+      duplicateMsg.style.display = "block";
+
+      // ✅ 기존 데이터 채워넣기
+      if (data.data) {
+        if (data.data.hour) hourSelect.value = data.data.hour;
+        if (data.data.minute) minuteSelect.value = data.data.minute;
+        if (data.data.temp) tempInput.value = data.data.temp;
+        if (data.data.humi) humidityInput.value = data.data.humi;
+        if (data.data.product) productSelect.value = data.data.product;
+        if (data.data.count) countInput.value = data.data.count;
+      }
+    } else {
+      duplicateMsg.style.display = "none";
+    }
+    submitBtn.disabled = false;
+    return true;
+  } catch(err){
+    loadingMsg.style.display="none";
+    duplicateText.textContent="중복 확인 오류!";
+    duplicateMsg.style.display="block";
+    return false;
+  }
+}
   groupSelect.addEventListener("change", async () => {
     if(dateInput.value && groupSelect.value){
       await checkDuplicate(dateInput.value, groupSelect.value);
