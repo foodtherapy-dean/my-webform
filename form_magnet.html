@@ -269,7 +269,7 @@ document.getElementById("option").addEventListener("change", async e => {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
     const url =
-      "https://script.google.com/macros/s/AKfycbytacCbchIOWG4Femb2_EERakVhI8aTsYbVFjTZ4JiQIwcv8zwf_pZRxEtQKQOXWcquKg/exec?checkMagnet=" +
+      "https://script.google.com/macros/s/AKfycbyV3UqJsFQ2lFL2XG3cAZaUPAd0nDk_Lvuajbl650dxHwp8klOpaTD4xFsL5is954Q8eg/exec?checkMagnet=" +
       query;
 
     const res = await fetch(url);
@@ -338,7 +338,7 @@ async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     const url =
-      "https://script.google.com/macros/s/AKfycbytacCbchIOWG4Femb2_EERakVhI8aTsYbVFjTZ4JiQIwcv8zwf_pZRxEtQKQOXWcquKg/exec?getMagnet=" +
+      "https://script.google.com/macros/s/AKfycbyV3UqJsFQ2lFL2XG3cAZaUPAd0nDk_Lvuajbl650dxHwp8klOpaTD4xFsL5is954Q8eg/exec?getMagnet=" +
       query;
 
     let existingOptions = [];
