@@ -138,34 +138,25 @@ document.addEventListener('DOMContentLoaded', () => {
   fillTimeOptions();
 
   function updateInputFields() {
-  const g = groupSelect.value;
-
-  // 먼저 모두 초기화
-  hourSelect.value = "";
-  minuteSelect.value = "";
-  tempInput.value = "";
-  humidityInput.value = "";
-  productSelect.value = "";
-  countInput.value = "";
-
-  if (g === "시스템ON" || g === "시스템OFF") {
-    timeRow.style.display = "flex";
-    thRow.style.display = "none";
-    productRow.style.display = "none";
-  } else if (g === "1차점검" || g === "2차점검") {
-    timeRow.style.display = "flex";
-    thRow.style.display = "flex";
-    productRow.style.display = "none";
-  } else if (g === "생산제품") {
-    timeRow.style.display = "none";  
-    thRow.style.display = "none";
-    productRow.style.display = "flex";
-  } else {
-    timeRow.style.display = "none";
-    thRow.style.display = "none";
-    productRow.style.display = "none";
+    const g = groupSelect.value;
+    if (g === "시스템ON" || g === "시스템OFF") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "none";
+      productRow.style.display = "none";
+    } else if (g === "1차점검" || g === "2차점검") {
+      timeRow.style.display = "flex";
+      thRow.style.display = "flex";
+      productRow.style.display = "none";
+    } else if (g === "생산제품") {
+      timeRow.style.display = "none";  
+      thRow.style.display = "none";
+      productRow.style.display = "flex";
+    } else {
+      timeRow.style.display = "none";
+      thRow.style.display = "none";
+      productRow.style.display = "none";
+    }
   }
-}
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
   });
