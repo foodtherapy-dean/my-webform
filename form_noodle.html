@@ -96,104 +96,6 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
   </div>
 </div>
 
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>건면공정 모니터링</title>
-<style>
-body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
-.app-container { display:flex; flex-direction:column; height:100%; }
-.app-header { background:#4CAF50; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
-.app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
-.app-footer { flex:0 0 auto; }
-#submitBtn { width:100%; font-size:1.5rem; padding:20px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; }
-.inline-row { display:flex; gap:20px; margin-top:10px; }
-.inline-row > * { flex:1; }
-label { display:block; margin-bottom:6px; }
-input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px solid #ccc; border-radius:6px; }
-#duplicateMsg { display:none; background:#ffcccc; color:#900; padding:12px; margin-top:6px; border:1px solid #900; border-radius:6px; font-weight:bold; }
-#duplicateMsg button { margin-left:12px; background:#900; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }
-#loadingMsg { display:none; background:#ffe599; color:#333; padding:8px; margin-bottom:10px; border-radius:6px; font-weight:bold; }
-</style>
-</head>
-<body>
-<div class="app-container">
-  <div class="app-header">건면공정 점검 입력</div>
-
-  <div class="app-body">
-    <!-- 날짜 -->
-    <label for="date">날짜</label>
-    <input type="date" id="date" required />
-
-    <!-- 점검 옵션 -->
-    <label for="group" style="margin-top:20px;">점검 옵션</label>
-    <select id="group" required>
-      <option value="">선택하세요</option>
-      <option value="생산제품">생산제품</option>
-      <option value="시스템ON">시스템ON</option>
-      <option value="1차점검">1차점검</option>
-      <option value="2차점검">2차점검</option>
-      <option value="시스템OFF">시스템OFF</option>
-    </select>
-
-    <!-- 중복 메시지 -->
-    <div id="duplicateMsg">
-      <span id="duplicateText"></span>
-      <button id="duplicateConfirmBtn">확인</button>
-    </div>
-
-    <!-- 로딩 메시지 -->
-    <div id="loadingMsg">중복 확인 중...</div>
-
-    <!-- 시간 입력 -->
-    <div class="inline-row" id="timeRow">
-      <div>
-        <label for="hour">시간 (시)</label>
-        <select id="hour"></select>
-      </div>
-      <div>
-        <label for="minute">시간 (분)</label>
-        <select id="minute"></select>
-      </div>
-    </div>
-
-    <!-- 온도 / 습도 입력 -->
-    <div class="inline-row" id="thRow">
-      <div>
-        <label for="temp">온도(℃)</label>
-        <input type="number" id="temp" step="0.1" min="0" max="100" />
-      </div>
-      <div>
-        <label for="humidity">습도(%)</label>
-        <input type="number" id="humidity" step="0.1" min="0" max="100" />
-      </div>
-    </div>
-
-    <!-- 생산제품 입력 -->
-    <div class="inline-row" id="productRow" style="display:none;">
-      <div>
-        <label for="product">제품명</label>
-        <select id="product">
-          <option value="">선택하세요</option>
-          <option value="일반국수">일반국수</option>
-          <option value="치자국수">치자국수</option>
-          <option value="메밀국수">메밀국수</option>
-        </select>
-      </div>
-      <div>
-        <label for="count">수량</label>
-        <input type="number" id="count" min="1" />
-      </div>
-    </div>
-  </div>
-
-  <div class="app-footer">
-    <button id="submitBtn">📥 서버로 전송</button>
-  </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById("date");
@@ -415,12 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
-
-
-</body>
-</html>
-
-
 
 
 </body>
