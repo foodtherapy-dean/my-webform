@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     duplicateMsg.style.display = "none";
   });
 
-  // ✅ 적합시간 표시용 span 추가
+  // ✅ 추천시간 표시용 span 추가
   const suggestionSpan = document.createElement("span");
   suggestionSpan.style.marginLeft = "10px";
   suggestionSpan.style.color = "blue";
@@ -196,12 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
         duplicateMsg.style.display = "none";
       }
 
-      // ✅ 불러온 데이터 저장 (적합시간값 계산용)
+      // ✅ 불러온 데이터 저장 (추천값 계산용)
       if (data.data) {
         loadedData[group] = data.data;
       }
 
-      updateSuggestion(); // ✅ 적합시간 업데이트
+      updateSuggestion(); // ✅ 추천시간 업데이트
 
       submitBtn.disabled = false;
       return true;
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ✅ 적합시간 계산 함수
+  // ✅ 추천시간 계산 함수
   function updateSuggestion() {
     const selectedOption = groupSelect.value;
     let suggestedHour = null;
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (suggestedHour !== null) {
-      suggestionSpan.textContent = ` (적합: ${String(suggestedHour).padStart(2,"0")}시)`;
+      suggestionSpan.textContent = ` (추천: ${String(suggestedHour).padStart(2,"0")}시)`;
     } else {
       suggestionSpan.textContent = "";
     }
@@ -317,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateInputFields();
 });
 </script>
-
 
 </body>
 </html>
