@@ -174,6 +174,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // 점검 옵션 순서
   const orderMap = ["시스템ON","1차점검","2차점검","시스템OFF"];
 
+  // ====== 옵션 완료 표시 함수 ======
+  async function updateOptionCompletion(dateVal) {
+    try {
+      const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+      const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
+      const data = res.ok ? await res.json() : {};
+      const existingGroups = data.groups || [];
+
+      Array.from(groupSelect.options).forEach(opt => {
+        if(!opt.value) return;
+        const clean = opt.value.trim();
+        opt.textContent = existingGroups.includes(clean) ? `${clean}(완료)` : clean;
+        opt.value = clean;
+      });
+    } catch(err) {
+      console.error("옵션 완료 업데이트 오류:", err);
+    }
+  }
+
   // 중복 체크 및 데이터 불러오기
   async function checkDuplicate(date, group, internal=false){
     loadingMsg.style.display = "block";
@@ -198,11 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 내부용/외부용 모두 loadedData 저장
       if (data.data) loadedData[group] = data.data;
 
-      updateSuggestion(); // 추천시간 갱신
+      updateSuggestion();
       submitBtn.disabled = false;
+
+      // 완료 표시 갱신
+      updateOptionCompletion(date);
+
       return true;
     } catch(err){
       loadingMsg.style.display="none";
@@ -252,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 이전 단계 데이터 없는 경우, 내부적으로만 불러오기
     if(idx > 0 && !loadedData[orderMap[idx-1]]){
-      await checkDuplicate(dateInput.value, orderMap[idx-1], true); // UI 변경 없이 내부만 처리
+      await checkDuplicate(dateInput.value, orderMap[idx-1], true);
       updateSuggestion();
     }
 
@@ -328,6 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   updateInputFields();
+
+  // 초기 완료 표시 갱신
+  updateOptionCompletion(dateInput.value);
 });
 </script>
 
