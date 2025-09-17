@@ -244,6 +244,7 @@ dateInput.classList.add("selected");
 dateInput.addEventListener("change", () => {
   resetForm(document.getElementById("magnetForm"), dateInput.value);
   dateInput.classList.add("selected");
+  updateOptionCompletion(dateInput.value); // ✅ 옵션 완료 상태 갱신
 });
 
 // select, time 입력 시 selected 클래스 적용
@@ -385,6 +386,33 @@ async function validateOptionSequence(dateVal, opt) {
   }
 }
 
+// ====== 옵션 완료 상태 갱신 함수 (신규 추가) ======
+async function updateOptionCompletion(dateVal) {
+  const url =
+    "https://script.google.com/macros/s/AKfycbyV3UqJsFQ2lFL2XG3cAZaUPAd0nDk_Lvuajbl650dxHwp8klOpaTD4xFsL5is954Q8eg/exec?getMagnet=" +
+    encodeURIComponent(JSON.stringify({ date: dateVal }));
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    const completedOptions = data.options || [];
+
+    // 모든 옵션 항목 텍스트 갱신
+    const select = document.getElementById("option");
+    [...select.options].forEach(optEl => {
+      const baseText = optEl.text.replace(" (완료)", "");
+      if (completedOptions.includes(baseText)) {
+        optEl.text = baseText + " (완료)";
+      } else {
+        optEl.text = baseText;
+      }
+    });
+  } catch (err) {
+    console.error("옵션 완료 갱신 오류:", err);
+  }
+}
+
 // ====== 폼 제출 처리 ======
 document.getElementById("magnetForm").addEventListener("submit", async function (e) {
   e.preventDefault();
@@ -453,6 +481,8 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
+      // ✅ 저장 후 완료 상태 즉시 갱신
+      updateOptionCompletion(form.date.value);
     } else {
       alert("❌ 서버 오류:\n" + result);
     }
@@ -476,7 +506,13 @@ function resetForm(form, keepDate) {
   document.getElementById("summaryInputs").style.display = "none";
   document.getElementById("duplicateMsg").style.display = "none";
 }
+
+// 📌 페이지 로드 시 오늘 날짜 기준으로 완료상태 갱신
+document.addEventListener("DOMContentLoaded", () => {
+  if (dateInput.value) updateOptionCompletion(dateInput.value);
+});
 </script>
+
 
 </body>
 </html>
