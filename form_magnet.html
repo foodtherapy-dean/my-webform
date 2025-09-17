@@ -240,6 +240,26 @@ const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
+// select element 참조
+const optionSelect = document.getElementById("option");
+
+// 페이지 로드 시 option의 base 값 초기화 함수
+function initOptionBaseValues() {
+  if (!optionSelect) return;
+  [...optionSelect.options].forEach(optEl => {
+    // 이미 데이터 속성이 있으면 유지
+    if (!optEl.dataset.base) {
+      // 기존에 value 어트리뷰트가 있으면 그걸 base로, 없으면 텍스트에서 "(완료)" 제거한 값을 base로 사용
+      const currentValue = optEl.getAttribute("value");
+      const textWithoutDone = optEl.text.replace(/\s*\(완료\)$/, "").trim();
+      const base = currentValue ? currentValue.trim() : textWithoutDone;
+      optEl.dataset.base = base;
+      // 비교/전송에 쓰일 value는 항상 base로 고정
+      optEl.value = base;
+    }
+  });
+}
+
 // 📌 날짜 변경 시 폼 초기화 (날짜만 유지)
 dateInput.addEventListener("change", () => {
   resetForm(document.getElementById("magnetForm"), dateInput.value);
@@ -260,6 +280,7 @@ applySelectedStyle('input[type="time"]');
 
 // ====== 점검 옵션 변경 시 UI 표시 + 중복 체크 ======
 document.getElementById("option").addEventListener("change", async e => {
+  // e.target.value는 이제 base 값(예: "1차점검")을 반환합니다.
   const opt = e.target.value;
   const dateVal = dateInput.value;
   if (!opt || !dateVal) return;
@@ -289,7 +310,7 @@ document.getElementById("option").addEventListener("change", async e => {
 
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 입력 UI 표시 제어
+  // 입력 UI 표시 제어 (기존 로직 유지)
   const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(opt);
   const isSummary = opt === "최종취합";
   document.getElementById("subInputs").style.display = showSub ? "block" : "none";
@@ -346,6 +367,8 @@ async function validateOptionSequence(dateVal, opt) {
     try {
       const res = await fetch(url);
       if (res.ok) existingOptions = (await res.json()).options || [];
+      // 정리: 공백 제거
+      existingOptions = existingOptions.map(s => s && s.toString().trim());
     } catch (e) {
       console.error("서버 fetch 오류:", e);
       existingOptions = [];
@@ -386,8 +409,10 @@ async function validateOptionSequence(dateVal, opt) {
   }
 }
 
-// ====== 옵션 완료 상태 갱신 함수 (신규 추가) ======
+// ====== 옵션 완료 상태 갱신 함수 (수정됨) ======
 async function updateOptionCompletion(dateVal) {
+  if (!optionSelect) return;
+
   const url =
     "https://script.google.com/macros/s/AKfycbyV3UqJsFQ2lFL2XG3cAZaUPAd0nDk_Lvuajbl650dxHwp8klOpaTD4xFsL5is954Q8eg/exec?getMagnet=" +
     encodeURIComponent(JSON.stringify({ date: dateVal }));
@@ -396,17 +421,17 @@ async function updateOptionCompletion(dateVal) {
     const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
-    const completedOptions = data.options || [];
+    // 정리: 공백 제거
+    const completedOptions = (data.options || []).map(s => s && s.toString().trim());
 
-    // 모든 옵션 항목 텍스트 갱신
-    const select = document.getElementById("option");
-    [...select.options].forEach(optEl => {
-      const baseText = optEl.text.replace(" (완료)", "");
-      if (completedOptions.includes(baseText)) {
-        optEl.text = baseText + " (완료)";
-      } else {
-        optEl.text = baseText;
-      }
+    // 모든 옵션 항목 텍스트 갱신 (화면 텍스트만 변경, value는 base로 유지)
+    [...optionSelect.options].forEach(optEl => {
+      // base는 data-base에 저장된 값 (초기화 시 셋업됨)
+      const baseName = (optEl.dataset.base || optEl.value || optEl.text).toString().trim();
+      // value는 반드시 base로 설정 (중복/검증용)
+      optEl.value = baseName;
+      // 텍스트는 "(완료)" 토글
+      optEl.text = completedOptions.includes(baseName) ? `${baseName} (완료)` : baseName;
     });
   } catch (err) {
     console.error("옵션 완료 갱신 오류:", err);
@@ -440,7 +465,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
     }
   }
 
-  // 순서 검증
+  // 순서 검증 (form.option.value 는 base 값)
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
     resetForm(form, form.date.value); // 📌 날짜 유지 초기화
@@ -457,7 +482,7 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
   const data = {
     type: "data",
     date: form.date.value,
-    option: form.option.value,
+    option: form.option.value, // base 값(예: "1차점검")
     hour,
     minute,
     product: form.product.value,
@@ -499,7 +524,8 @@ function resetForm(form, keepDate) {
   form.reset();
   dateInput.value = savedDate; // 📌 날짜 유지
   dateInput.classList.add("selected");
-  form.option.value = "";
+  // 선택값 비우기
+  if (optionSelect) optionSelect.value = "";
   oxValues = {};
   document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
   document.getElementById("subInputs").style.display = "none";
@@ -507,8 +533,9 @@ function resetForm(form, keepDate) {
   document.getElementById("duplicateMsg").style.display = "none";
 }
 
-// 📌 페이지 로드 시 오늘 날짜 기준으로 완료상태 갱신
+// 📌 페이지 로드 시 옵션 base 초기화 및 오늘 날짜 기준으로 완료상태 갱신
 document.addEventListener("DOMContentLoaded", () => {
+  initOptionBaseValues();
   if (dateInput.value) updateOptionCompletion(dateInput.value);
 });
 </script>
