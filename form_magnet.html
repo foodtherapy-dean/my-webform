@@ -262,13 +262,18 @@ function applySelectedStyle(selector) {
 applySelectedStyle("select");
 applySelectedStyle('input[type="time"]');
 
+// ====== 점검 옵션 focus 시 BASE 없이 완료 포함 옵션 활성화 ======
+const optionSelect = document.getElementById("option");
+optionSelect.addEventListener("focus", async () => {
+  await updateOptionCompletion(dateInput.value);
+});
+
 // ====== 점검 옵션 변경 시 UI 표시 + 중복 체크 ======
-document.getElementById("option").addEventListener("change", async e => {
+optionSelect.addEventListener("change", async e => {
   let opt = e.target.value;
   const dateVal = dateInput.value;
   if (!opt || !dateVal) return;
 
-  // "(완료)" 제거한 실제 옵션명
   const cleanOpt = opt.trim();
 
   // 로딩 표시
@@ -277,7 +282,6 @@ document.getElementById("option").addEventListener("change", async e => {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: cleanOpt }));
     const url = `${BASE_URL}?checkMagnet=${query}`;
-
     const res = await fetch(url);
     const result = res.ok ? await res.json() : {};
     if (result.exists) {
@@ -291,7 +295,6 @@ document.getElementById("option").addEventListener("change", async e => {
     console.error("중복 체크 오류:", err);
     document.getElementById("duplicateMsg").style.display = "none";
   }
-
   document.getElementById("loadingMsg").style.display = "none";
 
   // 입력 UI 표시 제어
@@ -344,7 +347,6 @@ async function validateOptionSequence(dateVal, opt) {
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     const url = `${BASE_URL}?getMagnet=${query}`;
-
     let existingOptions = [];
     try {
       const res = await fetch(url);
@@ -354,7 +356,6 @@ async function validateOptionSequence(dateVal, opt) {
       existingOptions = [];
     }
 
-    // 최종취합 처리
     if (opt === "최종취합") {
       if (!existingOptions.includes("1차점검")) {
         alert("⚠️ 최종취합은 1차점검이 먼저 입력되어야 합니다.");
@@ -363,7 +364,6 @@ async function validateOptionSequence(dateVal, opt) {
       return true;
     }
 
-    // 2~4차점검: 누락된 모든 차수 체크
     const requiredMap = {
       "2차점검": ["1차점검"],
       "3차점검": ["1차점검", "2차점검"],
@@ -376,7 +376,6 @@ async function validateOptionSequence(dateVal, opt) {
         return false;
       }
     }
-
     return true;
   } catch (err) {
     console.error("순서 검증 오류:", err);
@@ -390,7 +389,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
   e.preventDefault();
   const form = e.target;
 
-  // 필수 입력 체크
   const activeInputs = form.querySelectorAll("input, select");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
@@ -401,7 +399,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
     }
   }
 
-  // OX 필수 체크 (최종취합 제외)
   if (form.option.value !== "최종취합") {
     for (const label of oxItems) {
       if (!(label in oxValues)) {
@@ -412,19 +409,16 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
     }
   }
 
-  // 순서 검증
   const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
   if (!isValidSequence) {
-    resetForm(form, form.date.value); // 📌 날짜 유지 초기화
+    resetForm(form, form.date.value);
     return;
   }
 
-  // 시간 분리
   const timeInput = form.querySelector("#time");
   let hour = "", minute = "";
   if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
 
-  // 데이터 구성
   const data = {
     type: "data",
     date: form.date.value,
@@ -445,7 +439,6 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
       method: "POST",
       body: formData
     });
-
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
@@ -455,28 +448,25 @@ document.getElementById("magnetForm").addEventListener("submit", async function 
   } catch (err) {
     alert("❌ 저장 중 오류 발생:\n" + err.message);
   } finally {
-    resetForm(form, new Date().toISOString().split("T")[0]); // 저장 후 오늘 날짜 유지
+    resetForm(form, new Date().toISOString().split("T")[0]);
   }
 });
 
 // ====== 완료표시 업데이트 함수 ======
 async function updateOptionCompletion(dateVal) {
   const optionSelect = document.getElementById("option");
-
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     const url = `${BASE_URL}?getMagnet=${query}`;
-
     const res = await fetch(url);
     const data = res.ok ? await res.json() : {};
     const existingOptions = data.options || [];
 
-    // 전체 옵션 돌면서 "(완료)" 붙이기
     Array.from(optionSelect.options).forEach(opt => {
-      if (!opt.value) return; // "선택하세요" 제외
+      if (!opt.value) return;
       const clean = opt.value.trim();
       opt.textContent = existingOptions.includes(clean) ? `${clean}(완료)` : clean;
-      opt.value = clean; // value는 항상 순수값 유지
+      opt.value = clean;
     });
   } catch (err) {
     console.error("옵션 완료 업데이트 오류:", err);
@@ -487,7 +477,7 @@ async function updateOptionCompletion(dateVal) {
 function resetForm(form, keepDate) {
   const savedDate = keepDate || dateInput.value;
   form.reset();
-  dateInput.value = savedDate; // 📌 날짜 유지
+  dateInput.value = savedDate;
   dateInput.classList.add("selected");
   form.option.value = "";
   oxValues = {};
@@ -495,7 +485,7 @@ function resetForm(form, keepDate) {
   document.getElementById("subInputs").style.display = "none";
   document.getElementById("summaryInputs").style.display = "none";
   document.getElementById("duplicateMsg").style.display = "none";
-  updateOptionCompletion(savedDate); // 초기화 후 완료표시 갱신
+  updateOptionCompletion(savedDate);
 }
 
 // 📌 최초 로드시 완료표시 갱신
