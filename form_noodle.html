@@ -261,6 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 선택 변경 이벤트
   groupSelect.addEventListener("change", async () => {
+    // 이전 중복 메시지 숨김
+  duplicateMsg.style.display = "none";
+  duplicateText.textContent = "";
+
+    
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
