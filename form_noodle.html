@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(e.target.tagName === "LI"){
       const cleanOpt = e.target.dataset.value;
 
-      // 이전 값 초기화
+      // 이전 값 초기화 및 메시지창 닫기
       hourSelect.value="";
       minuteSelect.value="";
       tempInput.value="";
@@ -160,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       productSelect.value="";
       countInput.value="";
       recommendedDiv.textContent="";
+      duplicateMsg.style.display="none";
 
       currentGroup = cleanOpt;
       selectedDiv.textContent = e.target.textContent;
@@ -167,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       updateInputFields();
       checkDuplicate(dateInput.value, cleanOpt);
-      updateRecommendedTime(cleanOpt);
+      updateRecommendedTime();
     }
   });
 
@@ -227,6 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(d.humi) humidityInput.value = d.humi;
         if(d.product) productSelect.value = d.product;
         if(d.count) countInput.value = d.count;
+
+        // 추천시간도 갱신
+        updateRecommendedTime();
       }
     }catch(err){
       loadingMsg.style.display="none";
@@ -235,41 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally{ submitBtn.disabled=false; }
   }
 
-  function updateRecommendedTime(group){
-    let recHour = null;
-    const currentHour = parseInt(hourSelect.value) || null;
-
-    switch(group) {
-      case "1차점검":
-        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 7;
-        break;
-      case "2차점검":
-        if(lastFirstCheckHour !== null) recHour = lastFirstCheckHour + 1;
-        break;
-      case "시스템OFF":
-        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 10;
-        break;
-      default: recHour = null;
-    }
-
-    if(recHour !== null){
-      recHour = ((recHour-1)%24)+1;
-      recommendedDiv.textContent = `추천: ${recHour}시`;
-    } else{
-      recommendedDiv.textContent = "";
-    }
-
-    if(group === "시스템ON" && currentHour) lastSystemOnHour = currentHour;
-    if(group === "1차점검" && currentHour) lastFirstCheckHour = currentHour;
-  }
-
-  updateOptionCompletion(dateInput.value);
-
   dateInput.addEventListener("change", ()=>{
     currentGroup="";
     selectedDiv.textContent="선택하세요";
     duplicateMsg.style.display="none";
-    duplicateText.textContent="";
     hourSelect.value="";
     minuteSelect.value="";
     tempInput.value="";
@@ -281,12 +254,50 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOptionCompletion(dateInput.value);
   });
 
+  function updateRecommendedTime(){
+    let recHour = null;
+    switch(currentGroup){
+      case "1차점검":
+        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 7;
+        break;
+      case "2차점검":
+        if(lastFirstCheckHour !== null) recHour = lastFirstCheckHour + 1;
+        break;
+      case "시스템OFF":
+        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 10;
+        break;
+    }
+    if(recHour !== null){
+      recHour = ((recHour-1)%24)+1;
+      recommendedDiv.textContent = `추천: ${recHour}시`;
+    } else{
+      recommendedDiv.textContent = "";
+    }
+  }
+
+  hourSelect.addEventListener("change", ()=>{
+    const val = parseInt(hourSelect.value);
+    if(currentGroup === "시스템ON") lastSystemOnHour = val;
+    if(currentGroup === "1차점검") lastFirstCheckHour = val;
+    updateRecommendedTime();
+  });
+
   submitBtn.addEventListener("click", async ()=>{
     if(!currentGroup){ alert("점검 옵션을 선택하세요."); return; }
     if(!dateInput.value){ alert("날짜를 선택하세요."); return; }
-    if(timeRow.style.display!=="none"){ if(!hourSelect.value){ alert("시간(시) 선택"); return; } if(!minuteSelect.value){ alert("시간(분) 선택"); return; } }
-    if(thRow.style.display!=="none"){ if(!tempInput.value){ alert("온도 입력"); return; } if(!humidityInput.value){ alert("습도 입력"); return; } }
-    if(productRow.style.display!=="none"){ if(!productSelect.value){ alert("제품명 선택"); return; } if(!countInput.value){ alert("수량 입력"); return; } }
+
+    if(timeRow.style.display!=="none"){
+      if(!hourSelect.value){ alert("시간(시) 선택"); return; }
+      if(!minuteSelect.value){ alert("시간(분) 선택"); return; }
+    }
+    if(thRow.style.display!=="none"){
+      if(!tempInput.value){ alert("온도 입력"); return; }
+      if(!humidityInput.value){ alert("습도 입력"); return; }
+    }
+    if(productRow.style.display!=="none"){
+      if(!productSelect.value){ alert("제품명 선택"); return; }
+      if(!countInput.value){ alert("수량 입력"); return; }
+    }
 
     let entries;
     if(productRow.style.display !== "none"){
@@ -307,6 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
       location.reload();
     }catch(err){ alert("에러: "+err.message); }
   });
+
+  updateOptionCompletion(dateInput.value);
 });
 </script>
 </body>
