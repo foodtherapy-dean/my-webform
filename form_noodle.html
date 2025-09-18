@@ -54,6 +54,8 @@
       <ul class="options" role="listbox" aria-label="점검 옵션"></ul>
     </div>
 
+    <div id="recommended"></div>
+
     <div id="duplicateMsg"><span id="duplicateText"></span><button id="duplicateConfirmBtn" type="button">확인</button></div>
     <div id="loadingMsg">중복 확인 중...</div>
 
@@ -67,9 +69,6 @@
         <select id="minute" aria-label="시간 분"></select>
       </div>
     </div>
-
-    <!-- 추천시간을 시간입력창 밑으로 이동 -->
-    <div id="recommended"></div>
 
     <div class="inline-row" id="thRow" style="display:none;">
       <div>
@@ -135,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   dateInput.valueAsDate = new Date();
 
-  // 시/분 옵션 채우기
   function fillTimeOptions(){
     hourSelect.innerHTML = '<option value=""></option>';
     for(let h=1; h<=24; h++){ hourSelect.innerHTML += `<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}</option>`; }
@@ -144,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 옵션리스트 렌더링
   function renderOptions(existing=[]) {
     optionsList.innerHTML = "";
     optionItems.forEach(opt=>{
@@ -155,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 서버에서 완료여부 조회
   async function updateOptionCompletion(dateVal){
     if(!dateVal) { renderOptions([]); optionsLoadedForDate = null; return; }
     try{
@@ -171,24 +167,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 입력창 초기화 + 닫기
-  function resetInputs() {
-    timeRow.style.display = "none";
-    thRow.style.display = "none";
-    productRow.style.display = "none";
-    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
-    recommendedDiv.textContent="";
+  function applyGroupDataToInputs(d){
+    if(!d){ hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value=""; return; }
+    hourSelect.value = d.hour ? String(d.hour).padStart(2,'0') : "";
+    minuteSelect.value = d.minute ? String(d.minute).padStart(2,'0') : "";
+    tempInput.value = d.temp || "";
+    humidityInput.value = d.humi || "";
+    productSelect.value = d.product || "";
+    countInput.value = d.count || "";
   }
 
-  // 선택된 옵션별 입력창 열기
-  function updateInputFields(selected){
-    resetInputs();
-    if(selected === "시스템ON" || selected === "시스템OFF"){ timeRow.style.display = "flex"; }
-    else if(selected === "1차점검" || selected === "2차점검"){ timeRow.style.display = "flex"; thRow.style.display = "flex"; }
-    else if(selected === "생산제품"){ productRow.style.display = "flex"; }
+  async function checkDuplicate(date, group, internal=false){
+    if(!date || !group) return {ok:false};
+    loadingMsg.style.display = "block";
+    submitBtn.disabled = true;
+    try{
+      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
+      const data = await res.json();
+      loadingMsg.style.display = "none";
+      submitBtn.disabled = false;
+      const exists = Boolean(data.exists);
+      const dat = data.data || null;
+      loadedData[group] = { fetched:true, exists: exists, data: dat };
+      if(!internal){
+        if(exists){
+          applyGroupDataToInputs(dat);
+          duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+          duplicateMsg.style.display = "block";
+        } else {
+          duplicateMsg.style.display = "none";
+        }
+      }
+      return {ok:true, exists, data: dat};
+    } catch(err){
+      loadingMsg.style.display = "none";
+      submitBtn.disabled = false;
+      console.error("checkDuplicate error", err);
+      if(!internal){
+        duplicateText.textContent = "중복 확인 오류!";
+        duplicateMsg.style.display = "block";
+      }
+      return {ok:false};
+    }
   }
 
-  // 추천시간 계산
   function fmtHourWrap(n){ const v = (((Number(n)||0)-1)%24+24)%24+1; return String(v).padStart(2,'0'); }
   function updateSuggestion(selected){
     const sel = selected || (selectedDiv.dataset.value || "");
@@ -201,78 +223,50 @@ document.addEventListener('DOMContentLoaded', () => {
       const first = loadedData["1차점검"];
       out = (first && first.data && first.data.hour) ? `추천: ${fmtHourWrap(Number(first.data.hour)+1)}시` : "1차점검 미입력";
     } else if(sel === "시스템OFF"){
-      const sys = loadedData["시스템ON"];
-      out = (sys && sys.data && sys.data.hour) ? `추천: ${fmtHourWrap(Number(sys.data.hour)+10)}시` : "시스템ON 미입력";
+      const second = loadedData["2차점검"];
+      if(!second || !second.data || !second.data.hour){ out = "2차점검 미입력"; }
+      else {
+        const sys = loadedData["시스템ON"];
+        out = (sys && sys.data && sys.data.hour) ? `추천: ${fmtHourWrap(Number(sys.data.hour)+10)}시` : "시스템ON 미입력";
+      }
     }
     recommendedDiv.textContent = out ? ` ${out}` : "";
   }
 
-  // 중복확인
-  async function checkDuplicate(date, group){
-    if(!date || !group) return {ok:false};
-    loadingMsg.style.display = "block";
-    submitBtn.disabled = true;
-    try{
-      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-      submitBtn.disabled = false;
-      const exists = Boolean(data.exists);
-      const dat = data.data || null;
-      loadedData[group] = { exists, data: dat };
-      if(exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
-      } else {
-        duplicateMsg.style.display = "none";
-      }
-      return {ok:true, exists, data: dat};
-    } catch(err){
-      loadingMsg.style.display = "none";
-      submitBtn.disabled = false;
-      console.error("checkDuplicate error", err);
-      duplicateText.textContent = "중복 확인 오류!";
-      duplicateMsg.style.display = "block";
-      return {ok:false};
-    }
+  function updateInputFields(selected){
+    const sel = selected || (selectedDiv.dataset.value || "");
+    if(sel === "시스템ON" || sel === "시스템OFF"){ timeRow.style.display = "flex"; thRow.style.display = "none"; productRow.style.display = "none"; }
+    else if(sel === "1차점검" || sel === "2차점검"){ timeRow.style.display = "flex"; thRow.style.display = "flex"; productRow.style.display = "none"; }
+    else if(sel === "생산제품"){ timeRow.style.display = "none"; thRow.style.display = "none"; productRow.style.display = "flex"; }
+    else { timeRow.style.display = "none"; thRow.style.display = "none"; productRow.style.display = "none"; }
   }
 
   duplicateConfirmBtn.addEventListener('click', ()=> { duplicateMsg.style.display = "none"; });
+  renderOptions([]);
 
-  // 드롭다운 열기 전에 먼저 서버에서 완료여부 갱신
-  selectedDiv.addEventListener('click', async ()=>{
-    await updateOptionCompletion(dateInput.value);
-    customGroup.classList.toggle('open');
+  customGroup.addEventListener('click', (e) => {
+    if(e.target.classList.contains('selected-option')){ customGroup.classList.toggle('open'); return; }
+    if(e.target.tagName === 'LI'){
+      const value = e.target.dataset.value;
+      customGroup.classList.remove('open');
+      selectedDiv.textContent = e.target.textContent;
+      selectedDiv.dataset.value = value;
+      (async () => {
+        duplicateMsg.style.display = "none"; duplicateText.textContent = "";
+        hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
+        await updateOptionCompletion(dateInput.value);
+        const idx = orderMap.indexOf(value);
+        if(idx > 0){ const prev = orderMap[idx-1]; await checkDuplicate(dateInput.value, prev, true); }
+        await checkDuplicate(dateInput.value, value, false);
+        updateInputFields(value); updateSuggestion(value);
+      })();
+    }
   });
-
-  // 옵션 선택 이벤트
-  optionsList.addEventListener('click', async (e)=>{
-    if(e.target.tagName !== "LI") return;
-    const value = e.target.dataset.value;
-    customGroup.classList.remove('open');
-
-    // 🔹 기존 입력창 즉시 닫고 초기화
-    resetInputs();
-
-    selectedDiv.textContent = e.target.textContent;
-    selectedDiv.dataset.value = value;
-
-    await checkDuplicate(dateInput.value, value);
-    updateInputFields(value);
-    updateSuggestion(value);
-  });
-
   document.addEventListener('click', (e)=>{ if(!customGroup.contains(e.target)) customGroup.classList.remove('open'); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') customGroup.classList.remove('open'); });
+  dateInput.addEventListener('change', async ()=>{ selectedDiv.textContent = "선택하세요"; selectedDiv.dataset.value = ""; duplicateMsg.style.display = "none"; duplicateText.textContent = ""; hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value=""; recommendedDiv.textContent = ""; loadedData = {}; optionsLoadedForDate = null; updateInputFields(); await updateOptionCompletion(dateInput.value); });
+  hourSelect.addEventListener('change', ()=>{ const sel = selectedDiv.dataset.value || ""; if(sel){ if(!loadedData[sel]) loadedData[sel] = { fetched:false, exists:false, data: {} }; loadedData[sel].data = loadedData[sel].data || {}; loadedData[sel].data.hour = hourSelect.value ? parseInt(hourSelect.value,10) : null; } updateSuggestion(sel); });
 
-  // 날짜 변경 시 전체 초기화
-  dateInput.addEventListener('change', async ()=>{
-    selectedDiv.textContent = "선택하세요"; selectedDiv.dataset.value = "";
-    resetInputs(); duplicateMsg.style.display="none";
-    loadedData = {};
-    await updateOptionCompletion(dateInput.value);
-  });
-
-  // 제출
   submitBtn.addEventListener('click', async ()=>{
     const sel = selectedDiv.dataset.value || "";
     if(!sel){ alert("점검 옵션을 선택하세요."); return; }
@@ -281,12 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if(thRow.style.display !== "none"){ if(!tempInput.value){ alert("온도 입력"); return; } if(!humidityInput.value){ alert("습도 입력"); return; } }
     if(productRow.style.display !== "none"){ if(!productSelect.value){ alert("제품명 선택"); return; } if(!countInput.value){ alert("수량 입력"); return; } }
 
-    const payload = {
-      date: dateInput.value,
-      group: sel,
-      entries: [{ hour: hourSelect.value, minute: minuteSelect.value, temp: tempInput.value, humi: humidityInput.value, product: productSelect.value, count: countInput.value }]
-    };
-
+    let entries;
+    if(productRow.style.display !== "none"){
+      entries = [{ product: productSelect.value, count: countInput.value }];
+    } else {
+      entries = [{ hour: hourSelect.value, minute: minuteSelect.value, temp: tempInput.value, humi: humidityInput.value, product: productSelect.value || "", count: countInput.value || "" }];
+    }
+    const payload = { date: dateInput.value, group: sel, entries: entries };
     try{
       const res = await fetch(scriptUrl, { method:"POST", body: JSON.stringify({ noodle: payload }) });
       const txt = await res.text();
@@ -295,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(err){ alert("❌ 서버 전송 오류: " + err.message); }
   });
 
-  // 초기 옵션 불러오기
   updateOptionCompletion(dateInput.value);
 });
 </script>
