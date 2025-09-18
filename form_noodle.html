@@ -28,8 +28,12 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
 /* ====== 커스텀 드롭다운 ====== */
 .custom-select { position: relative; width: 100%; margin-top:6px; }
 .custom-select .selected-option { border:1px solid #ccc; border-radius:6px; padding:14px 16px; font-size:1.3rem; cursor:pointer; background:#fff; }
-.custom-select ul.options { position:absolute; top:100%; left:0; right:0; max-height:200px; overflow-y:auto; border:1px solid #ccc; border-radius:6px; background:#fff; list-style:none; padding:0; margin:0; z-index:1000; display:none; }
-.custom-select ul.options li { padding:8px 12px; cursor:pointer; font-size:1.2rem; line-height:1.4; }
+.custom-select ul.options { 
+  position:absolute; top:100%; left:0; right:0; 
+  border:1px solid #ccc; border-radius:6px; background:#fff; 
+  list-style:none; padding:0; margin:0; z-index:1000; display:none; 
+}
+.custom-select ul.options li { padding:10px 12px; cursor:pointer; font-size:1.3rem; line-height:1.5; }
 .custom-select ul.options li:hover { background:#4CAF50; color:#fff; }
 .custom-select.open ul.options { display:block; }
 </style>
@@ -60,7 +64,7 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
     <div id="loadingMsg">중복 확인 중...</div>
 
     <!-- 시간 입력 -->
-    <div class="inline-row" id="timeRow">
+    <div class="inline-row" id="timeRow" style="display:none;">
       <div>
         <label for="hour">시간 (시)</label>
         <select id="hour"></select>
@@ -72,7 +76,7 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
     </div>
 
     <!-- 온도 / 습도 입력 -->
-    <div class="inline-row" id="thRow">
+    <div class="inline-row" id="thRow" style="display:none;">
       <div>
         <label for="temp">온도(℃)</label>
         <input type="number" id="temp" step="0.1" min="0" max="100" />
@@ -224,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingMsg.style.display="none";
 
       if(data.exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`; 
         duplicateMsg.style.display="block";
         const d = data.data || {};
         if(d.hour) hourSelect.value = d.hour.padStart(2,"0");
@@ -243,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 초기 렌더
   updateOptionCompletion(dateInput.value);
+  updateInputFields(); // 폼 열릴 때 입력창 감춤
 
   dateInput.addEventListener("change", ()=>{
     currentGroup="";
