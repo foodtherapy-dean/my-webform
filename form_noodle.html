@@ -164,6 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 중복 확인 ======
   async function checkDuplicate(date, group, internal=false) {
     if(!date || !group) return false;
+    if(loadedData[group] && loadedData[group].fetched) return true; // 이미 가져왔으면 재호출 안함
+
     loadingMsg.style.display = "block";
     submitBtn.disabled = true;
     try {
@@ -172,24 +174,24 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingMsg.style.display = "none";
       submitBtn.disabled = false;
 
+      loadedData[group] = { fetched:true, data: data.data || null };
+
       if(!internal && data.exists){
         duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
         duplicateMsg.style.display = "block";
 
-        if (data.data) {
-          if (data.data.hour) hourSelect.value = data.data.hour.padStart(2,"0");
-          if (data.data.minute) minuteSelect.value = data.data.minute.padStart(2,"0");
-          if (data.data.temp) tempInput.value = data.data.temp;
-          if (data.data.humi) humidityInput.value = data.data.humi;
-          if (data.data.product) productSelect.value = data.data.product;
-          if (data.data.count) countInput.value = data.data.count;
+        const d = data.data;
+        if(d){
+          hourSelect.value = d.hour ? d.hour.padStart(2,"0") : "";
+          minuteSelect.value = d.minute ? d.minute.padStart(2,"0") : "";
+          tempInput.value = d.temp || "";
+          humidityInput.value = d.humi || "";
+          productSelect.value = d.product || "";
+          countInput.value = d.count || "";
         }
       }
 
-      if (data.data) loadedData[group] = data.data;
-
       updateSuggestion();
-
       return true;
     } catch(err) {
       loadingMsg.style.display = "none";
@@ -205,20 +207,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 추천시간 계산 ======
   function updateSuggestion() {
     const sel = groupSelect.value;
-    let suggestedHour = null;
+    let suggestedText = "";
 
     if(sel==="1차점검"){
-      const sys = loadedData["시스템ON"];
-      if(sys && sys.hour) suggestedHour = (parseInt(sys.hour,10)+7)%24;
+      const sys = loadedData["시스템ON"]?.data;
+      suggestedText = sys && sys.hour ? `추천: ${((parseInt(sys.hour,10)+7)%24).toString().padStart(2,"0")}시` : "시스템ON 미입력";
     } else if(sel==="2차점검"){
-      const first = loadedData["1차점검"];
-      if(first && first.hour) suggestedHour = (parseInt(first.hour,10)+1)%24;
+      const first = loadedData["1차점검"]?.data;
+      suggestedText = first && first.hour ? `추천: ${((parseInt(first.hour,10)+1)%24).toString().padStart(2,"0")}시` : "1차점검 미입력";
     } else if(sel==="시스템OFF"){
-      const sys = loadedData["시스템ON"];
-      if(sys && sys.hour) suggestedHour = (parseInt(sys.hour,10)+10)%24;
+      const second = loadedData["2차점검"]?.data;
+      suggestedText = second && second.hour ? `추천: ${((parseInt(loadedData["시스템ON"]?.data?.hour || 0,10)+10)%24).toString().padStart(2,"0")}시` : "2차점검 미입력";
+    } else {
+      suggestedText = "";
     }
 
-    suggestionSpan.textContent = suggestedHour!==null ? `추천: ${String(suggestedHour).padStart(2,"0")}시` : "";
+    suggestionSpan.textContent = suggestedText;
   }
 
   // ====== 입력 필드 표시 ======
@@ -257,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
+    // 입력 초기화
     hourSelect.value = "";
     minuteSelect.value = "";
     tempInput.value = "";
@@ -264,10 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
     productSelect.value = "";
     countInput.value = "";
 
-    // 이전 옵션 데이터 없는 경우, internal=true 로 로딩
+    // 직전 옵션 데이터 없으면 internal=true 로 불러오기 (화면 표시 없음)
     if(idx>0 && !loadedData[orderMap[idx-1]]) await checkDuplicate(dateInput.value, orderMap[idx-1], true);
 
-    // 현재 선택 옵션만 화면 표시용 중복 확인
+    // 현재 옵션만 화면 표시용
     if(dateInput.value && selected) await checkDuplicate(dateInput.value, selected, false);
 
     updateInputFields();
