@@ -215,24 +215,29 @@ document.addEventListener('DOMContentLoaded', () => {
   groupSelect.addEventListener("focus", async ()=>{ await updateOptionCompletion(dateInput.value); });
 
   groupSelect.addEventListener("change", async ()=>{
-    duplicateMsg.style.display="none"; duplicateText.textContent="";
+    duplicateMsg.style.display="none"; 
+    duplicateText.textContent="";
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
-    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
+    // 입력창 초기화
+    hourSelect.value=""; minuteSelect.value="";
+    tempInput.value=""; humidityInput.value="";
+    productSelect.value=""; countInput.value="";
 
+    // 이전 데이터 불러오기 (idx>0 조건 제거, 시스템ON도 처리)
+    if(!loadedData[selected]){
+      await checkDuplicate(dateInput.value, selected, true);
+    }
+
+    // 이전 단계 데이터 체크 (추천시간 계산용)
     if(idx>0 && !loadedData[orderMap[idx-1]]){
       await checkDuplicate(dateInput.value, orderMap[idx-1], true);
     }
 
-    if(dateInput.value && selected){
-      await checkDuplicate(dateInput.value, selected);
-    }
-
     updateInputFields();
     updateSuggestion();
-  });
-
+});
   dateInput.addEventListener("change", async ()=>{
     groupSelect.value=""; duplicateMsg.style.display="none"; duplicateText.textContent="";
     hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
