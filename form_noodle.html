@@ -112,10 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
 
-  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
-  // 시/분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
     for(let h=1; h<=24; h++) hourSelect.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
@@ -134,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   duplicateConfirmBtn.addEventListener("click", ()=>{ duplicateMsg.style.display="none"; });
 
-  // 추천시간 표시용 span
   const suggestionSpan = document.createElement("span");
   suggestionSpan.style.marginLeft="10px"; suggestionSpan.style.color="blue";
   hourSelect.insertAdjacentElement("afterend", suggestionSpan);
@@ -143,11 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const orderMap=["시스템ON","1차점검","2차점검","시스템OFF"];
 
   async function updateOptionCompletion(dateVal){
+    if(!dateVal) return;
+    if(loadedData["options"]) return; // 이미 로딩됨
     try{
       const query = encodeURIComponent(JSON.stringify({date: dateVal}));
       const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
       const data = res.ok ? await res.json() : {};
       const existingGroups = data.options || [];
+      loadedData["options"] = existingGroups;
       Array.from(groupSelect.options).forEach(opt=>{
         if(!opt.value) return;
         const clean = opt.value.trim();
@@ -158,6 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function checkDuplicate(date, group, internal=false){
+    if(!date || !group) return false;
+    if(loadedData[group]) return true; // 이미 로딩됨
+
     loadingMsg.style.display="block"; submitBtn.disabled=true;
     try{
       const res = await fetch(`${scriptUrl}?checkNoodle=`+encodeURIComponent(JSON.stringify({date,group})));
@@ -180,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if(data.data) loadedData[group]=data.data;
       updateSuggestion();
       submitBtn.disabled=false;
-      await updateOptionCompletion(date);
       return true;
     }catch(err){
       loadingMsg.style.display="none";
@@ -191,28 +193,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateSuggestion(){
     const selectedOption = groupSelect.value;
-    let suggestedHour = null;
+    let suggestedText = "";
 
     if(selectedOption==="1차점검"){
       const sysOn = loadedData["시스템ON"];
-      if(sysOn && sysOn.hour) suggestedHour = (parseInt(sysOn.hour,10)+7)%24;
+      if(sysOn && sysOn.hour) suggestedText = `추천: ${(parseInt(sysOn.hour,10)+7)%24}시`;
+      else suggestedText = "시스템ON 미입력";
     } else if(selectedOption==="2차점검"){
       const firstCheck = loadedData["1차점검"];
-      if(firstCheck && firstCheck.hour) suggestedHour = (parseInt(firstCheck.hour,10)+1)%24;
+      if(firstCheck && firstCheck.hour) suggestedText = `추천: ${(parseInt(firstCheck.hour,10)+1)%24}시`;
+      else suggestedText = "1차점검 미입력";
     } else if(selectedOption==="시스템OFF"){
       const sysOn = loadedData["시스템ON"];
-      if(sysOn && sysOn.hour) suggestedHour = (parseInt(sysOn.hour,10)+10)%24;
+      if(sysOn && sysOn.hour) suggestedText = `추천: ${(parseInt(sysOn.hour,10)+10)%24}시`;
+      else suggestedText = "시스템ON 미입력";
     }
 
-    if(suggestedHour!==null){ suggestionSpan.textContent=` (추천: ${String(suggestedHour).padStart(2,"0")}시)`; }
-    else suggestionSpan.textContent="";
+    suggestionSpan.textContent = suggestedText ? ` (${suggestedText})` : "";
   }
 
   groupSelect.addEventListener("focus", async ()=>{ await updateOptionCompletion(dateInput.value); });
 
   groupSelect.addEventListener("change", async ()=>{
     duplicateMsg.style.display="none"; duplicateText.textContent="";
-
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
@@ -220,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(idx>0 && !loadedData[orderMap[idx-1]]){
       await checkDuplicate(dateInput.value, orderMap[idx-1], true);
-      updateSuggestion();
     }
 
     if(dateInput.value && selected){
@@ -228,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateInputFields();
+    updateSuggestion();
   });
 
   dateInput.addEventListener("change", async ()=>{
