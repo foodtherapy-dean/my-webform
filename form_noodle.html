@@ -137,12 +137,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 추천시간 표시 span 생성
-  const suggestionSpan = document.createElement("span");
-  suggestionSpan.style.display = "block";
-  suggestionSpan.style.marginTop = "4px";
-  suggestionSpan.style.color = "blue";
-  minuteSelect.insertAdjacentElement("afterend", suggestionSpan);
+  // 추천시간 표시용 div 생성
+  const suggestionDiv = document.createElement("div");
+  suggestionDiv.style.color = "#1E90FF";
+  suggestionDiv.style.marginTop = "4px";
+  suggestionDiv.style.fontSize = "0.9em";
+  minuteSelect.insertAdjacentElement("afterend", suggestionDiv);
 
   const orderMap = ["시스템ON","1차점검","2차점검","시스템OFF"];
   let loadedData = {};
@@ -239,18 +239,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(sel==="1차점검"){
       const sys = loadedData["시스템ON"];
-      text = sys && sys.hour ? `추천: ${((parseInt(sys.hour,10)+7)%24).toString().padStart(2,"0")}시` : "시스템ON 미입력";
+      if(sys && sys.hour) {
+        const h = parseInt(sys.hour,10);
+        text = isNaN(h) ? "시스템ON 미입력" : `추천: ${((h+7)%24).toString().padStart(2,"0")}시`;
+      } else {
+        text = "시스템ON 미입력";
+      }
     } else if(sel==="2차점검"){
       const first = loadedData["1차점검"];
-      text = first && first.hour ? `추천: ${((parseInt(first.hour,10)+1)%24).toString().padStart(2,"0")}시` : "1차점검 미입력";
+      if(first && first.hour) {
+        const h = parseInt(first.hour,10);
+        text = isNaN(h) ? "1차점검 미입력" : `추천: ${((h+1)%24).toString().padStart(2,"0")}시`;
+      } else {
+        text = "1차점검 미입력";
+      }
     } else if(sel==="시스템OFF"){
       const sysOn = loadedData["시스템ON"];
-      text = sysOn && sysOn.hour ? `추천: ${((parseInt(sysOn.hour,10)+10)%24).toString().padStart(2,"0")}시` : "시스템ON 미입력";
+      if(sysOn && sysOn.hour) {
+        const h = parseInt(sysOn.hour,10);
+        text = isNaN(h) ? "시스템ON 미입력" : `추천: ${((h+10)%24).toString().padStart(2,"0")}시`;
+      } else {
+        text = "시스템ON 미입력";
+      }
     } else {
       text = "";
     }
 
-    suggestionSpan.textContent = text;
+    suggestionDiv.textContent = text;
   }
 
   // 옵션 변경 처리
@@ -259,18 +274,16 @@ document.addEventListener('DOMContentLoaded', () => {
     timeRow.style.display = "none";
     thRow.style.display = "none";
     productRow.style.display = "none";
-    suggestionSpan.textContent = "";
+    suggestionDiv.textContent = "";
 
     const idx = orderMap.indexOf(selected);
 
     // 이전 옵션 체크
-    let prevData = null;
     if(idx > 0){
       const prev = orderMap[idx-1];
       if(!loadedData[prev]){
         await checkDuplicate(dateInput.value, prev, true);
       }
-      prevData = loadedData[orderMap[idx-1]];
     }
 
     // 현재 옵션 데이터 체크
@@ -324,21 +337,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!sel){ alert("점검 옵션 선택"); return;}
     if(!dateInput.value){ alert("날짜 선택"); return;}
 
-    if(timeRow.style.display!=="none"){
+    if(timeRow.style.display!=="flex"){
       if(!hourSelect.value){ alert("시간(시) 선택"); return;}
       if(!minuteSelect.value){ alert("시간(분) 선택"); return;}
     }
-    if(thRow.style.display!=="none"){
+    if(thRow.style.display!=="flex"){
       if(!tempInput.value){ alert("온도 입력"); return;}
       if(!humidityInput.value){ alert("습도 입력"); return;}
     }
-    if(productRow.style.display!=="none"){
+    if(productRow.style.display!=="flex"){
       if(!productSelect.value){ alert("제품명 선택"); return;}
       if(!countInput.value){ alert("수량 입력"); return;}
     }
 
     let entries;
-    if(productRow.style.display!=="none"){
+    if(productRow.style.display==="flex"){
       entries = [{ product: productSelect.value, count: countInput.value }];
     } else {
       entries = [{
@@ -371,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOptionCompletion(dateInput.value);
 });
 </script>
-
 
 </body>
 </html>
