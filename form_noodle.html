@@ -255,25 +255,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function updateRecommendedTime(){
-    let recHour = null;
-    switch(currentGroup){
-      case "1차점검":
-        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 7;
-        break;
-      case "2차점검":
-        if(lastFirstCheckHour !== null) recHour = lastFirstCheckHour + 1;
-        break;
-      case "시스템OFF":
-        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 10;
-        break;
-    }
-    if(recHour !== null){
-      recHour = ((recHour-1)%24)+1;
-      recommendedDiv.textContent = `추천: ${recHour}시`;
-    } else{
-      recommendedDiv.textContent = "";
-    }
+  let recHour = null;
+  const systemHour = parseInt(lastSystemOnHour) || parseInt(hourSelect.value) || null;
+  const firstCheckHour = parseInt(lastFirstCheckHour) || parseInt(hourSelect.value) || null;
+
+  switch(currentGroup){
+    case "1차점검":
+      if(systemHour !== null) recHour = systemHour + 7;
+      break;
+    case "2차점검":
+      if(firstCheckHour !== null) recHour = firstCheckHour + 1;
+      break;
+    case "시스템OFF":
+      if(systemHour !== null) recHour = systemHour + 10;
+      break;
   }
+
+  if(recHour !== null){
+    recHour = ((recHour-1)%24)+1; // 24시간 wrap
+    recommendedDiv.textContent = `추천: ${recHour}시`;
+  } else{
+    recommendedDiv.textContent = "";
+  }
+}
+
 
   hourSelect.addEventListener("change", ()=>{
     const val = parseInt(hourSelect.value);
