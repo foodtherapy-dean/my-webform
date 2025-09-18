@@ -54,7 +54,7 @@
       <ul class="options" role="listbox" aria-label="점검 옵션"></ul>
     </div>
 
-    <div id="recommended"></div>
+    
 
     <div id="duplicateMsg"><span id="duplicateText"></span><button id="duplicateConfirmBtn" type="button">확인</button></div>
     <div id="loadingMsg">중복 확인 중...</div>
@@ -69,6 +69,7 @@
         <select id="minute" aria-label="시간 분"></select>
       </div>
     </div>
+    <div id="recommended"></div>
 
     <div class="inline-row" id="thRow" style="display:none;">
       <div>
@@ -142,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  function renderOptions(existing=[]) {
+  function renderOptions(existing=[]){
     optionsList.innerHTML = "";
     optionItems.forEach(opt=>{
       const li = document.createElement('li');
@@ -153,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function updateOptionCompletion(dateVal){
-    if(!dateVal) { renderOptions([]); optionsLoadedForDate = null; return; }
+    if(!dateVal){ renderOptions([]); optionsLoadedForDate = null; return; }
     try{
       const query = encodeURIComponent(JSON.stringify({date: dateVal}));
       const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
@@ -179,13 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function checkDuplicate(date, group, internal=false){
     if(!date || !group) return {ok:false};
-    loadingMsg.style.display = "block";
-    submitBtn.disabled = true;
     try{
       const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
       const data = await res.json();
-      loadingMsg.style.display = "none";
-      submitBtn.disabled = false;
       const exists = Boolean(data.exists);
       const dat = data.data || null;
       loadedData[group] = { fetched:true, exists: exists, data: dat };
@@ -200,8 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return {ok:true, exists, data: dat};
     } catch(err){
-      loadingMsg.style.display = "none";
-      submitBtn.disabled = false;
       console.error("checkDuplicate error", err);
       if(!internal){
         duplicateText.textContent = "중복 확인 오류!";
@@ -212,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fmtHourWrap(n){ const v = (((Number(n)||0)-1)%24+24)%24+1; return String(v).padStart(2,'0'); }
+
   function updateSuggestion(selected){
     const sel = selected || (selectedDiv.dataset.value || "");
     if(!sel){ recommendedDiv.textContent = ""; return; }
@@ -244,28 +240,68 @@ document.addEventListener('DOMContentLoaded', () => {
   duplicateConfirmBtn.addEventListener('click', ()=> { duplicateMsg.style.display = "none"; });
   renderOptions([]);
 
+  // 점검옵션 클릭 이벤트
   customGroup.addEventListener('click', (e) => {
-    if(e.target.classList.contains('selected-option')){ customGroup.classList.toggle('open'); return; }
+    if(e.target.classList.contains('selected-option')){
+      // 클릭 시 loading 표시 후 중복 확인
+      const dateVal = dateInput.value;
+      if(!dateVal) return;
+      loadingMsg.style.display = "block";
+      optionsList.innerHTML = ""; // 옵션 숨김
+      (async ()=>{
+        // 날짜 기준 캐시 확인
+        if(optionsLoadedForDate !== dateVal){
+          await updateOptionCompletion(dateVal);
+        }
+        // 모든 옵션 중복 체크 병렬
+        const promises = orderMap.map(opt => checkDuplicate(dateVal, opt, true));
+        await Promise.all(promises);
+        // 완료 여부 표시
+        renderOptions(orderMap.filter(opt=>loadedData[opt]?.exists));
+        loadingMsg.style.display = "none";
+        customGroup.classList.add('open');
+      })();
+      return;
+    }
+
+    // LI 선택 시
     if(e.target.tagName === 'LI'){
       const value = e.target.dataset.value;
-      customGroup.classList.remove('open');
       selectedDiv.textContent = e.target.textContent;
       selectedDiv.dataset.value = value;
-      (async () => {
-        duplicateMsg.style.display = "none"; duplicateText.textContent = "";
-        hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
-        await updateOptionCompletion(dateInput.value);
-        const idx = orderMap.indexOf(value);
-        if(idx > 0){ const prev = orderMap[idx-1]; await checkDuplicate(dateInput.value, prev, true); }
+
+      (async ()=>{
+        duplicateMsg.style.display = "none";
+        duplicateText.textContent = "";
+        applyGroupDataToInputs(null);
         await checkDuplicate(dateInput.value, value, false);
-        updateInputFields(value); updateSuggestion(value);
+        updateInputFields(value);
+        updateSuggestion(value);
       })();
     }
   });
+
   document.addEventListener('click', (e)=>{ if(!customGroup.contains(e.target)) customGroup.classList.remove('open'); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') customGroup.classList.remove('open'); });
-  dateInput.addEventListener('change', async ()=>{ selectedDiv.textContent = "선택하세요"; selectedDiv.dataset.value = ""; duplicateMsg.style.display = "none"; duplicateText.textContent = ""; hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value=""; recommendedDiv.textContent = ""; loadedData = {}; optionsLoadedForDate = null; updateInputFields(); await updateOptionCompletion(dateInput.value); });
-  hourSelect.addEventListener('change', ()=>{ const sel = selectedDiv.dataset.value || ""; if(sel){ if(!loadedData[sel]) loadedData[sel] = { fetched:false, exists:false, data: {} }; loadedData[sel].data = loadedData[sel].data || {}; loadedData[sel].data.hour = hourSelect.value ? parseInt(hourSelect.value,10) : null; } updateSuggestion(sel); });
+
+  dateInput.addEventListener('change', async ()=>{
+    selectedDiv.textContent = "선택하세요"; selectedDiv.dataset.value = "";
+    duplicateMsg.style.display = "none"; duplicateText.textContent = "";
+    applyGroupDataToInputs(null);
+    recommendedDiv.textContent = "";
+    loadedData = {}; optionsLoadedForDate = null; updateInputFields();
+    await updateOptionCompletion(dateInput.value);
+  });
+
+  hourSelect.addEventListener('change', ()=>{
+    const sel = selectedDiv.dataset.value || "";
+    if(sel){
+      if(!loadedData[sel]) loadedData[sel] = { fetched:false, exists:false, data: {} };
+      loadedData[sel].data = loadedData[sel].data || {};
+      loadedData[sel].data.hour = hourSelect.value ? parseInt(hourSelect.value,10) : null;
+    }
+    updateSuggestion(sel);
+  });
 
   submitBtn.addEventListener('click', async ()=>{
     const sel = selectedDiv.dataset.value || "";
@@ -293,5 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOptionCompletion(dateInput.value);
 });
 </script>
+
 </body>
 </html>
