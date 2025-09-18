@@ -49,14 +49,11 @@ button[type="submit"] {
   border-radius: 0;
   cursor: pointer;
 }
-
-button[type="submit"]:hover {
-  background-color: #218838;
-}
+button[type="submit"]:hover { background-color: #218838; }
 
 label {
   display: block;
-  margin-top: 20px; /* 날짜와 점검 옵션 간격 조정 */
+  margin-top: 20px;
   font-weight: bold;
 }
 
@@ -69,14 +66,8 @@ input, select {
   font-size: 1.1rem;
 }
 
-.inline-row {
-  display: flex;
-  gap: 10px;
-}
-
-.inline-row > div {
-  flex: 1;
-}
+.inline-row { display: flex; gap: 10px; }
+.inline-row > div { flex: 1; }
 
 .ox-group {
   display: flex;
@@ -84,7 +75,6 @@ input, select {
   gap: 10px;
   margin-top: 10px;
 }
-
 .ox-set {
   flex: 1 1 48%;
   text-align: center;
@@ -92,14 +82,12 @@ input, select {
   border-radius: 8px;
   padding: 10px;
 }
-
 .ox-buttons {
   display: flex;
   justify-content: center;
   gap: 10px;
   margin-top: 5px;
 }
-
 .ox-buttons button {
   flex: 1;
   padding: 12px;
@@ -110,25 +98,16 @@ input, select {
   cursor: pointer;
   border-radius: 4px;
 }
-
 .ox-buttons button.selected {
   background-color: #007bff;
   color: white;
   border-color: #0056b3;
 }
 
-.number-row {
-  display: flex;
-  gap: 10px;
-}
+.number-row { display: flex; gap: 10px; }
+.number-row > div { flex: 1; }
 
-.number-row > div {
-  flex: 1;
-}
-
-/* 선택된 input/select 강조 */
-select.selected,
-input.selected {
+select.selected, input.selected {
   border: 2px solid #007bff;
   background-color: #e8f0fe;
   font-weight: bold;
@@ -143,7 +122,6 @@ input.selected {
   border-radius: 4px;
   display: none;
 }
-
 #duplicateConfirmBtn {
   background-color: #007bff;
   color: white;
@@ -154,7 +132,6 @@ input.selected {
   margin-top: 10px;
 }
 
-/* 로딩 메시지 스타일 */
 #loadingMsg {
   background-color: #007bff;
   color: white;
@@ -162,7 +139,48 @@ input.selected {
   margin-top: 10px;
   text-align: center;
   border-radius: 4px;
-  display: none; /* 기본적으로 숨겨놓음 */
+  display: none;
+}
+
+/* ===== 커스텀 드롭다운 ===== */
+.custom-select {
+  position: relative;
+  user-select: none;
+  margin-top: 10px;
+}
+.custom-select .selected-option {
+  padding: 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+.custom-select.open .selected-option {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.custom-select ul.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  width: 100%;
+  background: #fff;
+  z-index: 1000;
+  display: none;
+}
+.custom-select.open ul.options { display: block; }
+.custom-select ul.options li {
+  padding: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.custom-select ul.options li:hover {
+  background: #f0f0f0;
 }
 </style>
 </head>
@@ -175,16 +193,11 @@ input.selected {
       <input type="date" id="date" name="date" />
     </label>
 
-    <label>점검 옵션
-      <select id="option" name="option" required>
-        <option value="">선택하세요</option>
-        <option value="1차점검">1차점검</option>
-        <option value="2차점검">2차점검</option>
-        <option value="3차점검">3차점검</option>
-        <option value="4차점검">4차점검</option>
-        <option value="최종취합">최종취합</option>
-      </select>
-    </label>
+    <label>점검 옵션</label>
+    <div id="customOption" class="custom-select">
+      <div class="selected-option">선택하세요</div>
+      <ul class="options"></ul>
+    </div>
 
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
@@ -211,20 +224,14 @@ input.selected {
       </label>
 
       <label>검출 상태</label>
-      <div class="ox-group" id="oxContainer">
-        <!-- JS에서 자동 생성 -->
-      </div>
+      <div class="ox-group" id="oxContainer"></div>
     </div>
 
     <div id="summaryInputs" style="display:none;">
       <label>통과/검출 수량</label>
       <div class="number-row">
-        <div>
-          <input type="number" name="passCount" placeholder="통과 수량" />
-        </div>
-        <div>
-          <input type="number" name="detectCount" placeholder="검출 수량" />
-        </div>
+        <div><input type="number" name="passCount" placeholder="통과 수량" /></div>
+        <div><input type="number" name="detectCount" placeholder="검출 수량" /></div>
       </div>
     </div>
   </form>
@@ -235,86 +242,92 @@ input.selected {
 </div>
 
 <script>
-// ====== 공통 BASE_URL (모든 호출 통일) ======
+// ===== BASE_URL =====
 const BASE_URL =
   "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
 
-// ====== 날짜 기본값 및 selected 클래스 적용 ======
+// 날짜 기본값
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
-// 📌 날짜 변경 시 폼 초기화 (날짜만 유지)
+// 날짜 변경 시 폼 초기화 + 옵션 갱신
 dateInput.addEventListener("change", () => {
   resetForm(document.getElementById("magnetForm"), dateInput.value);
   dateInput.classList.add("selected");
-  updateOptionCompletion(dateInput.value); // 날짜 바뀌면 완료표시 업데이트
+  updateOptionCompletion(dateInput.value);
 });
 
-// select, time 입력 시 selected 클래스 적용
-function applySelectedStyle(selector) {
-  document.querySelectorAll(selector).forEach(el => {
-    el.addEventListener("change", () => {
-      el.classList.toggle("selected", !!el.value);
-    });
+// ===== 커스텀 드롭다운 =====
+const customOption = document.getElementById("customOption");
+const selectedDiv = customOption.querySelector(".selected-option");
+const optionsList = customOption.querySelector(".options");
+let currentOption = "";
+const optionItems = ["1차점검","2차점검","3차점검","4차점검","최종취합"];
+
+// 옵션 리스트 렌더링
+function renderOptions(existing=[]) {
+  optionsList.innerHTML = "";
+  optionItems.forEach(opt => {
+    const li = document.createElement("li");
+    li.dataset.value = opt;
+    li.textContent = existing.includes(opt) ? `${opt}(완료)` : opt;
+    optionsList.appendChild(li);
   });
 }
-applySelectedStyle("select");
-applySelectedStyle('input[type="time"]');
 
-// ====== 점검 옵션 focus 시 BASE 없이 완료 포함 옵션 활성화 ======
-const optionSelect = document.getElementById("option");
-optionSelect.addEventListener("focus", async () => {
-  await updateOptionCompletion(dateInput.value);
+// 옵션 클릭 처리
+customOption.addEventListener("click", e => {
+  if (e.target.classList.contains("selected-option")) {
+    customOption.classList.toggle("open");
+  }
+  if (e.target.tagName === "LI") {
+    currentOption = e.target.dataset.value;
+    selectedDiv.textContent = e.target.textContent;
+    customOption.classList.remove("open");
+    handleOptionChange(currentOption);
+  }
+});
+// 바깥 클릭 닫기
+document.addEventListener("click", e => {
+  if (!customOption.contains(e.target)) {
+    customOption.classList.remove("open");
+  }
 });
 
-// ====== 점검 옵션 변경 시 UI 표시 + 중복 체크 ======
-optionSelect.addEventListener("change", async e => {
-  let opt = e.target.value;
+// ===== 옵션 변경 처리 =====
+async function handleOptionChange(opt) {
   const dateVal = dateInput.value;
   if (!opt || !dateVal) return;
-
-  const cleanOpt = opt.trim();
-
-  // 로딩 표시
   document.getElementById("loadingMsg").style.display = "block";
 
   try {
-    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: cleanOpt }));
-    const url = `${BASE_URL}?checkMagnet=${query}`;
-    const res = await fetch(url);
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
+    const res = await fetch(`${BASE_URL}?checkMagnet=${query}`);
     const result = res.ok ? await res.json() : {};
     if (result.exists) {
       document.getElementById("duplicateText").innerText =
-        `⚠️ 이미 같은 날짜(${dateVal})와 옵션(${cleanOpt})의 데이터가 존재합니다.`;
+        `⚠️ 이미 ${dateVal} ${opt} 데이터가 존재합니다.`;
       document.getElementById("duplicateMsg").style.display = "block";
     } else {
       document.getElementById("duplicateMsg").style.display = "none";
     }
-  } catch (err) {
-    console.error("중복 체크 오류:", err);
-    document.getElementById("duplicateMsg").style.display = "none";
-  }
+  } catch { document.getElementById("duplicateMsg").style.display = "none"; }
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 입력 UI 표시 제어
-  const showSub = ["1차점검", "2차점검", "3차점검", "4차점검", "최종취합"].includes(cleanOpt);
-  const isSummary = cleanOpt === "최종취합";
-  document.getElementById("subInputs").style.display = showSub ? "block" : "none";
+  const isSummary = opt === "최종취합";
+  document.getElementById("subInputs").style.display = !isSummary ? "block" : "none";
   document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
   document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-  const timeLabel = document.getElementById("timeLabel");
-  if (timeLabel) timeLabel.style.display = isSummary ? "none" : "block";
+  document.getElementById("timeLabel").style.display = isSummary ? "none" : "block";
   if (isSummary) oxValues = {};
-});
-
-// ====== 중복 확인 버튼 ======
+}
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
   document.getElementById("duplicateMsg").style.display = "none";
 });
 
-// ====== OX 버튼 생성 ======
-const oxItems = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
+// ===== OX 버튼 =====
+const oxItems = ["Fe","Sus","제품","제품+Fe","제품+Sus"];
 const oxContainer = document.getElementById("oxContainer");
 oxItems.forEach(label => {
   const oxSet = document.createElement("div");
@@ -324,12 +337,9 @@ oxItems.forEach(label => {
     <div class="ox-buttons">
       <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
       <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-    </div>
-  `;
+    </div>`;
   oxContainer.appendChild(oxSet);
 });
-
-// ====== OX 선택 처리 ======
 let oxValues = {};
 document.addEventListener("click", e => {
   if (e.target.classList.contains("ox")) {
@@ -342,157 +352,100 @@ document.addEventListener("click", e => {
   }
 });
 
-// ====== 옵션 입력 순서 검증 ======
+// ===== 순서 검증 =====
 async function validateOptionSequence(dateVal, opt) {
+  const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+  let existingOptions = [];
   try {
-    const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-    const url = `${BASE_URL}?getMagnet=${query}`;
-    let existingOptions = [];
-    try {
-      const res = await fetch(url);
-      if (res.ok) existingOptions = (await res.json()).options || [];
-    } catch (e) {
-      console.error("서버 fetch 오류:", e);
-      existingOptions = [];
-    }
-
-    if (opt === "최종취합") {
-      if (!existingOptions.includes("1차점검")) {
-        alert("⚠️ 최종취합은 1차점검이 먼저 입력되어야 합니다.");
-        return false;
-      }
-      return true;
-    }
-
-    const requiredMap = {
-      "2차점검": ["1차점검"],
-      "3차점검": ["1차점검", "2차점검"],
-      "4차점검": ["1차점검", "2차점검", "3차점검"]
-    };
-    if (opt in requiredMap) {
-      const missing = requiredMap[opt].filter(req => !existingOptions.includes(req));
-      if (missing.length > 0) {
-        alert(`⚠️ 누락된 차수: ${missing.join(", ")}이(가) 먼저 입력되어야 ${opt}를 저장할 수 있습니다.`);
-        return false;
-      }
+    const res = await fetch(`${BASE_URL}?getMagnet=${query}`);
+    if (res.ok) existingOptions = (await res.json()).options || [];
+  } catch {}
+  if (opt === "최종취합") {
+    if (!existingOptions.includes("1차점검")) {
+      alert("⚠️ 최종취합 전 1차점검이 필요합니다.");
+      return false;
     }
     return true;
-  } catch (err) {
-    console.error("순서 검증 오류:", err);
-    alert("⚠️ 순서 검증 중 오류 발생. 서버 상태를 확인하세요.");
-    return false;
   }
+  const requiredMap = {
+    "2차점검": ["1차점검"],
+    "3차점검": ["1차점검","2차점검"],
+    "4차점검": ["1차점검","2차점검","3차점검"]
+  };
+  if (opt in requiredMap) {
+    const missing = requiredMap[opt].filter(r => !existingOptions.includes(r));
+    if (missing.length) {
+      alert(`⚠️ ${opt} 전 ${missing.join(", ")} 필요`);
+      return false;
+    }
+  }
+  return true;
 }
 
-// ====== 폼 제출 처리 ======
-document.getElementById("magnetForm").addEventListener("submit", async function (e) {
+// ===== 제출 =====
+document.getElementById("magnetForm").addEventListener("submit", async e => {
   e.preventDefault();
   const form = e.target;
+  if (!currentOption) return alert("점검옵션을 선택하세요.");
 
-  const activeInputs = form.querySelectorAll("input, select");
+  const activeInputs = form.querySelectorAll("input");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
     if (!input.value) {
-      alert(`${input.previousElementSibling?.innerText || "입력값"}을(를) 입력하세요.`);
+      alert(`${input.previousElementSibling?.innerText || "입력값"}을 입력하세요.`);
       input.focus();
       return;
     }
   }
-
-  if (form.option.value !== "최종취합") {
-    for (const label of oxItems) {
-      if (!(label in oxValues)) {
-        alert(`검출 상태 '${label}'의 O 또는 X를 선택하세요.`);
-        document.querySelector(`.ox[data-label="${label}"]`)?.focus();
-        return;
-      }
-    }
+  if (currentOption !== "최종취합") {
+    for (const label of oxItems) if (!(label in oxValues)) return alert(`${label} 선택 필요`);
+  }
+  if (!await validateOptionSequence(form.date.value, currentOption)) {
+    resetForm(form, form.date.value); return;
   }
 
-  const isValidSequence = await validateOptionSequence(form.date.value, form.option.value);
-  if (!isValidSequence) {
-    resetForm(form, form.date.value);
-    return;
-  }
-
-  const timeInput = form.querySelector("#time");
-  let hour = "", minute = "";
-  if (timeInput && timeInput.value) [hour, minute] = timeInput.value.split(":");
+  let hour="", minute="";
+  if (form.time?.value) [hour,minute] = form.time.value.split(":");
 
   const data = {
-    type: "data",
-    date: form.date.value,
-    option: form.option.value,
-    hour,
-    minute,
+    type:"data",
+    date:form.date.value, option:currentOption, hour, minute,
     product: form.product.value,
-    passCount: form.querySelector('input[name="passCount"]')?.value || "",
-    detectCount: form.querySelector('input[name="detectCount"]')?.value || "",
+    passCount: form.passCount?.value||"",
+    detectCount: form.detectCount?.value||"",
     states: oxValues
   };
-
-  const formData = new FormData();
-  formData.append("magnet", JSON.stringify(data));
-
+  const fd = new FormData(); fd.append("magnet", JSON.stringify(data));
   try {
-    const response = await fetch(BASE_URL, {
-      method: "POST",
-      body: formData
-    });
-    const result = await response.text();
-    if (response.ok) {
-      alert("✅ 저장 완료:\n" + result);
-    } else {
-      alert("❌ 서버 오류:\n" + result);
-    }
-  } catch (err) {
-    alert("❌ 저장 중 오류 발생:\n" + err.message);
-  } finally {
-    resetForm(form, new Date().toISOString().split("T")[0]);
-  }
+    const res = await fetch(BASE_URL,{method:"POST",body:fd});
+    const txt = await res.text();
+    alert(res.ok? "✅ 저장 완료:\n"+txt : "❌ 오류:\n"+txt);
+  } catch(err) { alert("❌ 저장 오류:\n"+err.message); }
+  finally { resetForm(form,new Date().toISOString().split("T")[0]); }
 });
 
-// ====== 완료표시 업데이트 함수 ======
+// ===== 완료표시 =====
 async function updateOptionCompletion(dateVal) {
-  const optionSelect = document.getElementById("option");
   try {
     const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-    const url = `${BASE_URL}?getMagnet=${query}`;
-    const res = await fetch(url);
-    const data = res.ok ? await res.json() : {};
-    const existingOptions = data.options || [];
-
-    Array.from(optionSelect.options).forEach(opt => {
-      if (!opt.value) return;
-      const clean = opt.value.trim();
-      opt.textContent = existingOptions.includes(clean) ? `${clean}(완료)` : clean;
-      opt.value = clean;
-    });
-  } catch (err) {
-    console.error("옵션 완료 업데이트 오류:", err);
-  }
+    const res = await fetch(`${BASE_URL}?getMagnet=${query}`);
+    const data = res.ok? await res.json():{};
+    renderOptions(data.options||[]);
+  } catch {}
 }
 
-// ====== 폼 초기화 함수 ======
+// ===== resetForm =====
 function resetForm(form, keepDate) {
-  const savedDate = keepDate || dateInput.value;
-  form.reset();
-  dateInput.value = savedDate;
-  dateInput.classList.add("selected");
-  form.option.value = "";
-  oxValues = {};
-  document.querySelectorAll(".ox.selected").forEach(btn => btn.classList.remove("selected"));
-  document.getElementById("subInputs").style.display = "none";
-  document.getElementById("summaryInputs").style.display = "none";
-  document.getElementById("duplicateMsg").style.display = "none";
+  const savedDate = keepDate||dateInput.value;
+  form.reset(); dateInput.value=savedDate;
+  currentOption=""; selectedDiv.textContent="선택하세요";
+  oxValues={}; document.querySelectorAll(".ox.selected").forEach(b=>b.classList.remove("selected"));
+  document.getElementById("subInputs").style.display="none";
+  document.getElementById("summaryInputs").style.display="none";
+  document.getElementById("duplicateMsg").style.display="none";
   updateOptionCompletion(savedDate);
 }
-
-// 📌 최초 로드시 완료표시 갱신
-document.addEventListener("DOMContentLoaded", () => {
-  updateOptionCompletion(dateInput.value);
-});
+document.addEventListener("DOMContentLoaded",()=>updateOptionCompletion(dateInput.value));
 </script>
-
 </body>
 </html>
