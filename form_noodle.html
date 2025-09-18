@@ -134,6 +134,12 @@ body, html {
   display:block; 
 }
 
+#recommendedTime {
+  margin-top:6px; 
+  font-weight:bold; 
+  color:#4CAF50;
+}
+
 .app-footer { 
   flex:0 0 auto; 
 }
@@ -163,6 +169,9 @@ body, html {
       <div class="selected-option">선택하세요</div>
       <ul class="options"></ul>
     </div>
+
+    <!-- 추천 시간 -->
+    <div id="recommendedTime"></div>
 
     <!-- 중복 메시지 -->
     <div id="duplicateMsg">
@@ -237,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadingMsg = document.getElementById("loadingMsg");
   const timeRow = document.getElementById("timeRow");
   const thRow = document.getElementById("thRow");
+  const recommendedDiv = document.getElementById("recommendedTime");
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
 
@@ -285,6 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       customGroup.classList.remove("open");
       updateInputFields();
       checkDuplicate(dateInput.value, cleanOpt);
+      updateRecommendedTime(cleanOpt);
     }
   });
 
@@ -355,6 +366,45 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally{ submitBtn.disabled=false; }
   }
 
+  // ====== 추천 시간 로직 ======
+  let lastSystemOnHour = null;
+  let lastFirstCheckHour = null;
+
+  function updateRecommendedTime(group) {
+    let recHour = null;
+    const currentHour = parseInt(hourSelect.value) || null;
+
+    switch(group) {
+      case "1차점검":
+        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 7;
+        break;
+      case "2차점검":
+        if(lastFirstCheckHour !== null) recHour = lastFirstCheckHour + 1;
+        break;
+      case "시스템OFF":
+        if(lastSystemOnHour !== null) recHour = lastSystemOnHour + 10;
+        break;
+      default:
+        recHour = null;
+    }
+
+    if(recHour !== null){
+      recHour = ((recHour-1)%24)+1;
+      recommendedDiv.textContent = `추천: ${recHour}시`;
+    } else{
+      recommendedDiv.textContent = "";
+    }
+
+    if(group === "시스템ON" && currentHour) lastSystemOnHour = currentHour;
+    if(group === "1차점검" && currentHour) lastFirstCheckHour = currentHour;
+  }
+
+  hourSelect.addEventListener("change", () => {
+    if(currentGroup === "시스템ON") lastSystemOnHour = parseInt(hourSelect.value);
+    if(currentGroup === "1차점검") lastFirstCheckHour = parseInt(hourSelect.value);
+    updateRecommendedTime(currentGroup);
+  });
+
   // 초기 렌더
   updateOptionCompletion(dateInput.value);
 
@@ -369,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     humidityInput.value="";
     productSelect.value="";
     countInput.value="";
+    recommendedDiv.textContent="";
     updateInputFields();
     updateOptionCompletion(dateInput.value);
   });
