@@ -112,8 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
 
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
+  // 시/분 옵션 채우기
   function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
     for(let h=1; h<=24; h++) hourSelect.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
@@ -132,142 +134,236 @@ document.addEventListener('DOMContentLoaded', () => {
 
   duplicateConfirmBtn.addEventListener("click", ()=>{ duplicateMsg.style.display="none"; });
 
+  // 추천시간 표시용 span
   const suggestionSpan = document.createElement("span");
   suggestionSpan.style.marginLeft="10px"; suggestionSpan.style.color="blue";
   hourSelect.insertAdjacentElement("afterend", suggestionSpan);
 
-  let loadedData={};
+  // 캐시 구조: loadedData[group] = { fetched:bool, exists:bool, data:obj }
+  let loadedData = {};
+  // options list cache flag
+  let optionsLoadedForDate = null;
   const orderMap=["시스템ON","1차점검","2차점검","시스템OFF"];
 
+  // 옵션 완료 상태(날짜별) 불러오기 — (최소 호출)
   async function updateOptionCompletion(dateVal){
     if(!dateVal) return;
-    if(loadedData["options"]) return; // 이미 로딩됨
+    if(optionsLoadedForDate === dateVal) return; // 이미 같은 날짜로 로드됨
     try{
       const query = encodeURIComponent(JSON.stringify({date: dateVal}));
       const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
       const data = res.ok ? await res.json() : {};
       const existingGroups = data.options || [];
-      loadedData["options"] = existingGroups;
+      optionsLoadedForDate = dateVal;
       Array.from(groupSelect.options).forEach(opt=>{
         if(!opt.value) return;
         const clean = opt.value.trim();
         opt.textContent = existingGroups.includes(clean) ? `${clean}(완료)` : clean;
         opt.value = clean;
       });
-    } catch(err){ console.error(err); }
+    } catch(err){ console.error("옵션완료 로드 오류:", err); }
   }
 
+  // 서버에서 중복/데이터 검사: internal=true 면 메시지 숨김(추천용 선조회)
   async function checkDuplicate(date, group, internal=false){
     if(!date || !group) return false;
-    if(loadedData[group]) return true; // 이미 로딩됨
 
-    loadingMsg.style.display="block"; submitBtn.disabled=true;
+    // 이미 캐시된 경우: 내부/외부 호출에 따라 처리
+    if(loadedData[group] && loadedData[group].fetched){
+      // 외부 호출이면(실제 선택) 기존 캐시를 화면에 반영
+      if(!internal){
+        if(loadedData[group].exists){
+          applyGroupDataToInputs(group);
+          duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+          duplicateMsg.style.display = "block";
+        } else {
+          duplicateMsg.style.display = "none";
+        }
+      }
+      return true;
+    }
+
+    loadingMsg.style.display="block";
+    submitBtn.disabled=true;
     try{
       const res = await fetch(`${scriptUrl}?checkNoodle=`+encodeURIComponent(JSON.stringify({date,group})));
       const data = await res.json();
       loadingMsg.style.display="none";
 
-      if(!internal && data.exists){
-        duplicateText.textContent=`⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display="block";
+      const exists = Boolean(data.exists);
+      const dat = data.data || null;
+      loadedData[group] = { fetched:true, exists: exists, data: dat };
 
-        if(data.data){
-          if(data.data.hour) hourSelect.value=data.data.hour.padStart(2,"0");
-          if(data.data.minute) minuteSelect.value=data.data.minute.padStart(2,"0");
-          if(data.data.temp) tempInput.value=data.data.temp;
-          if(data.data.humi) humidityInput.value=data.data.humi;
-          if(data.data.product) productSelect.value=data.data.product;
-          if(data.data.count) countInput.value=data.data.count;
+      if(!internal){
+        if(exists){
+          // 화면에 채우고 메시지 표시
+          applyGroupDataToInputs(group);
+          duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+          duplicateMsg.style.display = "block";
+        } else {
+          duplicateMsg.style.display = "none";
         }
       }
-      if(data.data) loadedData[group]=data.data;
-      updateSuggestion();
       submitBtn.disabled=false;
       return true;
     }catch(err){
       loadingMsg.style.display="none";
-      if(!internal){ duplicateText.textContent="중복 확인 오류!"; duplicateMsg.style.display="block"; }
+      submitBtn.disabled=false;
+      if(!internal){
+        duplicateText.textContent="중복 확인 오류!";
+        duplicateMsg.style.display="block";
+      }
+      console.error("checkDuplicate 오류:", err);
       return false;
     }
   }
 
-  function updateSuggestion(){
-    const selectedOption = groupSelect.value;
-    let suggestedText = "";
-
-    if(selectedOption==="1차점검"){
-      const sysOn = loadedData["시스템ON"];
-      if(sysOn && sysOn.hour) suggestedText = `추천: ${(parseInt(sysOn.hour,10)+7)%24}시`;
-      else suggestedText = "시스템ON 미입력";
-    } else if(selectedOption==="2차점검"){
-      const firstCheck = loadedData["1차점검"];
-      if(firstCheck && firstCheck.hour) suggestedText = `추천: ${(parseInt(firstCheck.hour,10)+1)%24}시`;
-      else suggestedText = "1차점검 미입력";
-    } else if(selectedOption==="시스템OFF"){
-      const sysOn = loadedData["시스템ON"];
-      if(sysOn && sysOn.hour) suggestedText = `추천: ${(parseInt(sysOn.hour,10)+10)%24}시`;
-      else suggestedText = "시스템ON 미입력";
+  function applyGroupDataToInputs(group){
+    const rec = loadedData[group];
+    if(!rec || !rec.data){
+      // 없으면 초기화
+      hourSelect.value=""; minuteSelect.value="";
+      tempInput.value=""; humidityInput.value="";
+      productSelect.value=""; countInput.value="";
+      return;
     }
-
-    suggestionSpan.textContent = suggestedText ? ` (${suggestedText})` : "";
+    const d = rec.data;
+    if(d.hour) hourSelect.value = d.hour.toString().padStart(2,"0"); else hourSelect.value="";
+    if(d.minute) minuteSelect.value = d.minute.toString().padStart(2,"0"); else minuteSelect.value="";
+    if(d.temp) tempInput.value = d.temp; else tempInput.value="";
+    if(d.humi) humidityInput.value = d.humi; else humidityInput.value="";
+    if(d.product) productSelect.value = d.product; else productSelect.value="";
+    if(d.count) countInput.value = d.count; else countInput.value="";
   }
 
+  // 추천시간 로직 — 사용자 요청대로 메시지 우선순위 반영
+  function updateSuggestion(){
+    const selected = groupSelect.value;
+    if(!selected){ suggestionSpan.textContent = ""; return; }
+
+    const fmt = h => String(((h-1)%24 + 24)%24 + 1).padStart(2,"0"); // 1..24 wrap
+    let out = "";
+
+    if(selected === "1차점검"){
+      const sys = loadedData["시스템ON"];
+      if(sys && sys.data && sys.data.hour) out = `추천: ${fmt(parseInt(sys.data.hour,10) + 7)}시`;
+      else out = "시스템ON 미입력";
+    } else if(selected === "2차점검"){
+      const first = loadedData["1차점검"];
+      if(first && first.data && first.data.hour) out = `추천: ${fmt(parseInt(first.data.hour,10) + 1)}시`;
+      else out = "1차점검 미입력";
+    } else if(selected === "시스템OFF"){
+      // --- 요구사항: 2차점검이 없으면 "2차점검 미입력" 출력 ---
+      const second = loadedData["2차점검"];
+      if(!second || !second.data || !second.data.hour){
+        out = "2차점검 미입력";
+      } else {
+        // 2차가 있으면 추천시간은 기존 규칙(시스템ON + 10)을 우선 사용
+        const sys = loadedData["시스템ON"];
+        if(sys && sys.data && sys.data.hour) out = `추천: ${fmt(parseInt(sys.data.hour,10) + 10)}시`;
+        else out = "시스템ON 미입력";
+      }
+    } else {
+      out = "";
+    }
+
+    suggestionSpan.textContent = out ? ` (${out})` : "";
+  }
+
+  // 포커스시 옵션(완료표시) 최신화 — 날짜 바뀌면 반드시 재요청
   groupSelect.addEventListener("focus", async ()=>{ await updateOptionCompletion(dateInput.value); });
 
+  // 옵션 변경 처리 — 핵심 로직: 이전단계(추천용) 선조회 + 선택 항목 데이터조회(캐시 사용)
   groupSelect.addEventListener("change", async ()=>{
-    duplicateMsg.style.display="none"; 
-    duplicateText.textContent="";
+    // 초기화 UI
+    duplicateMsg.style.display="none"; duplicateText.textContent="";
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
-    // 입력창 초기화
-    hourSelect.value=""; minuteSelect.value="";
-    tempInput.value=""; humidityInput.value="";
+    // 입력 필드 초기화 (일단 비움 — 있으면 나중에 채움)
+    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
     productSelect.value=""; countInput.value="";
 
-    // 이전 데이터 불러오기 (idx>0 조건 제거, 시스템ON도 처리)
-    if(!loadedData[selected]){
-      await checkDuplicate(dateInput.value, selected, true);
+    // 1) 추천시간 계산에 필요한 '직전 단계'를 우선 선조회 (internal=true: 메시지 노출X)
+    if(idx > 0){
+      const prev = orderMap[idx-1];
+      if(!loadedData[prev] || !loadedData[prev].fetched){
+        await checkDuplicate(dateInput.value, prev, true);
+      }
     }
 
-    // 이전 단계 데이터 체크 (추천시간 계산용)
-    if(idx>0 && !loadedData[orderMap[idx-1]]){
-      await checkDuplicate(dateInput.value, orderMap[idx-1], true);
+    // 2) 선택 항목 자체를 캐시에서 가져오거나 서버에서 가져와 화면 적용
+    if(selected){
+      if(!loadedData[selected] || !loadedData[selected].fetched){
+        // 실제 선택이므로 메시지 보이게 internal=false
+        await checkDuplicate(dateInput.value, selected, false);
+      } else {
+        // 이미 캐시에 있으면 화면에 반영 (그리고 메시지도 표시)
+        if(loadedData[selected].exists){
+          applyGroupDataToInputs(selected);
+          duplicateText.textContent = `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${selected}) 데이터가 존재합니다.`;
+          duplicateMsg.style.display = "block";
+        } else {
+          duplicateMsg.style.display = "none";
+        }
+      }
     }
 
+    // 입력창 표시/숨김 및 추천 갱신
     updateInputFields();
     updateSuggestion();
-});
+  });
+
+  // 날짜 변경 시 캐시 초기화(그 날짜에 대한 캐시만 유지하지 않음)
   dateInput.addEventListener("change", async ()=>{
     groupSelect.value=""; duplicateMsg.style.display="none"; duplicateText.textContent="";
     hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
-    productSelect.value=""; countInput.value=""; loadedData={};
+    productSelect.value=""; countInput.value="";
+    loadedData = {}; optionsLoadedForDate = null;
     updateInputFields();
     await updateOptionCompletion(dateInput.value);
   });
 
+  // 시간 변경 시 추천 재계산 (사용자가 직접 시간 입력한 경우)
   hourSelect.addEventListener("change", updateSuggestion);
 
+  // 제출
   submitBtn.addEventListener("click", async ()=>{
     if(!groupSelect.value){ alert("점검 옵션을 선택하세요."); return; }
     if(!dateInput.value){ alert("날짜를 선택하세요."); return; }
 
-    if(timeRow.style.display!=="none"){ if(!hourSelect.value){ alert("시간(시) 선택"); return; } if(!minuteSelect.value){ alert("시간(분) 선택"); return; } }
-    if(thRow.style.display!=="none"){ if(!tempInput.value){ alert("온도 입력"); return; } if(!humidityInput.value){ alert("습도 입력"); return; } }
-    if(productRow.style.display!=="none"){ if(!productSelect.value){ alert("제품명 선택"); return; } if(!countInput.value){ alert("수량 입력"); return; } }
+    if(timeRow.style.display!=="none"){
+      if(!hourSelect.value){ alert("시간(시) 선택"); return; }
+      if(!minuteSelect.value){ alert("시간(분) 선택"); return; }
+    }
+    if(thRow.style.display!=="none"){
+      if(!tempInput.value){ alert("온도 입력"); return; }
+      if(!humidityInput.value){ alert("습도 입력"); return; }
+    }
+    if(productRow.style.display!=="none"){
+      if(!productSelect.value){ alert("제품명 선택"); return; }
+      if(!countInput.value){ alert("수량 입력"); return; }
+    }
 
     let entries;
-    if(productRow.style.display!=="none"){ entries=[{product:productSelect.value,count:countInput.value}]; }
-    else{ entries=[{hour:hourSelect.value,minute:minuteSelect.value,temp:tempInput.value,humi:humidityInput.value,product:productSelect.value||"",count:countInput.value||""}]; }
+    if(productRow.style.display!=="none"){
+      entries=[{product:productSelect.value,count:countInput.value}];
+    } else {
+      entries=[{hour:hourSelect.value,minute:minuteSelect.value,temp:tempInput.value,humi:humidityInput.value,product:productSelect.value||"",count:countInput.value||""}];
+    }
 
     const data={date:dateInput.value,group:groupSelect.value,entries:entries};
     try{
       const res=await fetch(scriptUrl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"noodle="+encodeURIComponent(JSON.stringify(data))});
       const text=await res.text();
-      alert("서버 응답: "+text); location.reload();
-    } catch(err){ alert("에러: "+err.message); }
+      alert("서버 응답: "+text);
+      location.reload();
+    } catch(err){
+      alert("에러: "+err.message);
+    }
   });
 
+  // 초기화
   updateInputFields();
   updateOptionCompletion(dateInput.value);
 });
