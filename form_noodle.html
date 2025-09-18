@@ -15,39 +15,27 @@
     width:100%; padding:12px 14px; box-sizing:border-box; font-size:1rem;
     border:1px solid #ccc; border-radius:8px; background:#fff;
   }
-
-  /* inline row */
   .inline-row{display:flex;gap:14px;margin-top:8px;}
   .inline-row>div{flex:1;}
-
-  /* duplicate */
   #duplicateMsg{display:none;background:#fff3f3;color:#900;padding:10px;border:1px solid #900;border-radius:8px;margin-top:10px;font-weight:700;}
   #duplicateMsg button{margin-left:12px;background:#900;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;}
-
   #loadingMsg{display:none;background:#fff7e0;padding:8px;border-radius:8px;margin-top:10px;font-weight:700;color:#333;}
-
-  /* custom select (no native popup) */
   .custom-select{position:relative;width:100%;}
   .custom-select .selected-option{cursor:pointer;border-radius:8px;}
   .custom-select ul.options{
     position:absolute; left:0; right:0; top:100%; margin:8px 0 0 0; padding:0; list-style:none;
     border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.12); background:#fff; border:1px solid #ddd;
     z-index:2000; display:none;
-    /* important: do not limit height -> show all options without scroll */
   }
   .custom-select.open ul.options{display:block;}
   .custom-select ul.options li{padding:12px 14px; cursor:pointer; font-size:1rem; border-bottom:1px solid #f0f0f0;}
   .custom-select ul.options li:last-child{border-bottom:none;}
   .custom-select ul.options li:hover{background:var(--green);color:#fff;}
-
-  /* make sure options fill available area visually (no scroll) on mobile */
   @media (max-width:480px){
     .custom-select ul.options{margin:6px 0 0 0;}
     .custom-select ul.options li{padding:14px 16px;}
   }
-
   #recommended { margin-top:6px; font-weight:700; color:var(--green); min-height:20px; }
-
   .app-footer{padding:12px;}
   #submitBtn{width:100%;padding:14px 16px;font-size:1.05rem;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;}
 </style>
@@ -82,9 +70,6 @@
       </div>
     </div>
 
-    <!-- 추천 텍스트 바로 아래에 나오도록 보장 — 사용자가 원하셨던 위치 -->
-    <!-- #recommended 위에 이미 배치됨 -->
-
     <div class="inline-row" id="thRow" style="display:none;">
       <div>
         <label for="temp">온도(℃)</label>
@@ -111,7 +96,6 @@
         <input id="count" type="number" min="1" />
       </div>
     </div>
-
   </div>
 
   <div class="app-footer">
@@ -120,17 +104,9 @@
 </div>
 
 <script>
-/* 전체 동작 요약:
- - 커스텀 드롭다운 사용 (모바일 네이티브 차단)
- - 옵션 변경 시 항상 서버에서 재조회(선택 항목 + 이전 단계) -> 완전 리프레시
- - 추천시간은 시간 입력창 바로 아래 #recommended에 표시
- - 시스템OFF의 경우 2차점검 없으면 '2차점검 미입력' 표시
-*/
-
 document.addEventListener('DOMContentLoaded', () => {
   const scriptUrl = "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
 
-  // elements
   const dateInput = document.getElementById('date');
   const customGroup = document.getElementById('customGroup');
   const selectedDiv = customGroup.querySelector('.selected-option');
@@ -140,34 +116,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateText = document.getElementById('duplicateText');
   const duplicateConfirmBtn = document.getElementById('duplicateConfirmBtn');
   const loadingMsg = document.getElementById('loadingMsg');
-
   const timeRow = document.getElementById('timeRow');
   const hourSelect = document.getElementById('hour');
   const minuteSelect = document.getElementById('minute');
-
   const thRow = document.getElementById('thRow');
   const tempInput = document.getElementById('temp');
   const humidityInput = document.getElementById('humidity');
-
   const productRow = document.getElementById('productRow');
   const productSelect = document.getElementById('product');
   const countInput = document.getElementById('count');
-
   const submitBtn = document.getElementById('submitBtn');
 
-  // option items
   const optionItems = ["생산제품","시스템ON","1차점검","2차점검","시스템OFF"];
   const orderMap = ["시스템ON","1차점검","2차점검","시스템OFF"];
-
-  // cache for loaded group data (but we will still re-fetch on change per 요청)
-  // structure: loadedData[group] = { fetched: bool, exists: bool, data: object }
   let loadedData = {};
-  let optionsLoadedForDate = null; // to decorate (완료) - can be refreshed on demand
+  let optionsLoadedForDate = null;
 
-  // today default
   dateInput.valueAsDate = new Date();
 
-  // fill hour/minute
   function fillTimeOptions(){
     hourSelect.innerHTML = '<option value=""></option>';
     for(let h=1; h<=24; h++){ hourSelect.innerHTML += `<option value="${String(h).padStart(2,"0")}">${String(h).padStart(2,"0")}</option>`; }
@@ -176,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // render custom options (with completed label if known)
   function renderOptions(existing=[]) {
     optionsList.innerHTML = "";
     optionItems.forEach(opt=>{
@@ -187,11 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // fetch and decorate options (완료 표시) - called on focus and date change and after changes
   async function updateOptionCompletion(dateVal){
     if(!dateVal) { renderOptions([]); optionsLoadedForDate = null; return; }
     try{
-      // always refresh (user wanted full refresh behavior)
       const query = encodeURIComponent(JSON.stringify({date: dateVal}));
       const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
       const data = res.ok ? await res.json() : {};
@@ -204,9 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // utilities to apply data into inputs
   function applyGroupDataToInputs(d){
-    // d: {hour, minute, temp, humi, product, count}
     if(!d){ hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value=""; return; }
     hourSelect.value = d.hour ? String(d.hour).padStart(2,'0') : "";
     minuteSelect.value = d.minute ? String(d.minute).padStart(2,'0') : "";
@@ -216,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
     countInput.value = d.count || "";
   }
 
-  // checkDuplicate: always fetch fresh (per latest 요청). internal=true -> suppress duplicate message.
   async function checkDuplicate(date, group, internal=false){
     if(!date || !group) return {ok:false};
     loadingMsg.style.display = "block";
@@ -226,19 +186,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       loadingMsg.style.display = "none";
       submitBtn.disabled = false;
-
       const exists = Boolean(data.exists);
       const dat = data.data || null;
-      // store fresh
       loadedData[group] = { fetched:true, exists: exists, data: dat };
-
       if(!internal){
         if(exists){
           applyGroupDataToInputs(dat);
           duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
           duplicateMsg.style.display = "block";
         } else {
-          // no existing -> clear any prior duplicate message
           duplicateMsg.style.display = "none";
         }
       }
@@ -255,211 +211,86 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 추천시간 계산: 위치는 #recommended (시간 입력창 바로 아래)
-  function fmtHourWrap(n){
-    // accepts integer, returns 1..24 wrapped, string
-    const v = (( (Number(n)||0) - 1) % 24 + 24 ) % 24 + 1;
-    return String(v).padStart(2,'0');
-  }
-
+  function fmtHourWrap(n){ const v = (((Number(n)||0)-1)%24+24)%24+1; return String(v).padStart(2,'0'); }
   function updateSuggestion(selected){
-    // selected: option name (string). if omitted, read from selectedDiv dataset
     const sel = selected || (selectedDiv.dataset.value || "");
     if(!sel){ recommendedDiv.textContent = ""; return; }
-
     let out = "";
     if(sel === "1차점검"){
       const sys = loadedData["시스템ON"];
-      if(sys && sys.data && sys.data.hour) out = `추천: ${fmtHourWrap(Number(sys.data.hour)+7)}시`;
-      else out = "시스템ON 미입력";
+      out = (sys && sys.data && sys.data.hour) ? `추천: ${fmtHourWrap(Number(sys.data.hour)+7)}시` : "시스템ON 미입력";
     } else if(sel === "2차점검"){
       const first = loadedData["1차점검"];
-      if(first && first.data && first.data.hour) out = `추천: ${fmtHourWrap(Number(first.data.hour)+1)}시`;
-      else out = "1차점검 미입력";
+      out = (first && first.data && first.data.hour) ? `추천: ${fmtHourWrap(Number(first.data.hour)+1)}시` : "1차점검 미입력";
     } else if(sel === "시스템OFF"){
-      // rule: if 2차점검 missing -> show "2차점검 미입력"
       const second = loadedData["2차점검"];
-      if(!second || !second.data || !second.data.hour){
-        out = "2차점검 미입력";
-      } else {
+      if(!second || !second.data || !second.data.hour){ out = "2차점검 미입력"; }
+      else {
         const sys = loadedData["시스템ON"];
-        if(sys && sys.data && sys.data.hour) out = `추천: ${fmtHourWrap(Number(sys.data.hour)+10)}시`;
-        else out = "시스템ON 미입력";
+        out = (sys && sys.data && sys.data.hour) ? `추천: ${fmtHourWrap(Number(sys.data.hour)+10)}시` : "시스템ON 미입력";
       }
-    } else {
-      out = "";
     }
-
     recommendedDiv.textContent = out ? ` ${out}` : "";
   }
 
-  // show/hide input fields based on current selected option value
   function updateInputFields(selected){
     const sel = selected || (selectedDiv.dataset.value || "");
-    if(sel === "시스템ON" || sel === "시스템OFF"){
-      timeRow.style.display = "flex";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
-    } else if(sel === "1차점검" || sel === "2차점검"){
-      timeRow.style.display = "flex";
-      thRow.style.display = "flex";
-      productRow.style.display = "none";
-    } else if(sel === "생산제품"){
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      productRow.style.display = "flex";
-    } else {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
-    }
+    if(sel === "시스템ON" || sel === "시스템OFF"){ timeRow.style.display = "flex"; thRow.style.display = "none"; productRow.style.display = "none"; }
+    else if(sel === "1차점검" || sel === "2차점검"){ timeRow.style.display = "flex"; thRow.style.display = "flex"; productRow.style.display = "none"; }
+    else if(sel === "생산제품"){ timeRow.style.display = "none"; thRow.style.display = "none"; productRow.style.display = "flex"; }
+    else { timeRow.style.display = "none"; thRow.style.display = "none"; productRow.style.display = "none"; }
   }
 
-  // duplicate confirm hides message
   duplicateConfirmBtn.addEventListener('click', ()=> { duplicateMsg.style.display = "none"; });
-
-  // build initial options UI
   renderOptions([]);
 
-  // custom dropdown open/close
   customGroup.addEventListener('click', (e) => {
-    // if clicked the selected box -> toggle
-    if(e.target.classList.contains('selected-option')){
-      customGroup.classList.toggle('open');
-      return;
-    }
-    // if clicked an li -> handle selection
+    if(e.target.classList.contains('selected-option')){ customGroup.classList.toggle('open'); return; }
     if(e.target.tagName === 'LI'){
       const value = e.target.dataset.value;
-      // close dropdown
       customGroup.classList.remove('open');
-      // set selected ui
       selectedDiv.textContent = e.target.textContent;
       selectedDiv.dataset.value = value;
-
-      // On option change: full refresh behavior requested
       (async () => {
-        // hide duplicate message and clear inputs immediately for visible refresh
-        duplicateMsg.style.display = "none";
-        duplicateText.textContent = "";
-        // clear input fields temporarily
+        duplicateMsg.style.display = "none"; duplicateText.textContent = "";
         hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
-
-        // 1) always refresh option-completion labels (server call)
         await updateOptionCompletion(dateInput.value);
-
-        // 2) fetch previous step (if any) for recommendation logic
         const idx = orderMap.indexOf(value);
-        if(idx > 0){
-          const prev = orderMap[idx-1];
-          // always re-fetch prev per full-refresh requirement
-          await checkDuplicate(dateInput.value, prev, true);
-        }
-
-        // 3) fetch the selected group's own data (always refresh)
+        if(idx > 0){ const prev = orderMap[idx-1]; await checkDuplicate(dateInput.value, prev, true); }
         await checkDuplicate(dateInput.value, value, false);
-
-        // 4) update input fields visibility and suggestion text
-        updateInputFields(value);
-        updateSuggestion(value);
+        updateInputFields(value); updateSuggestion(value);
       })();
     }
   });
+  document.addEventListener('click', (e)=>{ if(!customGroup.contains(e.target)) customGroup.classList.remove('open'); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') customGroup.classList.remove('open'); });
+  dateInput.addEventListener('change', async ()=>{ selectedDiv.textContent = "선택하세요"; selectedDiv.dataset.value = ""; duplicateMsg.style.display = "none"; duplicateText.textContent = ""; hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value=""; recommendedDiv.textContent = ""; loadedData = {}; optionsLoadedForDate = null; updateInputFields(); await updateOptionCompletion(dateInput.value); });
+  hourSelect.addEventListener('change', ()=>{ const sel = selectedDiv.dataset.value || ""; if(sel){ if(!loadedData[sel]) loadedData[sel] = { fetched:false, exists:false, data: {} }; loadedData[sel].data = loadedData[sel].data || {}; loadedData[sel].data.hour = hourSelect.value ? parseInt(hourSelect.value,10) : null; } updateSuggestion(sel); });
 
-  // close dropdown when clicking outside
-  document.addEventListener('click', (e)=>{
-    if(!customGroup.contains(e.target)) customGroup.classList.remove('open');
-  });
-
-  // allow keyboard navigation: close on Escape
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape') customGroup.classList.remove('open');
-  });
-
-  // when date changes: clear caches and re-render options (full refresh)
-  dateInput.addEventListener('change', async ()=>{
-    // clear UI and caches
-    selectedDiv.textContent = "선택하세요";
-    selectedDiv.dataset.value = "";
-    duplicateMsg.style.display = "none";
-    duplicateText.textContent = "";
-    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value=""; productSelect.value=""; countInput.value="";
-    recommendedDiv.textContent = "";
-    loadedData = {};
-    optionsLoadedForDate = null;
-    updateInputFields();
-    await updateOptionCompletion(dateInput.value);
-  });
-
-  // if user changes hour manually -> update suggestion (in case they want to override)
-  hourSelect.addEventListener('change', ()=> {
-    const sel = selectedDiv.dataset.value || "";
-    // if user changed hour for a group we have data for, update loadedData for that group so suggestion calculation can use latest values
-    if(sel){
-      // do not overwrite server cached data permanently; just reflect for suggestion calculation if current group has data object
-      if(!loadedData[sel]) loadedData[sel] = { fetched:false, exists:false, data: {} };
-      loadedData[sel].data = loadedData[sel].data || {};
-      loadedData[sel].data.hour = hourSelect.value ? parseInt(hourSelect.value,10) : null;
-    }
-    updateSuggestion(sel);
-  });
-
-  // submit handler (same behavior as before)
   submitBtn.addEventListener('click', async ()=>{
     const sel = selectedDiv.dataset.value || "";
     if(!sel){ alert("점검 옵션을 선택하세요."); return; }
     if(!dateInput.value){ alert("날짜를 선택하세요."); return; }
-
-    // validation
-    if(timeRow.style.display !== "none"){
-      if(!hourSelect.value){ alert("시간(시) 선택"); return; }
-      if(!minuteSelect.value){ alert("시간(분) 선택"); return; }
-    }
-    if(thRow.style.display !== "none"){
-      if(!tempInput.value){ alert("온도 입력"); return; }
-      if(!humidityInput.value){ alert("습도 입력"); return; }
-    }
-    if(productRow.style.display !== "none"){
-      if(!productSelect.value){ alert("제품명 선택"); return; }
-      if(!countInput.value){ alert("수량 입력"); return; }
-    }
+    if(timeRow.style.display !== "none"){ if(!hourSelect.value){ alert("시간(시) 선택"); return; } if(!minuteSelect.value){ alert("시간(분) 선택"); return; } }
+    if(thRow.style.display !== "none"){ if(!tempInput.value){ alert("온도 입력"); return; } if(!humidityInput.value){ alert("습도 입력"); return; } }
+    if(productRow.style.display !== "none"){ if(!productSelect.value){ alert("제품명 선택"); return; } if(!countInput.value){ alert("수량 입력"); return; } }
 
     let entries;
     if(productRow.style.display !== "none"){
       entries = [{ product: productSelect.value, count: countInput.value }];
     } else {
-      entries = [{
-        hour: hourSelect.value,
-        minute: minuteSelect.value,
-        temp: tempInput.value,
-        humi: humidityInput.value,
-        product: productSelect.value || "",
-        count: countInput.value || ""
-      }];
+      entries = [{ hour: hourSelect.value, minute: minuteSelect.value, temp: tempInput.value, humi: humidityInput.value, product: productSelect.value || "", count: countInput.value || "" }];
     }
-
     const payload = { date: dateInput.value, group: sel, entries: entries };
     try{
-      const res = await fetch(scriptUrl, {
-        method:'POST',
-        headers: {'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'noodle=' + encodeURIComponent(JSON.stringify(payload))
-      });
-      const text = await res.text();
-      alert('서버 응답: ' + text);
-      location.reload();
-    } catch(err){
-      alert('에러: ' + (err && err.message ? err.message : err));
-    }
+      const res = await fetch(scriptUrl, { method:"POST", body: JSON.stringify({ noodle: payload }) });
+      const txt = await res.text();
+      alert("✅ 서버 응답: " + txt);
+      await updateOptionCompletion(dateInput.value);
+    } catch(err){ alert("❌ 서버 전송 오류: " + err.message); }
   });
 
-  // initial load
-  (async ()=>{
-    await updateOptionCompletion(dateInput.value);
-    updateInputFields();
-    recommendedDiv.textContent = "";
-  })();
-
+  updateOptionCompletion(dateInput.value);
 });
 </script>
 </body>
