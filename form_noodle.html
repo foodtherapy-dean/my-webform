@@ -164,10 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 중복 확인 ======
   async function checkDuplicate(date, group, internal=false) {
     if(!date || !group) return false;
-    if(loadedData[group] && loadedData[group].fetched) return true; // 이미 가져왔으면 재호출 안함
 
     loadingMsg.style.display = "block";
     submitBtn.disabled = true;
+
     try {
       const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
       const data = await res.json();
@@ -191,7 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // 중복 확인 완료 후 입력창과 추천시간 표시
+      updateInputFields();
       updateSuggestion();
+
       return true;
     } catch(err) {
       loadingMsg.style.display = "none";
@@ -228,22 +231,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 입력 필드 표시 ======
   function updateInputFields() {
     const g = groupSelect.value;
-    if (g === "시스템ON" || g === "시스템OFF") {
+    // 우선 모두 숨김
+    timeRow.style.display = "none";
+    thRow.style.display = "none";
+    productRow.style.display = "none";
+    suggestionSpan.style.display = "none";
+
+    // 필요한 입력창만 표시
+    if(g === "시스템ON" || g === "시스템OFF") {
       timeRow.style.display = "flex";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
-    } else if (g === "1차점검" || g === "2차점검") {
+      suggestionSpan.style.display = "block";
+    } else if(g === "1차점검" || g === "2차점검") {
       timeRow.style.display = "flex";
       thRow.style.display = "flex";
-      productRow.style.display = "none";
-    } else if (g === "생산제품") {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
+      suggestionSpan.style.display = "block";
+    } else if(g === "생산제품") {
       productRow.style.display = "flex";
-    } else {
-      timeRow.style.display = "none";
-      thRow.style.display = "none";
-      productRow.style.display = "none";
     }
   }
 
@@ -255,13 +258,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   groupSelect.addEventListener("change", async () => {
-    // 페이지 리프레시 추가
-    if(loadedData[groupSelect.value]?.data){
-      if(!confirm("이미 저장된 데이터를 수정하시겠습니까? 페이지를 새로고침합니다.")) return;
-      location.reload();
-      return;
-    }
-
+    // **즉시 모든 입력창과 추천시간 숨김**
+    timeRow.style.display = "none";
+    thRow.style.display = "none";
+    productRow.style.display = "none";
+    suggestionSpan.style.display = "none";
     duplicateMsg.style.display = "none";
     duplicateText.textContent = "";
 
@@ -276,13 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
     productSelect.value = "";
     countInput.value = "";
 
-    // 직전 옵션 데이터 없으면 internal=true 로 불러오기 (화면 표시 없음)
+    // 직전 옵션 데이터 없으면 internal=true 로 불러오기
     if(idx>0 && !loadedData[orderMap[idx-1]]) await checkDuplicate(dateInput.value, orderMap[idx-1], true);
 
-    // 현재 옵션만 화면 표시용
+    // 현재 옵션 중복확인 진행
     if(dateInput.value && selected) await checkDuplicate(dateInput.value, selected, false);
-
-    updateInputFields();
   });
 
   // 날짜 변경 시 초기화
@@ -341,12 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // 초기 표시
   updateInputFields();
   updateOptionCompletion(dateInput.value);
 });
 </script>
-
-
 
 </body>
 </html>
