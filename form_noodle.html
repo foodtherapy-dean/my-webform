@@ -135,10 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fillTimeOptions();
 
-  // 추천시간 표시 span (시간 입력창 아래)
+  // 추천시간 표시 span (시간 입력창 바로 아래)
   const suggestionSpan = document.createElement("span");
   suggestionSpan.style.display = "block";
   suggestionSpan.style.marginTop = "4px";
+  suggestionSpan.style.fontSize = "0.9em";
   suggestionSpan.style.color = "blue";
   timeRow.insertAdjacentElement("afterend", suggestionSpan);
 
@@ -211,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ====== 추천시간 계산 ======
+  // ====== 추천시간 계산 (최종 규칙 적용) ======
   function updateSuggestion() {
     const sel = groupSelect.value;
     let suggestedText = "";
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   groupSelect.addEventListener("change", async () => {
-    // **즉시 모든 입력창과 추천시간 숨김**
+    // 즉시 모든 입력창과 추천시간 숨김
     timeRow.style.display = "none";
     thRow.style.display = "none";
     productRow.style.display = "none";
@@ -307,8 +308,18 @@ document.addEventListener('DOMContentLoaded', () => {
     productSelect.value = "";
     countInput.value = "";
 
+    // 📌 시스템OFF 선택 시에도 반드시 2차점검/시스템ON 데이터 선로드
+    if (selected === "시스템OFF") {
+      if (!loadedData["2차점검"]) {
+        await checkDuplicate(dateInput.value, "2차점검", true);
+      }
+      if (!loadedData["시스템ON"]) {
+        await checkDuplicate(dateInput.value, "시스템ON", true);
+      }
+    }
+
     // 직전 옵션 데이터 없으면 internal=true 로 불러오기
-    if (idx > 0 && !loadedData[orderMap[idx-1]]) {
+    else if (idx > 0 && !loadedData[orderMap[idx-1]]) {
       await checkDuplicate(dateInput.value, orderMap[idx-1], true);
     }
 
