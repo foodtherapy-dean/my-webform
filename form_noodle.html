@@ -1,28 +1,141 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>건면공정 모니터링</title>
 <style>
-body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
-.app-container { display:flex; flex-direction:column; height:100%; }
-.app-header { background:#4CAF50; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
-.app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
-.app-body label { display:block; margin:14px 0 6px; font-weight:500; }
-.app-body input, .app-body select, .custom-select .selected-option { width:100%; padding:14px 16px; font-size:1.2rem; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; background:#fff; }
-.inline-row { display:flex; gap:20px; margin-top:10px; }
+body, html { 
+  margin:0; 
+  padding:0; 
+  height:100%; 
+  font-family:sans-serif; 
+}
+.app-container { 
+  display:flex; 
+  flex-direction:column; 
+  height:100%; 
+}
+.app-header { 
+  background:#4CAF50; 
+  color:#fff; 
+  text-align:center; 
+  padding:16px; 
+  font-size:1.6rem; 
+}
+.app-body { 
+  flex:1 1 auto; 
+  overflow-y:auto; 
+  padding:20px; 
+  box-sizing:border-box; 
+  background:#f9f9f9; 
+}
+.app-body label { 
+  display:block; 
+  margin:14px 0 6px; 
+  font-weight:500;
+}
+.app-body input, 
+.app-body select, 
+.custom-select .selected-option { 
+  width:100%; 
+  padding:14px 16px; 
+  font-size:1.2rem; 
+  border:1px solid #ccc; 
+  border-radius:6px; 
+  box-sizing:border-box;
+  background:#fff;
+}
+.inline-row { 
+  display:flex; 
+  gap:20px; 
+  margin-top:10px; 
+}
 .inline-row > * { flex:1; }
-#duplicateMsg { display:none; background:#ffcccc; color:#900; padding:12px; margin-top:6px; border:1px solid #900; border-radius:6px; font-weight:bold; }
-#duplicateMsg button { margin-left:12px; background:#900; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }
-#loadingMsg { display:none; background:#ffe599; color:#333; padding:8px; margin-bottom:10px; border-radius:6px; font-weight:bold; }
-.custom-select { position: relative; width: 100%; cursor:pointer; }
-.custom-select .selected-option { padding:14px 16px; border:1px solid #ccc; border-radius:6px; }
-.custom-select ul.options { position:absolute; top:100%; left:0; right:0; border:1px solid #ccc; border-radius:6px; background:#fff; list-style:none; padding:0; margin:0; z-index:1000; display:none; max-height:200px; overflow-y:auto; }
+#duplicateMsg { 
+  display:none; 
+  background:#ffcccc; 
+  color:#900; 
+  padding:12px; 
+  margin-top:6px; 
+  border:1px solid #900; 
+  border-radius:6px; 
+  font-weight:bold; 
+}
+#duplicateMsg button { 
+  margin-left:12px; 
+  background:#900; 
+  color:#fff; 
+  border:none; 
+  padding:4px 10px; 
+  border-radius:4px; 
+  cursor:pointer; 
+}
+#loadingMsg { 
+  display:none; 
+  background:#ffe599; 
+  color:#333; 
+  padding:8px; 
+  margin-bottom:10px; 
+  border-radius:6px; 
+  font-weight:bold; 
+}
+.custom-select { 
+  position: relative; 
+  width: 100%; 
+}
+.custom-select .selected-option { 
+  cursor:pointer; 
+}
+.custom-select ul.options { 
+  position:absolute; 
+  top:100%; 
+  left:0; 
+  right:0; 
+  border:1px solid #ccc; 
+  border-radius:6px; 
+  background:#fff; 
+  list-style:none; 
+  padding:0; 
+  margin:0; 
+  z-index:1000; 
+  display:none;
+  max-height:none;      /* 스크롤 제거 */
+  overflow-y: visible;  /* 스크롤 없이 전체 표시 */
+}
 .custom-select.open ul.options { display:block; }
-.custom-select ul.options li { padding:10px 14px; font-size:1.2rem; line-height:1.5; cursor:pointer; }
-.custom-select ul.options li:hover { background:#4CAF50; color:#fff; }
-#submitBtn { width:100%; font-size:1.5rem; padding:20px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; margin-top:10px; }
+.custom-select ul.options li { 
+  padding:14px 16px; 
+  cursor:pointer; 
+  font-size:1.2rem; 
+  line-height:1.5; 
+}
+.custom-select ul.options li:hover { 
+  background:#4CAF50; 
+  color:#fff; 
+}
+.app-footer { 
+  flex:0 0 auto; 
+  padding:0 20px 20px 20px;
+}
+#submitBtn { 
+  width:100%; 
+  font-size:1.5rem; 
+  padding:20px 0; 
+  background:#4CAF50; 
+  color:#fff; 
+  border:none; 
+  cursor:pointer; 
+  position:fixed;
+  bottom:0;
+  left:0;
+}
+#recommendedTime {
+  margin-top:6px; 
+  color:#0066cc; 
+  font-weight:bold; 
+  font-size:1.2rem;
+}
 </style>
 </head>
 <body>
@@ -30,7 +143,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
   <div class="app-header">건면공정 점검 입력</div>
   <div class="app-body">
     <label for="date">날짜</label>
-    <input type="date" id="date" required>
+    <input type="date" id="date" required />
 
     <label for="group">점검 옵션</label>
     <div class="custom-select" id="customGroup">
@@ -38,22 +151,40 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
       <ul class="options"></ul>
     </div>
 
-    <div id="recommendedTime" style="margin-top:6px; color:#0066cc; font-weight:bold; font-size:1.2rem;"></div>
-    <div id="duplicateMsg"><span id="duplicateText"></span><button id="duplicateConfirmBtn">확인</button></div>
+    <div id="recommendedTime"></div>
+
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
+
     <div id="loadingMsg">중복 확인 중...</div>
 
     <div class="inline-row" id="timeRow" style="display:none;">
-      <div><label for="hour">시간 (시)</label><select id="hour"></select></div>
-      <div><label for="minute">시간 (분)</label><select id="minute"></select></div>
+      <div>
+        <label for="hour">시간 (시)</label>
+        <select id="hour"></select>
+      </div>
+      <div>
+        <label for="minute">시간 (분)</label>
+        <select id="minute"></select>
+      </div>
     </div>
 
     <div class="inline-row" id="thRow" style="display:none;">
-      <div><label for="temp">온도(℃)</label><input type="number" id="temp" step="0.1" min="0" max="100"></div>
-      <div><label for="humidity">습도(%)</label><input type="number" id="humidity" step="0.1" min="0" max="100"></div>
+      <div>
+        <label for="temp">온도(℃)</label>
+        <input type="number" id="temp" step="0.1" min="0" max="100" />
+      </div>
+      <div>
+        <label for="humidity">습도(%)</label>
+        <input type="number" id="humidity" step="0.1" min="0" max="100" />
+      </div>
     </div>
 
     <div class="inline-row" id="productRow" style="display:none;">
-      <div><label for="product">제품명</label>
+      <div>
+        <label for="product">제품명</label>
         <select id="product">
           <option value="">선택하세요</option>
           <option value="일반국수">일반국수</option>
@@ -61,10 +192,15 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
           <option value="메밀국수">메밀국수</option>
         </select>
       </div>
-      <div><label for="count">수량</label><input type="number" id="count" min="1"></div>
+      <div>
+        <label for="count">수량</label>
+        <input type="number" id="count" min="1" />
+      </div>
     </div>
+  </div>
 
-    <button id="submitBtn">저장</button>
+  <div class="app-footer">
+    <button id="submitBtn">📥 서버로 전송</button>
   </div>
 </div>
 
@@ -87,20 +223,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const thRow = document.getElementById("thRow");
   const recommendedTime = document.getElementById("recommendedTime");
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec";
+  const scriptUrl = "YOUR_SCRIPT_URL_HERE";
 
   dateInput.valueAsDate = new Date();
 
-  // 시간 옵션 채우기
-  function fillTimeOptions(){
+  function fillTimeOptions() {
     hourSelect.innerHTML = '<option value=""></option>';
-    for(let h=1; h<=24; h++){ hourSelect.innerHTML+=`<option value="${h.toString().padStart(2,'0')}">${h.toString().padStart(2,'0')}</option>`; }
+    for(let h=1; h<=24; h++){
+      const val = h.toString().padStart(2,"0");
+      hourSelect.innerHTML += `<option value="${val}">${val}</option>`;
+    }
     minuteSelect.innerHTML = '<option value=""></option>';
-    for(let m=0; m<60; m+=10){ minuteSelect.innerHTML+=`<option value="${m.toString().padStart(2,'0')}">${m.toString().padStart(2,'0')}</option>`; }
+    for(let m=0; m<60; m+=10){
+      const val = m.toString().padStart(2,"0");
+      minuteSelect.innerHTML += `<option value="${val}">${val}</option>`;
+    }
   }
   fillTimeOptions();
 
-  // 드롭다운 옵션
   const customGroup = document.getElementById("customGroup");
   const selectedDiv = customGroup.querySelector(".selected-option");
   const optionsList = customGroup.querySelector(".options");
@@ -111,105 +251,138 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderOptions(existing=[]){
     optionsList.innerHTML="";
     optionItems.forEach(opt=>{
-      const li=document.createElement("li");
-      li.dataset.value=opt;
-      li.textContent=existing.includes(opt)?`${opt}(완료)`:opt;
+      const li = document.createElement("li");
+      li.dataset.value = opt;
+      li.textContent = existing.includes(opt) ? `${opt}(완료)` : opt;
       optionsList.appendChild(li);
     });
   }
-  renderOptions([]);
 
   customGroup.addEventListener("click", e=>{
-    if(e.target.classList.contains("selected-option")){
-      customGroup.classList.toggle("open");
-    } else if(e.target.tagName==="LI"){
+    if(e.target.classList.contains("selected-option")) customGroup.classList.toggle("open");
+    if(e.target.tagName==="LI"){
       const cleanOpt = e.target.dataset.value;
       currentGroup = cleanOpt;
       selectedDiv.textContent = e.target.textContent;
       customGroup.classList.remove("open");
-
-      // 중복 메시지 초기화
-      duplicateMsg.style.display="none"; duplicateText.textContent="";
-
+      duplicateMsg.style.display="none";
       updateInputFields();
       checkDuplicate(dateInput.value, cleanOpt);
+      updateRecommendedTime();
     }
   });
+  document.addEventListener("click", e=>{
+    if(!customGroup.contains(e.target)) customGroup.classList.remove("open");
+  });
 
-  document.addEventListener("click", e=>{ if(!customGroup.contains(e.target)) customGroup.classList.remove("open"); });
+  duplicateConfirmBtn.addEventListener("click", ()=>{ duplicateMsg.style.display="none"; });
 
   function updateInputFields(){
-    if(currentGroup==="시스템ON" || currentGroup==="시스템OFF"){
-      timeRow.style.display="flex"; thRow.style.display="none"; productRow.style.display="none";
-    } else if(currentGroup==="1차점검" || currentGroup==="2차점검"){
-      timeRow.style.display="flex"; thRow.style.display="flex"; productRow.style.display="none";
-    } else if(currentGroup==="생산제품"){
-      timeRow.style.display="none"; thRow.style.display="none"; productRow.style.display="flex";
-    } else {
-      timeRow.style.display="none"; thRow.style.display="none"; productRow.style.display="none";
-    }
+    const g = currentGroup;
+    if(g==="시스템ON"||g==="시스템OFF"){ timeRow.style.display="flex"; thRow.style.display="none"; productRow.style.display="none"; }
+    else if(g==="1차점검"||g==="2차점검"){ timeRow.style.display="flex"; thRow.style.display="flex"; productRow.style.display="none"; }
+    else if(g==="생산제품"){ timeRow.style.display="none"; thRow.style.display="none"; productRow.style.display="flex"; }
+    else { timeRow.style.display="none"; thRow.style.display="none"; productRow.style.display="none"; }
+  }
+
+  function updateRecommendedTime(){
+    let rec="";
+    try{
+      if(currentGroup==="1차점검" && lastData["시스템ON"]){
+        rec = `추천점검시간: ${((parseInt(lastData["시스템ON"].hour||0)+7-1)%24+1).toString().padStart(2,"0")}시`;
+      } else if(currentGroup==="2차점검" && lastData["1차점검"]){
+        rec = `추천점검시간: ${((parseInt(lastData["1차점검"].hour||0)+1-1)%24+1).toString().padStart(2,"0")}시`;
+      } else if(currentGroup==="시스템OFF" && lastData["시스템ON"]){
+        rec = `추천점검시간: ${((parseInt(lastData["시스템ON"].hour||0)+10-1)%24+1).toString().padStart(2,"0")}시`;
+      }
+    }catch(err){ console.error(err); }
+    recommendedTime.textContent=rec;
+  }
+
+  async function updateOptionCompletion(dateVal){
+    try{
+      const query=encodeURIComponent(JSON.stringify({date: dateVal}));
+      const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
+      const data = res.ok ? await res.json() : {};
+      lastData = data.data || {};
+      const existingGroups = data.options || [];
+      renderOptions(existingGroups);
+    }catch(err){ console.error(err); }
   }
 
   async function checkDuplicate(date, group){
     if(!group) return;
-    loadingMsg.style.display="block"; submitBtn.disabled=true;
+    loadingMsg.style.display="block";
+    submitBtn.disabled=true;
     try{
-      const res = await fetch(`${scriptUrl}?checkNoodle=${encodeURIComponent(JSON.stringify({date,group}))}`);
+      const res = await fetch(`${scriptUrl}?checkNoodle=`+encodeURIComponent(JSON.stringify({date,group})));
       const data = await res.json();
       loadingMsg.style.display="none";
 
       lastData = data.data || {};
-      if(data.exists){
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display="block";
 
-        if(lastData.hour) hourSelect.value = lastData.hour.padStart(2,'0');
-        if(lastData.minute) minuteSelect.value = lastData.minute.padStart(2,'0');
+      if(data.exists){
+        duplicateText.textContent=`⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+        duplicateMsg.style.display="block";
+        if(lastData.hour) hourSelect.value = lastData.hour.padStart(2,"0");
+        if(lastData.minute) minuteSelect.value = lastData.minute.padStart(2,"0");
         if(lastData.temp) tempInput.value = lastData.temp;
         if(lastData.humi) humidityInput.value = lastData.humi;
         if(lastData.product) productSelect.value = lastData.product;
         if(lastData.count) countInput.value = lastData.count;
       }
       updateRecommendedTime();
-    } catch(err){
+    }catch(err){
       loadingMsg.style.display="none";
       duplicateText.textContent="중복 확인 오류!";
       duplicateMsg.style.display="block";
-      console.error(err);
+      updateRecommendedTime();
     } finally{ submitBtn.disabled=false; }
   }
 
-  function updateRecommendedTime(){
-    let rec="";
-    try{
-      if(currentGroup==="1차점검" && lastData["시스템ON"]){ rec=`추천점검시간: ${((parseInt(lastData["시스템ON"].hour||0)+7-1)%24+1).toString().padStart(2,"0")}시`; }
-      else if(currentGroup==="2차점검" && lastData["1차점검"]){ rec=`추천점검시간: ${((parseInt(lastData["1차점검"].hour||0)+1-1)%24+1).toString().padStart(2,"0")}시`; }
-      else if(currentGroup==="시스템OFF" && lastData["시스템ON"]){ rec=`추천점검시간: ${((parseInt(lastData["시스템ON"].hour||0)+10-1)%24+1).toString().padStart(2,"0")}시`; }
-    } catch(err){ console.error(err); }
-    recommendedTime.textContent = rec;
-  }
-
   dateInput.addEventListener("change", ()=>{
-    currentGroup=""; selectedDiv.textContent="선택하세요";
-    duplicateMsg.style.display="none"; duplicateText.textContent="";
-    hourSelect.value=""; minuteSelect.value="";
-    tempInput.value=""; humidityInput.value="";
-    productSelect.value=""; countInput.value="";
-    updateInputFields(); recommendedTime.textContent="";
+    currentGroup="";
+    selectedDiv.textContent="선택하세요";
+    duplicateMsg.style.display="none";
+    duplicateText.textContent="";
+    hourSelect.value="";
+    minuteSelect.value="";
+    tempInput.value="";
+    humidityInput.value="";
+    productSelect.value="";
+    countInput.value="";
+    updateInputFields();
+    updateOptionCompletion(dateInput.value);
+    recommendedTime.textContent="";
   });
 
-  duplicateConfirmBtn.addEventListener("click", ()=>{ duplicateMsg.style.display="none"; });
+  updateOptionCompletion(dateInput.value);
 
   submitBtn.addEventListener("click", async ()=>{
     if(!currentGroup){ alert("점검 옵션을 선택하세요."); return; }
     if(!dateInput.value){ alert("날짜를 선택하세요."); return; }
-    if(timeRow.style.display!=="none"){ if(!hourSelect.value){ alert("시간(시) 선택"); return; } if(!minuteSelect.value){ alert("시간(분) 선택"); return; } }
-    if(thRow.style.display!=="none"){ if(!tempInput.value){ alert("온도 입력"); return; } if(!humidityInput.value){ alert("습도 입력"); return; } }
-    if(productRow.style.display!=="none"){ if(!productSelect.value){ alert("제품명 선택"); return; } if(!countInput.value){ alert("수량 입력"); return; } }
 
-    let entries = productRow.style.display!=="none"? [{product:productSelect.value, count:countInput.value}] : [{hour:hourSelect.value, minute:minuteSelect.value, temp:tempInput.value, humi:humidityInput.value}];
+    if(timeRow.style.display!=="none"){
+      if(!hourSelect.value){ alert("시간(시) 선택"); return; }
+      if(!minuteSelect.value){ alert("시간(분) 선택"); return; }
+    }
+    if(thRow.style.display!=="none"){
+      if(!tempInput.value){ alert("온도 입력"); return; }
+      if(!humidityInput.value){ alert("습도 입력"); return; }
+    }
+    if(productRow.style.display!=="none"){
+      if(!productSelect.value){ alert("제품명 선택"); return; }
+      if(!countInput.value){ alert("수량 입력"); return; }
+    }
 
-    const data={date:dateInput.value, group:currentGroup, entries};
+    let entries;
+    if(productRow.style.display !== "none"){
+      entries=[{product: productSelect.value, count: countInput.value}];
+    } else{
+      entries=[{hour: hourSelect.value, minute: minuteSelect.value, temp: tempInput.value, humi: humidityInput.value, product: productSelect.value||"", count: countInput.value||""}];
+    }
+
+    const data={date: dateInput.value, group: currentGroup, entries: entries};
     try{
       const res = await fetch(scriptUrl,{
         method:"POST",
@@ -219,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await res.text();
       alert("서버 응답: "+text);
       location.reload();
-    } catch(err){ alert("에러: "+err.message); }
+    }catch(err){ alert("에러: "+err.message); }
   });
 });
 </script>
