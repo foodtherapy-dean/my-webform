@@ -213,16 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let suggestedText = "";
 
   if(sel==="1차점검"){
-    const sys = loadedData["시스템ON"]?.data;
+    const sys = loadedData["시스템ON"];
     suggestedText = sys && sys.hour ? `추천: ${((parseInt(sys.hour,10)+7)%24).toString().padStart(2,"0")}시` : "시스템ON 미입력";
   } else if(sel==="2차점검"){
-    const first = loadedData["1차점검"]?.data;
+    const first = loadedData["1차점검"];
     suggestedText = first && first.hour ? `추천: ${((parseInt(first.hour,10)+1)%24).toString().padStart(2,"0")}시` : "1차점검 미입력";
   } else if(sel==="시스템OFF"){
-    const sysOn = loadedData["시스템ON"]?.data;
-    suggestedText = sysOn && sysOn.hour ? 
-      `추천: ${((parseInt(sysOn.hour,10)+10)%24).toString().padStart(2,"0")}시` :
-      "시스템ON 미입력";
+    const sysOn = loadedData["시스템ON"];
+    suggestedText = sysOn && sysOn.hour ? `추천: ${((parseInt(sysOn.hour,10)+10)%24).toString().padStart(2,"0")}시` : "시스템ON 미입력";
   } else {
     suggestedText = "";
   }
