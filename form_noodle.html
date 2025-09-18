@@ -255,6 +255,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   groupSelect.addEventListener("change", async () => {
+    // 페이지 리프레시 추가
+    if(loadedData[groupSelect.value]?.data){
+      if(!confirm("이미 저장된 데이터를 수정하시겠습니까? 페이지를 새로고침합니다.")) return;
+      location.reload();
+      return;
+    }
+
     duplicateMsg.style.display = "none";
     duplicateText.textContent = "";
 
@@ -338,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOptionCompletion(dateInput.value);
 });
 </script>
+
 
 
 </body>
