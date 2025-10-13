@@ -112,7 +112,16 @@ input, select {
 // 날짜 기본값 오늘
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
-
+// 날짜 변경 시 옵션 초기화
+dateInput.addEventListener("change", () => {
+  // 옵션 초기화
+  optionSelect.value = "";
+  // 하위 항목 초기화
+  oxContainer.innerHTML = "";
+  oxValues = {};
+  // 중복 메시지 숨기기
+  document.getElementById("duplicateMsg").style.display = "none";
+});
 // 각 옵션별 항목 정의
 const items = {
   "작업전": [
