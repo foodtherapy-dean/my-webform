@@ -109,11 +109,11 @@ input, select {
 </div>
 
 <script>
-// 날짜 기본값 오늘
+// ===== 날짜 기본값 오늘 =====
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 
-// 각 옵션별 항목 정의
+// ===== 각 옵션 항목 정의 =====
 const items = {
   "작업전": [
     "개인위생 - 복장구분 보관여부",
@@ -142,15 +142,51 @@ const items = {
 };
 
 let oxValues = {};
+let doneOptions = []; // ✅ 완료된 옵션 목록 저장
 
-// 선택 시 하위 항목 표시
 const optionSelect = document.getElementById("option");
 const oxContainer = document.getElementById("oxContainer");
 
+// ✅ 날짜 변경 시 완료상태 다시 불러오기
+dateInput.addEventListener("change", loadDoneOptions);
+
+// ✅ 페이지 로드시 기본 완료상태 불러오기
+document.addEventListener("DOMContentLoaded", loadDoneOptions);
+
+async function loadDoneOptions() {
+  const date = dateInput.value;
+  if (!date) return;
+
+  try {
+    const url = `https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec?getWashStatus=${date}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    doneOptions = data.doneOptions || [];
+
+    // ✅ 옵션 드롭다운 갱신
+    updateOptionDropdown();
+  } catch (err) {
+    console.error("완료옵션 불러오기 오류:", err);
+  }
+}
+
+function updateOptionDropdown() {
+  const options = ["", ...Object.keys(items)];
+  optionSelect.innerHTML = "";
+  options.forEach(opt => {
+    const option = document.createElement("option");
+    const isDone = doneOptions.includes(opt);
+    option.value = opt;
+    option.textContent = isDone ? `${opt} (완료)` : opt;
+    optionSelect.appendChild(option);
+  });
+}
+
+// ===== 옵션 선택 시 하위항목 표시 =====
 optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
   oxValues = {};
-  const opt = e.target.value;
+  const opt = e.target.value.replace(" (완료)", ""); // ✅ 실제 옵션명만 추출
 
   if (!opt || !items[opt]) return;
 
@@ -158,28 +194,26 @@ optionSelect.addEventListener("change", async (e) => {
   document.getElementById("loadingMsg").style.display = "block";
 
   try {
-    // 중복 체크 URL 만들기
+    // 중복 체크
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
     const url = `https://script.google.com/macros/s/AKfycbwTDib5h0YwBWyZjgT-r4NkcD2yzXSmx3TCITQed4v3WNmqE0Lx5zZQkWbTTS8MLdouIg/exec?checkWash=${query}`;
     const res = await fetch(url);
     const result = await res.json();
 
-    // 중복 확인 메시지
     if (result.exists) {
-      document.getElementById("duplicateText").innerText = `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${opt})의 데이터가 존재합니다.`;
+      document.getElementById("duplicateText").innerText =
+        `⚠️ 이미 같은 날짜(${dateInput.value})와 옵션(${opt})의 데이터가 존재합니다.`;
       document.getElementById("duplicateMsg").style.display = "block";
     } else {
       document.getElementById("duplicateMsg").style.display = "none";
     }
-
   } catch (err) {
     console.error("중복 체크 오류:", err);
   }
 
-  // 로딩 메시지 숨기기
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 항목 표시
+  // 하위항목 표시
   items[opt].forEach((label) => {
     const oxSet = document.createElement("div");
     oxSet.className = "ox-set";
@@ -194,7 +228,7 @@ optionSelect.addEventListener("change", async (e) => {
   });
 });
 
-// OX 선택 처리
+// ===== OX 선택 =====
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("ox")) {
     const btn = e.target;
@@ -206,22 +240,17 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// 중복 확인 확인 버튼
-document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
-  document.getElementById("duplicateMsg").style.display = "none";
-});
-
-// 폼 제출 처리
+// ===== 저장 =====
 document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const opt = optionSelect.value.replace(" (완료)", "");
 
-  if (!optionSelect.value) {
+  if (!opt) {
     alert("점검 옵션을 선택하세요");
     return;
   }
 
-  // 필수 항목 체크
-  for (const label of items[optionSelect.value]) {
+  for (const label of items[opt]) {
     if (!(label in oxValues)) {
       alert(`'${label}' 항목을 선택하세요.`);
       return;
@@ -230,7 +259,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
 
   const data = {
     date: dateInput.value,
-    option: optionSelect.value,
+    option: opt,
     states: Object.values(oxValues),
   };
 
@@ -246,12 +275,12 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     const result = await response.text();
     if (response.ok) {
       alert("✅ 저장 완료:\n" + result);
-      e.target.reset();  // 입력창 초기화
-      oxContainer.innerHTML = "";  // OX 버튼 초기화
-      oxValues = {};  // OX 값 초기화
-      document.getElementById("duplicateMsg").style.display = "none"; // 중복 메시지 숨기기
-      optionSelect.value = ""; // 점검 옵션 초기화
-      dateInput.valueAsDate = new Date(); 
+      e.target.reset();
+      oxContainer.innerHTML = "";
+      oxValues = {};
+      document.getElementById("duplicateMsg").style.display = "none";
+      dateInput.valueAsDate = new Date();
+      await loadDoneOptions(); // ✅ 저장 후 완료 상태 갱신
     } else {
       alert("❌ 오류:\n" + result);
     }
@@ -260,6 +289,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 
 
 </body>
