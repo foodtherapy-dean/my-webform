@@ -321,16 +321,39 @@ async function handleOptionChange(opt) {
     } else {
       document.getElementById("duplicateMsg").style.display = "none";
     }
-  } catch { document.getElementById("duplicateMsg").style.display = "none"; }
+  } catch { 
+    document.getElementById("duplicateMsg").style.display = "none"; 
+  }
   document.getElementById("loadingMsg").style.display = "none";
 
   const isSummary = opt === "최종취합";
-  document.getElementById("subInputs").style.display = !isSummary ? "block" : "none";
-  document.getElementById("summaryInputs").style.display = isSummary ? "block" : "none";
-  document.getElementById("oxContainer").style.display = isSummary ? "none" : "block";
-  document.getElementById("timeLabel").style.display = isSummary ? "none" : "block";
+
+  // ✅ 수정된 부분 시작
+  const subInputs = document.getElementById("subInputs");
+  const productInput = document.getElementById("product");
+
+  if (isSummary) {
+    // 통과/검출수량 영역 표시
+    document.getElementById("summaryInputs").style.display = "block";
+    // OX, 시간은 숨김
+    document.getElementById("oxContainer").style.display = "none";
+    document.getElementById("timeLabel").style.display = "none";
+    // 제품명만 표시되도록 처리
+    subInputs.style.display = "none";
+    if (productInput) productInput.closest("div").style.display = "block";
+  } else {
+    // 일반 점검일 때
+    subInputs.style.display = "block";
+    document.getElementById("summaryInputs").style.display = "none";
+    document.getElementById("oxContainer").style.display = "block";
+    document.getElementById("timeLabel").style.display = "block";
+    if (productInput) productInput.closest("div").style.display = "block";
+  }
+  // ✅ 수정된 부분 끝
+
   if (isSummary) oxValues = {};
 }
+
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
   document.getElementById("duplicateMsg").style.display = "none";
 });
@@ -456,5 +479,6 @@ function resetForm(form, keepDate) {
 }
 document.addEventListener("DOMContentLoaded",()=>updateOptionCompletion(dateInput.value));
 </script>
+
 </body>
 </html>
