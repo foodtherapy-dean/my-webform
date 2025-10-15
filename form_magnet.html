@@ -328,28 +328,23 @@ async function handleOptionChange(opt) {
 
   const isSummary = opt === "최종취합";
 
-  // ✅ 수정된 부분 시작
+  // ✅ 최종취합 시 제품명 입력창도 활성화되도록 수정
   const subInputs = document.getElementById("subInputs");
   const productInput = document.getElementById("product");
 
   if (isSummary) {
-    // 통과/검출수량 영역 표시
     document.getElementById("summaryInputs").style.display = "block";
-    // OX, 시간은 숨김
     document.getElementById("oxContainer").style.display = "none";
     document.getElementById("timeLabel").style.display = "none";
-    // 제품명만 표시되도록 처리
     subInputs.style.display = "none";
     if (productInput) productInput.closest("div").style.display = "block";
   } else {
-    // 일반 점검일 때
     subInputs.style.display = "block";
     document.getElementById("summaryInputs").style.display = "none";
     document.getElementById("oxContainer").style.display = "block";
     document.getElementById("timeLabel").style.display = "block";
     if (productInput) productInput.closest("div").style.display = "block";
   }
-  // ✅ 수정된 부분 끝
 
   if (isSummary) oxValues = {};
 }
@@ -420,6 +415,15 @@ document.getElementById("magnetForm").addEventListener("submit", async e => {
   const form = e.target;
   if (!currentOption) return alert("점검옵션을 선택하세요.");
 
+  // ✅ 제품 미선택 시 경고 추가
+  const productInput = form.querySelector("#product");
+  if (!productInput?.value?.trim()) {
+    alert("제품명을 선택 또는 입력하세요.");
+    productInput.focus();
+    return;
+  }
+
+  // 기본 입력값 검증
   const activeInputs = form.querySelectorAll("input");
   for (const input of activeInputs) {
     if (input.offsetParent === null) continue;
@@ -429,11 +433,15 @@ document.getElementById("magnetForm").addEventListener("submit", async e => {
       return;
     }
   }
+
   if (currentOption !== "최종취합") {
-    for (const label of oxItems) if (!(label in oxValues)) return alert(`${label} 선택 필요`);
+    for (const label of oxItems)
+      if (!(label in oxValues)) return alert(`${label} 선택 필요`);
   }
+
   if (!await validateOptionSequence(form.date.value, currentOption)) {
-    resetForm(form, form.date.value); return;
+    resetForm(form, form.date.value); 
+    return;
   }
 
   let hour="", minute="";
@@ -447,13 +455,18 @@ document.getElementById("magnetForm").addEventListener("submit", async e => {
     detectCount: form.detectCount?.value||"",
     states: oxValues
   };
-  const fd = new FormData(); fd.append("magnet", JSON.stringify(data));
+  const fd = new FormData(); 
+  fd.append("magnet", JSON.stringify(data));
+
   try {
     const res = await fetch(BASE_URL,{method:"POST",body:fd});
     const txt = await res.text();
     alert(res.ok? "✅ 저장 완료:\n"+txt : "❌ 오류:\n"+txt);
-  } catch(err) { alert("❌ 저장 오류:\n"+err.message); }
-  finally { resetForm(form,new Date().toISOString().split("T")[0]); }
+  } catch(err) { 
+    alert("❌ 저장 오류:\n"+err.message); 
+  } finally { 
+    resetForm(form,new Date().toISOString().split("T")[0]); 
+  }
 });
 
 // ===== 완료표시 =====
@@ -469,9 +482,12 @@ async function updateOptionCompletion(dateVal) {
 // ===== resetForm =====
 function resetForm(form, keepDate) {
   const savedDate = keepDate||dateInput.value;
-  form.reset(); dateInput.value=savedDate;
-  currentOption=""; selectedDiv.textContent="선택하세요";
-  oxValues={}; document.querySelectorAll(".ox.selected").forEach(b=>b.classList.remove("selected"));
+  form.reset(); 
+  dateInput.value=savedDate;
+  currentOption=""; 
+  selectedDiv.textContent="선택하세요";
+  oxValues={}; 
+  document.querySelectorAll(".ox.selected").forEach(b=>b.classList.remove("selected"));
   document.getElementById("subInputs").style.display="none";
   document.getElementById("summaryInputs").style.display="none";
   document.getElementById("duplicateMsg").style.display="none";
