@@ -102,7 +102,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // ✅ 날짜 변경 시 중복확인
+  async function checkDate() {
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
+    const res = await fetch(`${scriptUrl}?checkInput=${query}`);
+    const data = await res.json();
+    if (data.exists) {
+      duplicateMsg.style.display = "block";
+      productSelect.disabled = true;
+    } else {
+      duplicateMsg.style.display = "none";
+      productSelect.disabled = false;
+    }
+  }
+  dateInput.addEventListener("change", checkDate);
+  checkDate();
 
+  confirmBtn.addEventListener("click", () => {
+    duplicateMsg.style.display="none";
+    productSelect.disabled = false;
+  });
 
   // ✅ 제품 선택 시 기존 데이터 조회
   productSelect.addEventListener("change", async () => {
