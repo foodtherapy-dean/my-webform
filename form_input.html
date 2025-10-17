@@ -10,10 +10,12 @@ body { font-family: sans-serif; margin: 20px; }
 #formSection { display:none; margin-top:20px; }
 .ox-row { margin:5px 0; }
 button.ox { width:40px; margin-right:10px; }
+button.selected { background:#4CAF50; color:white; }
 </style>
 </head>
 <body>
-  <h2>📋 입력 및 중복확인 폼</h2>
+  <h2>📋 원자재 입고 확인</h2>
+
   <label>날짜:</label>
   <input type="date" id="dateInput"><br>
   <div id="loading">⏳ 중복 확인 중...</div>
@@ -21,14 +23,14 @@ button.ox { width:40px; margin-right:10px; }
 
   <div id="formSection">
     <label>품목명:</label>
-    <select id="itemSelect">
+    <select id="productSelect">
       <option value="">선택하세요</option>
       <option>밀가루</option>
       <option>소금</option>
       <option>치자가루</option>
       <option>메밀가루</option>
     </select>
-    <input type="number" id="qtyInput" placeholder="수량" disabled><br><br>
+    <input type="number" id="countInput" placeholder="수량" disabled><br><br>
 
     <div id="oxContainer"></div>
 
@@ -44,13 +46,11 @@ document.addEventListener("DOMContentLoaded", () => {
   dateInput.value = today;
   checkDuplicate(today);
 
-  dateInput.addEventListener("change", () => {
-    checkDuplicate(dateInput.value);
-  });
+  dateInput.addEventListener("change", () => checkDuplicate(dateInput.value));
 
-  document.getElementById("itemSelect").addEventListener("change", (e) => {
+  document.getElementById("productSelect").addEventListener("change", (e) => {
     const enabled = e.target.value !== "";
-    document.getElementById("qtyInput").disabled = !enabled;
+    document.getElementById("countInput").disabled = !enabled;
     if (enabled) renderOxButtons();
   });
 
@@ -67,8 +67,8 @@ function checkDuplicate(date) {
     .then(data => {
       document.getElementById("loading").style.display = "none";
       if (data.exists) {
-        document.getElementById("alertBox").innerHTML = 
-          `⚠️ 이미 ${date} 데이터가 존재합니다.<br>
+        document.getElementById("alertBox").innerHTML =
+          `⚠️ ${date} 데이터가 이미 존재합니다.<br>
            <button onclick="useExisting()">확인</button>`;
         document.getElementById("alertBox").style.display = "block";
         window.existingData = data;
@@ -82,49 +82,58 @@ function useExisting() {
   const d = window.existingData;
   document.getElementById("alertBox").style.display = "none";
   document.getElementById("formSection").style.display = "block";
-  document.getElementById("itemSelect").value = d.item;
-  document.getElementById("qtyInput").value = d.qty;
-  document.getElementById("qtyInput").disabled = false;
+  document.getElementById("productSelect").value = d.product;
+  document.getElementById("countInput").value = d.count;
+  document.getElementById("countInput").disabled = false;
   renderOxButtons(d.oxStates);
 }
 
 function renderOxButtons(existingStates = []) {
-  const oxNames = ["차량상태", "파레트상태", "외포장성상", "표시기준", "성적서구비"];
+  const labels = ["차량상태", "파레트상태", "외포장성상", "표시기준", "성적서구비"];
   const container = document.getElementById("oxContainer");
   container.innerHTML = "";
-  oxNames.forEach((name, i) => {
+  window.oxStates = existingStates.length ? existingStates : ["", "", "", "", ""];
+
+  labels.forEach((label, i) => {
     const row = document.createElement("div");
     row.className = "ox-row";
-    const label = document.createElement("span");
-    label.textContent = name + ": ";
+    const span = document.createElement("span");
+    span.textContent = label + ": ";
     const oBtn = document.createElement("button");
     const xBtn = document.createElement("button");
     oBtn.textContent = "O"; xBtn.textContent = "X";
     oBtn.className = xBtn.className = "ox";
-    oBtn.onclick = () => setOx(i, "O");
-    xBtn.onclick = () => setOx(i, "X");
-    row.append(label, oBtn, xBtn);
+
+    oBtn.onclick = () => setOx(i, "O", oBtn, xBtn);
+    xBtn.onclick = () => setOx(i, "X", oBtn, xBtn);
+
+    // 기존 데이터 반영
+    if (existingStates[i] === "O") oBtn.classList.add("selected");
+    if (existingStates[i] === "X") xBtn.classList.add("selected");
+
+    row.append(span, oBtn, xBtn);
     container.append(row);
   });
-  window.oxStates = existingStates.length ? existingStates : ["", "", "", "", ""];
 }
 
-function setOx(i, val) {
+function setOx(i, val, oBtn, xBtn) {
   window.oxStates[i] = val;
+  oBtn.classList.toggle("selected", val === "O");
+  xBtn.classList.toggle("selected", val === "X");
 }
 
 function saveData() {
   const payload = {
     input: {
       date: document.getElementById("dateInput").value,
-      item: document.getElementById("itemSelect").value,
-      qty: document.getElementById("qtyInput").value,
+      product: document.getElementById("productSelect").value,
+      count: document.getElementById("countInput").value,
       oxStates: window.oxStates || ["", "", "", "", ""]
     }
   };
 
-  if (!payload.input.item) return alert("품목명을 선택하세요.");
-  if (!payload.input.qty) return alert("수량을 입력하세요.");
+  if (!payload.input.product) return alert("품목명을 선택하세요.");
+  if (!payload.input.count) return alert("수량을 입력하세요.");
 
   fetch(BASE_URL, {
     method: "POST",
