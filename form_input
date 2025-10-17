@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>입력 및 중복확인</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+#loading { display:none; color:gray; }
+#alertBox { display:none; margin-top:10px; padding:10px; border:1px solid #aaa; background:#f7f7f7; }
+#formSection { display:none; margin-top:20px; }
+.ox-row { margin:5px 0; }
+button.ox { width:40px; margin-right:10px; }
+</style>
+</head>
+<body>
+  <h2>📋 입력 및 중복확인 폼</h2>
+  <label>날짜:</label>
+  <input type="date" id="dateInput"><br>
+  <div id="loading">⏳ 중복 확인 중...</div>
+  <div id="alertBox"></div>
+
+  <div id="formSection">
+    <label>품목명:</label>
+    <select id="itemSelect">
+      <option value="">선택하세요</option>
+      <option>밀가루</option>
+      <option>소금</option>
+      <option>치자가루</option>
+      <option>메밀가루</option>
+    </select>
+    <input type="number" id="qtyInput" placeholder="수량" disabled><br><br>
+
+    <div id="oxContainer"></div>
+
+    <button id="saveBtn">저장</button>
+  </div>
+
+<script>
+const BASE_URL = "https://script.google.com/macros/s/AKfycbz57EmnWIy2NPTGto_UhoaErbT5oiDHYpDLU62tPMNKST3zNzgcOK5fzbK1vh0JZU04og/exec";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dateInput = document.getElementById("dateInput");
+  const today = new Date().toISOString().split("T")[0];
+  dateInput.value = today;
+  checkDuplicate(today);
+
+  dateInput.addEventListener("change", () => {
+    checkDuplicate(dateInput.value);
+  });
+
+  document.getElementById("itemSelect").addEventListener("change", (e) => {
+    const enabled = e.target.value !== "";
+    document.getElementById("qtyInput").disabled = !enabled;
+    if (enabled) renderOxButtons();
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", saveData);
+});
+
+function checkDuplicate(date) {
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("alertBox").style.display = "none";
+  document.getElementById("formSection").style.display = "none";
+
+  fetch(`${BASE_URL}?checkInput=${JSON.stringify({ date })}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("loading").style.display = "none";
+      if (data.exists) {
+        document.getElementById("alertBox").innerHTML = 
+          `⚠️ 이미 ${date} 데이터가 존재합니다.<br>
+           <button onclick="useExisting()">확인</button>`;
+        document.getElementById("alertBox").style.display = "block";
+        window.existingData = data;
+      } else {
+        document.getElementById("formSection").style.display = "block";
+      }
+    });
+}
+
+function useExisting() {
+  const d = window.existingData;
+  document.getElementById("alertBox").style.display = "none";
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("itemSelect").value = d.item;
+  document.getElementById("qtyInput").value = d.qty;
+  document.getElementById("qtyInput").disabled = false;
+  renderOxButtons(d.oxStates);
+}
+
+function renderOxButtons(existingStates = []) {
+  const oxNames = ["차량상태", "파레트상태", "외포장성상", "표시기준", "성적서구비"];
+  const container = document.getElementById("oxContainer");
+  container.innerHTML = "";
+  oxNames.forEach((name, i) => {
+    const row = document.createElement("div");
+    row.className = "ox-row";
+    const label = document.createElement("span");
+    label.textContent = name + ": ";
+    const oBtn = document.createElement("button");
+    const xBtn = document.createElement("button");
+    oBtn.textContent = "O"; xBtn.textContent = "X";
+    oBtn.className = xBtn.className = "ox";
+    oBtn.onclick = () => setOx(i, "O");
+    xBtn.onclick = () => setOx(i, "X");
+    row.append(label, oBtn, xBtn);
+    container.append(row);
+  });
+  window.oxStates = existingStates.length ? existingStates : ["", "", "", "", ""];
+}
+
+function setOx(i, val) {
+  window.oxStates[i] = val;
+}
+
+function saveData() {
+  const payload = {
+    input: {
+      date: document.getElementById("dateInput").value,
+      item: document.getElementById("itemSelect").value,
+      qty: document.getElementById("qtyInput").value,
+      oxStates: window.oxStates || ["", "", "", "", ""]
+    }
+  };
+
+  if (!payload.input.item) return alert("품목명을 선택하세요.");
+  if (!payload.input.qty) return alert("수량을 입력하세요.");
+
+  fetch(BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.text())
+  .then(msg => alert(msg));
+}
+</script>
+</body>
+</html>
