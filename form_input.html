@@ -32,13 +32,8 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
     <label for="date">날짜</label>
     <input type="date" id="date" />
 
-    <div id="duplicateMsg">
-      이미 존재하는 데이터입니다.
-      <button id="confirmBtn">확인</button>
-    </div>
-
     <label for="product">제품명</label>
-    <select id="product" disabled>
+    <select id="product">
       <option value="">선택하세요</option>
       <option value="밀가루">밀가루</option>
       <option value="소금">소금</option>
@@ -46,30 +41,20 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
       <option value="메밀가루">메밀가루</option>
     </select>
 
+    <div id="duplicateMsg">
+      이미 존재하는 데이터입니다.
+      <button id="confirmBtn">확인</button>
+    </div>
+
     <label for="count">수량</label>
     <input type="number" id="count" min="0" disabled />
 
     <div id="optionsContainer" style="display:none; margin-top:16px;">
-      <div class="option-row">
-        <div class="option-label">차량상태</div>
-        <div class="option-buttons"><button>O</button><button>X</button></div>
-      </div>
-      <div class="option-row">
-        <div class="option-label">파레트상태</div>
-        <div class="option-buttons"><button>O</button><button>X</button></div>
-      </div>
-      <div class="option-row">
-        <div class="option-label">외포장상태</div>
-        <div class="option-buttons"><button>O</button><button>X</button></div>
-      </div>
-      <div class="option-row">
-        <div class="option-label">표시가준</div>
-        <div class="option-buttons"><button>O</button><button>X</button></div>
-      </div>
-      <div class="option-row">
-        <div class="option-label">성적서구비</div>
-        <div class="option-buttons"><button>O</button><button>X</button></div>
-      </div>
+      <div class="option-row"><div class="option-label">차량상태</div><div class="option-buttons"><button>O</button><button>X</button></div></div>
+      <div class="option-row"><div class="option-label">파레트상태</div><div class="option-buttons"><button>O</button><button>X</button></div></div>
+      <div class="option-row"><div class="option-label">외포장상태</div><div class="option-buttons"><button>O</button><button>X</button></div></div>
+      <div class="option-row"><div class="option-label">표시가준</div><div class="option-buttons"><button>O</button><button>X</button></div></div>
+      <div class="option-row"><div class="option-label">성적서구비</div><div class="option-buttons"><button>O</button><button>X</button></div></div>
     </div>
   </div>
 
@@ -79,7 +64,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyo6OcP1J9erEIEb2ZPDBtIZrOm2ti2Geu63vxowWzUBc864vhDxKW-ZxUfIn7zjX-wyQ/exec"; // 여기에 Apps Script URL 입력
+const scriptUrl = "https://script.google.com/macros/s/AKfycbyo6OcP1J9erEIEb2ZPDBtIZrOm2ti2Geu63vxowWzUBc864vhDxKW-ZxUfIn7zjX-wyQ/exec"; // 실제 Apps Script URL로 변경하세요
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
@@ -90,9 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmBtn = document.getElementById("confirmBtn");
   const submitBtn = document.getElementById("submitBtn");
 
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
-  // ✅ O/X 버튼 토글
+  // O/X 버튼 토글
   optionsContainer.querySelectorAll(".option-buttons").forEach(group => {
     group.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -102,60 +88,52 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ✅ 날짜 변경 시 중복확인
-  async function checkDate() {
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
-    const res = await fetch(`${scriptUrl}?getInputData=${query}`);
-    const data = await res.json();
-    if (data.exists) {
-      duplicateMsg.style.display = "block";
-      productSelect.disabled = true;
-    } else {
-      duplicateMsg.style.display = "none";
-      productSelect.disabled = false;
-    }
-  }
-  dateInput.addEventListener("change", checkDate);
-  checkDate();
-
-  confirmBtn.addEventListener("click", () => {
-    duplicateMsg.style.display="none";
-    productSelect.disabled = false;
-  });
-
-  // ✅ 제품 선택 시 기존 데이터 조회
+  // ✅ 제품 선택 시 중복확인 실행
   productSelect.addEventListener("change", async () => {
+    if (!dateInput.value) return alert("날짜를 먼저 선택하세요.");
     if (!productSelect.value) return;
-    countInput.disabled = false;
-    optionsContainer.style.display = "block";
 
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
-    const res = await fetch(`${scriptUrl}?getInput=${query}`);
-    const data = await res.json();
+    duplicateMsg.style.display = "none";
+    countInput.disabled = true;
+    optionsContainer.style.display = "none";
 
-    if (data.products && data.products.includes(productSelect.value)) {
-      // ✅ 기존 값이 있을 경우 다시 상세정보 불러오기
-      const detailQuery = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
-      const detailRes = await fetch(`${scriptUrl}?checkInput=${detailQuery}`);
-      const detailData = await detailRes.json();
-      if (detailData.exists && detailData.data) {
-        countInput.value = detailData.data.count || 0;
-        ["A","B","C","D","E"].forEach((k,i)=>{
-          const val = detailData.data[k];
-          const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
-          btns.forEach(b => b.classList.remove("selected"));
-          if(val==="O") btns[0].classList.add("selected");
-          else if(val==="X") btns[1].classList.add("selected");
-        });
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
+    try {
+      const res = await fetch(`${scriptUrl}?checkInput=${query}`);
+      const data = await res.json();
+
+      if (data.exists && data.data) {
+        // ✅ 중복데이터 있음 → 메시지 표시
+        duplicateMsg.style.display = "block";
+
+        // 확인 누르면 기존 데이터 불러오기
+        confirmBtn.onclick = () => {
+          duplicateMsg.style.display = "none";
+          countInput.disabled = false;
+          optionsContainer.style.display = "block";
+
+          countInput.value = data.data.count || 0;
+          ["A","B","C","D","E"].forEach((k,i)=>{
+            const val = data.data[k];
+            const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
+            btns.forEach(b => b.classList.remove("selected"));
+            if(val==="O") btns[0].classList.add("selected");
+            else if(val==="X") btns[1].classList.add("selected");
+          });
+        };
+      } else {
+        // 신규 입력 → 바로 활성화
+        countInput.disabled = false;
+        optionsContainer.style.display = "block";
+        countInput.value = "";
+        optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
       }
-    } else {
-      // 신규 입력
-      countInput.value = "";
-      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+    } catch(err){
+      alert("서버 오류: " + err.message);
     }
   });
 
-  // ✅ 저장 버튼
+  // ✅ 저장
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productSelect.value) return alert("제품을 선택하세요.");
@@ -181,13 +159,11 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("저장 완료!");
 
       productSelect.value="";
-      productSelect.disabled=false;
       countInput.value="";
       countInput.disabled=true;
       optionsContainer.style.display="none";
       optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
       duplicateMsg.style.display="none";
-      checkDate();
     } catch(err){ alert("서버 오류:"+err.message); }
   });
 });
