@@ -10,11 +10,11 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-header { background:#3f51b5; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
 .app-body { flex:1 1 auto; overflow-y:auto; padding:20px; background:#f9f9f9; }
 .app-footer { flex:0 0 auto; padding:10px; }
-button { font-size:1.2rem; padding:10px 0; background:#3f51b5; color:#fff; border:none; cursor:pointer; border-radius:6px; }
 input, select { width:100%; padding:10px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; margin-bottom:10px; }
-#duplicateMsg { display:none; background:#ffdddd; color:#900; padding:10px; border-radius:6px; margin-bottom:10px; }
+button { font-size:1.2rem; padding:10px 0; border:none; border-radius:6px; cursor:pointer; }
+#submitBtn { background:#3f51b5; color:#fff; width:100%; }
+#duplicateMsg { display:none; background:#ffdddd; color:#900; padding:10px; border-radius:6px; margin-bottom:10px; text-align:center; }
 .inline-row { display:flex; gap:10px; margin-bottom:10px; }
-.inline-row label { flex:0 0 80px; line-height:32px; }
 .selection-buttons button { width:100%; margin-bottom:6px; }
 .selection-buttons button.active { background:#4caf50; color:#fff; }
 .hidden { display:none; }
@@ -23,6 +23,7 @@ input, select { width:100%; padding:10px; font-size:1.1rem; border:1px solid #cc
 <body>
 <div class="app-container">
   <div class="app-header">📋 Input 데이터 입력</div>
+
   <div class="app-body">
     <label for="date">날짜</label>
     <input type="date" id="date">
@@ -41,17 +42,17 @@ input, select { width:100%; padding:10px; font-size:1.1rem; border:1px solid #cc
       <option value="메밀가루">메밀가루</option>
     </select>
 
-    <div class="inline-row">
+    <div class="inline-row hidden" id="countRow">
       <label for="count">수량</label>
-      <input type="number" id="count" min="0" disabled>
+      <input type="number" id="count" min="0">
     </div>
 
-    <div class="selection-buttons">
-      <button id="btn1" disabled>차량상태</button>
-      <button id="btn2" disabled>파레트상태</button>
-      <button id="btn3" disabled>외포장상태</button>
-      <button id="btn4" disabled>표시가준</button>
-      <button id="btn5" disabled>성적서구비</button>
+    <div class="selection-buttons hidden" id="selectionBtns">
+      <button id="btn1">차량상태</button>
+      <button id="btn2">파레트상태</button>
+      <button id="btn3">외포장상태</button>
+      <button id="btn4">표시가준</button>
+      <button id="btn5">성적서구비</button>
     </div>
   </div>
 
@@ -70,6 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const productSelect = document.getElementById("product");
   const countInput = document.getElementById("count");
+  const countRow = document.getElementById("countRow");
+  const selectionBtnsDiv = document.getElementById("selectionBtns");
   const submitBtn = document.getElementById("submitBtn");
 
   const buttons = [
@@ -80,13 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn5")
   ];
 
-  // 상태 저장용
   const buttonState = { btn1:0, btn2:0, btn3:0, btn4:0, btn5:0 };
 
   // 1️⃣ 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
-  // 2️⃣ 날짜 변경 시 중복 확인
+  // 2️⃣ 날짜 변경 시 중복 체크
   async function checkDuplicateDate(dateVal) {
     duplicateMsg.style.display = "none";
     disableAllInputs(true);
@@ -105,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateInput.addEventListener("change", () => {
     if (dateInput.value) checkDuplicateDate(dateInput.value);
+    resetForm();
   });
 
   // 3️⃣ 중복 확인 버튼 클릭
@@ -117,32 +120,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${scriptUrl}?checkInput=${query}`);
       const data = await res.json();
 
-      enableAllInputs();
+      enableProductSelection();
 
       if (data.exists) {
         const d = data.data;
         productSelect.value = d.product || "";
         countInput.value = d.count || 0;
 
-        // 선택 버튼 상태 채우기
         buttons.forEach((btn, idx) => {
           const key = "btn"+(idx+1);
           buttonState[key] = d[key] || 0;
           updateButtonVisual(btn, buttonState[key]);
         });
+        countRow.classList.remove("hidden");
+        selectionBtnsDiv.classList.remove("hidden");
       }
     } catch(err) { console.error(err); }
   });
 
-  // 4️⃣ 제품 선택 시 입력창 활성화
+  // 4️⃣ 품목 선택 시 수량/선택버튼 활성화
   productSelect.addEventListener("change", () => {
     const active = !!productSelect.value;
-    countInput.disabled = !active;
-    buttons.forEach(b => b.disabled = !active);
+    countRow.classList.toggle("hidden", !active);
+    selectionBtnsDiv.classList.toggle("hidden", !active);
     submitBtn.disabled = !active;
+    if (!active) resetSelectionButtons();
   });
 
-  // 5️⃣ 버튼 클릭 시 O/X 토글
+  // 5️⃣ 버튼 클릭 O/X 토글
   buttons.forEach((btn, idx) => {
     btn.addEventListener("click", () => {
       const key = "btn"+(idx+1);
@@ -162,8 +167,23 @@ document.addEventListener("DOMContentLoaded", () => {
     buttons.forEach(b => b.disabled = flag);
     submitBtn.disabled = flag;
   }
-  function enableAllInputs() {
-    disableAllInputs(false);
+
+  function enableProductSelection() {
+    productSelect.disabled = false;
+  }
+
+  function resetForm() {
+    productSelect.value = "";
+    countInput.value = "";
+    countRow.classList.add("hidden");
+    selectionBtnsDiv.classList.add("hidden");
+    submitBtn.disabled = true;
+    resetSelectionButtons();
+  }
+
+  function resetSelectionButtons() {
+    Object.keys(buttonState).forEach(k => buttonState[k] = 0);
+    buttons.forEach(btn => btn.classList.remove("active"));
   }
 
   // 6️⃣ 저장
@@ -185,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const text = await res.text();
       alert("서버 응답: " + text);
+      resetForm();
     } catch(err) { alert("서버 오류: " + err.message); }
   });
 
