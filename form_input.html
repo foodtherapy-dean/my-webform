@@ -20,8 +20,9 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 .inline-row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
 .inline-row input { flex:1 1 60px; }
 
-.option-item { display:flex; align-items:center; gap:8px; margin-top:8px; }
-.option-item button { width:40px; border-radius:4px; border:1px solid #888; }
+.option-item { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.option-item span { flex:1; }
+.option-item button { width:40px; border-radius:4px; border:1px solid #888; flex-shrink:0; }
 .option-item button.selected { background:#3f51b5; color:#fff; }
 
 #submitBtn { width:100%; font-size:1.4rem; padding:16px 0; background:#3f51b5; color:#fff; border:none; margin-top:20px; }
@@ -52,7 +53,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
     <label for="count">수량</label>
     <input type="number" id="count" min="0" disabled />
 
-    <div class="inline-row" id="optionsContainer" style="display:none;">
+    <div id="optionsContainer" style="display:none;">
       <div class="option-item"><span>차량상태</span><button type="button">O</button><button type="button">X</button></div>
       <div class="option-item"><span>파레트상태</span><button type="button">O</button><button type="button">X</button></div>
       <div class="option-item"><span>외포장상태</span><button type="button">O</button><button type="button">X</button></div>
@@ -77,34 +78,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmDuplicateBtn = document.getElementById("confirmDuplicateBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 오늘 날짜
   dateInput.valueAsDate = new Date();
-
   let isDuplicate = false;
 
   async function checkDuplicate(dateVal) {
     duplicateMsg.style.display = "none";
     productSelect.disabled = true;
-    const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
     try {
+      const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
       const res = await fetch(`${scriptUrl}?checkDate=${query}`);
       const data = await res.json();
       isDuplicate = data.exists;
-
-      if (isDuplicate) {
-        duplicateMsg.style.display = "block";
-      }
-      // 제품 선택 가능
+      if (isDuplicate) duplicateMsg.style.display = "block";
       productSelect.disabled = false;
-      // 중복 데이터가 있으면 선택한 첫 제품 정보 불러오기
-      if (data.duplicates && data.duplicates.length > 0) {
+
+      if(data.duplicates && data.duplicates.length >0){
         const first = data.duplicates[0];
         productSelect.value = first.product;
         countInput.value = first.count;
-        // O/X 버튼 초기화
-        optionsContainer.style.display = "block";
+        countInput.disabled=false;
+        optionsContainer.style.display="block";
         Array.from(optionsContainer.querySelectorAll(".option-item")).forEach((item,i)=>{
-          const val = ['A','B','C','D','E'][i]; // 임시: 기존 시트 열값에 맞춰
+          const val = ['A','B','C','D','E'][i];
           const v = first[val] || "";
           const btns = item.querySelectorAll("button");
           btns.forEach(b=>b.classList.remove("selected"));
@@ -112,31 +107,28 @@ document.addEventListener("DOMContentLoaded", () => {
           else if(v==="X") btns[1].classList.add("selected");
         });
       } else {
-        productSelect.value = "";
-        countInput.value = "";
-        optionsContainer.style.display = "none";
+        productSelect.value="";
+        countInput.value="";
+        countInput.disabled=true;
+        optionsContainer.style.display="none";
+        optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
       }
-
-    } catch(err){
-      console.error(err);
-    }
+    } catch(err){ console.error(err); }
   }
 
-  // 날짜 변경 시 중복 체크
   dateInput.addEventListener("change", ()=>checkDuplicate(dateInput.value));
 
-  // 제품 선택 시 수량 및 O/X 활성화
   productSelect.addEventListener("change", ()=>{
     if(!productSelect.value){
       countInput.disabled = true;
-      optionsContainer.style.display = "none";
+      optionsContainer.style.display="none";
+      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
       return;
     }
-    countInput.disabled = false;
-    optionsContainer.style.display = "block";
+    countInput.disabled=false;
+    optionsContainer.style.display="block";
   });
 
-  // O/X 버튼 클릭 이벤트
   optionsContainer.querySelectorAll(".option-item").forEach(item=>{
     const buttons = item.querySelectorAll("button");
     buttons.forEach(btn=>{
@@ -147,12 +139,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // 중복 확인 버튼 클릭
   confirmDuplicateBtn.addEventListener("click", ()=>{
     duplicateMsg.style.display="none";
   });
 
-  // 저장
   submitBtn.addEventListener("click", async ()=>{
     if(!dateInput.value) return alert("날짜 선택하세요");
     if(!productSelect.value) return alert("제품 선택하세요");
@@ -177,18 +167,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = await res.text();
       alert("서버 응답: "+text);
 
-      // 저장 후 리셋: 제품 선택만 활성화
+      // 저장 후 초기화: 날짜+제품 선택만
       productSelect.value="";
       countInput.value="";
       countInput.disabled=true;
       optionsContainer.style.display="none";
+      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
       duplicateMsg.style.display="none";
     }catch(err){
       alert("서버 오류:"+err.message);
     }
   });
 
-  // 초기 중복 체크
   checkDuplicate(dateInput.value);
 });
 </script>
