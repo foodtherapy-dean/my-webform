@@ -18,11 +18,11 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 
 #duplicateMsg { display:none; background:#ffdddd; color:#900; padding:10px; border-radius:6px; margin-top:8px; }
 .option-row { display:flex; align-items:center; margin-bottom:12px; }
-.option-label { width:100px; }
+.option-label { width:120px; font-weight:normal; }
 .option-buttons { flex:1; display:flex; justify-content:space-between; }
 .option-buttons button { width:48%; padding:10px 0; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; }
 .option-buttons button.selected { background:#3f51b5; color:#fff; }
-#submitBtn { width:100%; font-size:1.4rem; padding:20px 0; background:#3f51b5; color:#fff; margin-top:20px; }
+#submitBtn { width:100%; font-size:1.4rem; padding:20px 0; background:#3f51b5; color:#fff; margin-top:20px; border-radius:6px; }
 </style>
 </head>
 <body>
@@ -53,36 +53,36 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
       <div class="option-row">
         <div class="option-label">차량상태</div>
         <div class="option-buttons">
-          <button type="button" data-value="0">O</button>
-          <button type="button" data-value="">X</button>
+          <button type="button">O</button>
+          <button type="button">X</button>
         </div>
       </div>
       <div class="option-row">
         <div class="option-label">파레트상태</div>
         <div class="option-buttons">
-          <button type="button" data-value="0">O</button>
-          <button type="button" data-value="">X</button>
+          <button type="button">O</button>
+          <button type="button">X</button>
         </div>
       </div>
       <div class="option-row">
         <div class="option-label">외포장상태</div>
         <div class="option-buttons">
-          <button type="button" data-value="0">O</button>
-          <button type="button" data-value="">X</button>
+          <button type="button">O</button>
+          <button type="button">X</button>
         </div>
       </div>
       <div class="option-row">
         <div class="option-label">표시가준</div>
         <div class="option-buttons">
-          <button type="button" data-value="0">O</button>
-          <button type="button" data-value="">X</button>
+          <button type="button">O</button>
+          <button type="button">X</button>
         </div>
       </div>
       <div class="option-row">
         <div class="option-label">성적서구비</div>
         <div class="option-buttons">
-          <button type="button" data-value="0">O</button>
-          <button type="button" data-value="">X</button>
+          <button type="button">O</button>
+          <button type="button">X</button>
         </div>
       </div>
     </div>
@@ -109,11 +109,12 @@ document.addEventListener("DOMContentLoaded", () => {
   dateInput.valueAsDate = new Date();
 
   // O/X 버튼 클릭 토글
-  optionsContainer.querySelectorAll(".option-buttons button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const parent = btn.parentNode;
-      parent.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
+  optionsContainer.querySelectorAll(".option-buttons").forEach(group => {
+    group.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
     });
   });
 
@@ -130,11 +131,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 날짜 변경 시 중복 체크
-  dateInput.addEventListener("change", checkDate);
+  dateInput.addEventListener("change", () => {
+    productSelect.value="";
+    countInput.value="";
+    countInput.disabled=true;
+    optionsContainer.style.display="none";
+    optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+    checkDate();
+  });
   checkDate();
 
-  // 확인 버튼 클릭 → 제품 선택 활성화
   confirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display="none";
     productSelect.disabled = false;
@@ -157,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = data.data[k];
         const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
         btns.forEach(b => b.classList.remove("selected"));
-        if (val === 0) btns[0].classList.add("selected");
+        if (val === "O") btns[0].classList.add("selected");
         else btns[1].classList.add("selected");
       });
     } else {
@@ -174,11 +180,11 @@ document.addEventListener("DOMContentLoaded", () => {
       date: dateInput.value,
       product: productSelect.value,
       count: countInput.value || 0,
-      A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected')?.dataset.value || "",
-      B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected')?.dataset.value || "",
-      C: optionsContainer.querySelector('.option-row:nth-child(3) .option-buttons button.selected')?.dataset.value || "",
-      D: optionsContainer.querySelector('.option-row:nth-child(4) .option-buttons button.selected')?.dataset.value || "",
-      E: optionsContainer.querySelector('.option-row:nth-child(5) .option-buttons button.selected')?.dataset.value || ""
+      A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected')?.textContent || "",
+      B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected')?.textContent || "",
+      C: optionsContainer.querySelector('.option-row:nth-child(3) .option-buttons button.selected')?.textContent || "",
+      D: optionsContainer.querySelector('.option-row:nth-child(4) .option-buttons button.selected')?.textContent || "",
+      E: optionsContainer.querySelector('.option-row:nth-child(5) .option-buttons button.selected')?.textContent || ""
     };
 
     try {
