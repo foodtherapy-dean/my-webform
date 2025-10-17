@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ 날짜 변경 시 중복확인
   async function checkDate() {
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
-    const res = await fetch(`${scriptUrl}?checkInput=${query}`);
+    const res = await fetch(`${scriptUrl}?getInputData=${query}`);
     const data = await res.json();
     if (data.exists) {
       duplicateMsg.style.display = "block";
