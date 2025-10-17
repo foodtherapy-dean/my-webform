@@ -10,32 +10,35 @@ body, html { margin:0; padding:0; font-family:sans-serif; height:100%; }
 .app-header { background:#3f51b5; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
 .app-body { flex:1 1 auto; overflow-y:auto; padding:20px; background:#f9f9f9; }
 .app-footer { flex:0 0 auto; }
-button { font-size:1.2rem; cursor:pointer; }
-button#submitBtn { width:100%; padding:16px; background:#3f51b5; color:#fff; border:none; margin-top:10px; }
+button { cursor:pointer; border:none; border-radius:6px; }
+button:disabled { opacity:0.5; cursor:not-allowed; }
 
-label { display:block; margin-top:16px; font-weight:bold; }
-input, select { width:100%; padding:10px; font-size:1rem; margin-bottom:6px; border-radius:6px; border:1px solid #ccc; }
+label { display:block; margin-top:16px; margin-bottom:6px; font-weight:bold; }
+input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; }
 
-.ox-container { margin-bottom:12px; }
-.ox-label { margin-bottom:4px; font-weight:bold; }
-.ox-btn { width:48%; padding:10px; margin-right:4%; display:inline-block; border-radius:6px; border:1px solid #3f51b5; background:#fff; }
-.ox-btn.selected { background:#3f51b5; color:#fff; }
-.ox-btn:last-child { margin-right:0; }
-.hidden { display:none; }
-#duplicateMsg { color:#900; margin-top:8px; display:none; }
+#duplicateMsg { display:none; background:#ffdddd; color:#900; padding:10px; border-radius:6px; margin-top:8px; }
+.option-row { display:flex; align-items:center; margin-bottom:12px; }
+.option-label { width:100px; }
+.option-buttons { flex:1; display:flex; justify-content:space-between; }
+.option-buttons button { width:48%; padding:10px 0; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; }
+.option-buttons button.selected { background:#3f51b5; color:#fff; }
+#submitBtn { width:100%; font-size:1.4rem; padding:20px 0; background:#3f51b5; color:#fff; margin-top:20px; }
 </style>
 </head>
 <body>
 <div class="app-container">
   <div class="app-header">📋 Input 데이터 입력</div>
   <div class="app-body">
-    <label>날짜</label>
+    <label for="date">날짜</label>
     <input type="date" id="date" />
 
-    <div id="duplicateMsg">중복된 날짜가 존재합니다. 덮어쓰기가 가능합니다.</div>
+    <div id="duplicateMsg">
+      이미 존재하는 데이터입니다.
+      <button id="confirmBtn">확인</button>
+    </div>
 
-    <label>제품명</label>
-    <select id="product">
+    <label for="product">제품명</label>
+    <select id="product" disabled>
       <option value="">선택하세요</option>
       <option value="밀가루">밀가루</option>
       <option value="소금">소금</option>
@@ -43,97 +46,126 @@ input, select { width:100%; padding:10px; font-size:1rem; margin-bottom:6px; bor
       <option value="메밀가루">메밀가루</option>
     </select>
 
-    <label id="countLabel" class="hidden">수량</label>
-    <input type="number" id="count" class="hidden" min="0" />
+    <label for="count">수량</label>
+    <input type="number" id="count" min="0" disabled />
 
-    <div id="oxArea" class="hidden">
-      <div class="ox-container">
-        <div class="ox-label">차량상태</div>
-        <button type="button" class="ox-btn" data-key="A" data-value="O">O</button>
-        <button type="button" class="ox-btn" data-key="A" data-value="X">X</button>
+    <div id="optionsContainer" style="display:none; margin-top:16px;">
+      <div class="option-row">
+        <div class="option-label">차량상태</div>
+        <div class="option-buttons">
+          <button type="button" data-value="0">O</button>
+          <button type="button" data-value="">X</button>
+        </div>
       </div>
-      <div class="ox-container">
-        <div class="ox-label">파레트상태</div>
-        <button type="button" class="ox-btn" data-key="B" data-value="O">O</button>
-        <button type="button" class="ox-btn" data-key="B" data-value="X">X</button>
+      <div class="option-row">
+        <div class="option-label">파레트상태</div>
+        <div class="option-buttons">
+          <button type="button" data-value="0">O</button>
+          <button type="button" data-value="">X</button>
+        </div>
       </div>
-      <div class="ox-container">
-        <div class="ox-label">외포장상태</div>
-        <button type="button" class="ox-btn" data-key="C" data-value="O">O</button>
-        <button type="button" class="ox-btn" data-key="C" data-value="X">X</button>
+      <div class="option-row">
+        <div class="option-label">외포장상태</div>
+        <div class="option-buttons">
+          <button type="button" data-value="0">O</button>
+          <button type="button" data-value="">X</button>
+        </div>
       </div>
-      <div class="ox-container">
-        <div class="ox-label">표시기준</div>
-        <button type="button" class="ox-btn" data-key="D" data-value="O">O</button>
-        <button type="button" class="ox-btn" data-key="D" data-value="X">X</button>
+      <div class="option-row">
+        <div class="option-label">표시가준</div>
+        <div class="option-buttons">
+          <button type="button" data-value="0">O</button>
+          <button type="button" data-value="">X</button>
+        </div>
       </div>
-      <div class="ox-container">
-        <div class="ox-label">성적서 구비</div>
-        <button type="button" class="ox-btn" data-key="E" data-value="O">O</button>
-        <button type="button" class="ox-btn" data-key="E" data-value="X">X</button>
+      <div class="option-row">
+        <div class="option-label">성적서구비</div>
+        <div class="option-buttons">
+          <button type="button" data-value="0">O</button>
+          <button type="button" data-value="">X</button>
+        </div>
       </div>
     </div>
   </div>
+
   <div class="app-footer">
     <button id="submitBtn">💾 저장하기</button>
   </div>
 </div>
 
 <script>
+const scriptUrl = "https://script.google.com/macros/s/AKfycbzeg9VImWLnm250LnI-OkjhjLuyQeRf6yQPLk_x8UPAG2wNIcn53sKs_0tdvSoRa4EJLw/exec";
+
 document.addEventListener("DOMContentLoaded", () => {
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzeg9VImWLnm250LnI-OkjhjLuyQeRf6yQPLk_x8UPAG2wNIcn53sKs_0tdvSoRa4EJLw/exec";
   const dateInput = document.getElementById("date");
   const productSelect = document.getElementById("product");
   const countInput = document.getElementById("count");
-  const countLabel = document.getElementById("countLabel");
-  const oxArea = document.getElementById("oxArea");
+  const optionsContainer = document.getElementById("optionsContainer");
   const duplicateMsg = document.getElementById("duplicateMsg");
+  const confirmBtn = document.getElementById("confirmBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 초기값
+  // 오늘 날짜 설정
   dateInput.valueAsDate = new Date();
-  let selectedValues = {A:"",B:"",C:"",D:"",E:""};
 
-  // 중복 날짜 체크
-  async function checkDate() {
-    const res = await fetch(`${scriptUrl}?checkInput=${encodeURIComponent(JSON.stringify({date: dateInput.value}))}`);
-    const data = await res.json();
-    if (data.exists) {
-      duplicateMsg.style.display = "block";
-    } else {
-      duplicateMsg.style.display = "none";
-    }
-  }
-
-  dateInput.addEventListener("change", async () => {
-    resetForm();
-    await checkDate();
-  });
-
-  productSelect.addEventListener("change", () => {
-    if (productSelect.value) {
-      countInput.classList.remove("hidden");
-      countLabel.classList.remove("hidden");
-      oxArea.classList.remove("hidden");
-    } else {
-      countInput.classList.add("hidden");
-      countLabel.classList.add("hidden");
-      oxArea.classList.add("hidden");
-    }
-  });
-
-  // O/X 버튼 클릭
-  document.querySelectorAll(".ox-btn").forEach(btn => {
+  // O/X 버튼 클릭 토글
+  optionsContainer.querySelectorAll(".option-buttons button").forEach(btn => {
     btn.addEventListener("click", () => {
-      const key = btn.dataset.key;
-      const value = btn.dataset.value;
-      selectedValues[key] = value;
-      document.querySelectorAll(`.ox-btn[data-key="${key}"]`).forEach(b => b.classList.remove("selected"));
+      const parent = btn.parentNode;
+      parent.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
     });
   });
 
-  // 저장
+  async function checkDate() {
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
+    const res = await fetch(`${scriptUrl}?checkInput=${query}`);
+    const data = await res.json();
+    if (data.exists) {
+      duplicateMsg.style.display = "block";
+      productSelect.disabled = true;
+    } else {
+      duplicateMsg.style.display = "none";
+      productSelect.disabled = false;
+    }
+  }
+
+  // 날짜 변경 시 중복 체크
+  dateInput.addEventListener("change", checkDate);
+  checkDate();
+
+  // 확인 버튼 클릭 → 제품 선택 활성화
+  confirmBtn.addEventListener("click", () => {
+    duplicateMsg.style.display="none";
+    productSelect.disabled = false;
+  });
+
+  // 제품 선택 시 수량 + 옵션 활성화
+  productSelect.addEventListener("change", async () => {
+    if (!productSelect.value) return;
+    countInput.disabled = false;
+    optionsContainer.style.display = "block";
+
+    // 중복 데이터 있을 경우 값 로드
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
+    const res = await fetch(`${scriptUrl}?checkInput=${query}`);
+    const data = await res.json();
+    if (data.exists && data.data) {
+      countInput.value = data.data.count || 0;
+      const keys = ["A","B","C","D","E"];
+      keys.forEach((k,i)=>{
+        const val = data.data[k];
+        const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
+        btns.forEach(b => b.classList.remove("selected"));
+        if (val === 0) btns[0].classList.add("selected");
+        else btns[1].classList.add("selected");
+      });
+    } else {
+      countInput.value = 0;
+      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+    }
+  });
+
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜 선택 필요");
     if (!productSelect.value) return alert("제품 선택 필요");
@@ -142,35 +174,34 @@ document.addEventListener("DOMContentLoaded", () => {
       date: dateInput.value,
       product: productSelect.value,
       count: countInput.value || 0,
-      A: selectedValues.A,
-      B: selectedValues.B,
-      C: selectedValues.C,
-      D: selectedValues.D,
-      E: selectedValues.E
+      A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected')?.dataset.value || "",
+      B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected')?.dataset.value || "",
+      C: optionsContainer.querySelector('.option-row:nth-child(3) .option-buttons button.selected')?.dataset.value || "",
+      D: optionsContainer.querySelector('.option-row:nth-child(4) .option-buttons button.selected')?.dataset.value || "",
+      E: optionsContainer.querySelector('.option-row:nth-child(5) .option-buttons button.selected')?.dataset.value || ""
     };
 
-    const res = await fetch(scriptUrl, {
-      method:"POST",
-      headers: {"Content-Type":"application/x-www-form-urlencoded"},
-      body: "input=" + encodeURIComponent(JSON.stringify(payload))
-    });
-    const text = await res.text();
-    alert(text);
-    resetForm();
-    await checkDate();
+    try {
+      const res = await fetch(scriptUrl, {
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"input="+encodeURIComponent(JSON.stringify(payload))
+      });
+      const text = await res.text();
+      alert("서버 응답: "+text);
+
+      // UI 초기화
+      productSelect.value="";
+      productSelect.disabled=false;
+      countInput.value="";
+      countInput.disabled=true;
+      optionsContainer.style.display="none";
+      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+      duplicateMsg.style.display="none";
+
+      checkDate();
+    } catch(err){ alert("서버 오류:"+err.message); }
   });
-
-  function resetForm() {
-    productSelect.value = "";
-    countInput.value = "";
-    countInput.classList.add("hidden");
-    countLabel.classList.add("hidden");
-    oxArea.classList.add("hidden");
-    selectedValues = {A:"",B:"",C:"",D:"",E:""};
-    document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("selected"));
-  }
-
-  checkDate();
 });
 </script>
 </body>
