@@ -105,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmBtn = document.getElementById("confirmBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 오늘 날짜 설정
   dateInput.valueAsDate = new Date();
 
   // O/X 버튼 클릭 토글
@@ -131,14 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  dateInput.addEventListener("change", () => {
-    productSelect.value="";
-    countInput.value="";
-    countInput.disabled=true;
-    optionsContainer.style.display="none";
-    optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
-    checkDate();
-  });
+  dateInput.addEventListener("change", checkDate);
   checkDate();
 
   confirmBtn.addEventListener("click", () => {
@@ -146,25 +138,23 @@ document.addEventListener("DOMContentLoaded", () => {
     productSelect.disabled = false;
   });
 
-  // 제품 선택 시 수량 + 옵션 활성화
   productSelect.addEventListener("change", async () => {
     if (!productSelect.value) return;
     countInput.disabled = false;
     optionsContainer.style.display = "block";
 
-    // 중복 데이터 있을 경우 값 로드
+    // 중복 데이터 불러오기
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
     const res = await fetch(`${scriptUrl}?checkInput=${query}`);
     const data = await res.json();
     if (data.exists && data.data) {
       countInput.value = data.data.count || 0;
-      const keys = ["A","B","C","D","E"];
-      keys.forEach((k,i)=>{
+      ["A","B","C","D","E"].forEach((k,i)=>{
         const val = data.data[k];
         const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
         btns.forEach(b => b.classList.remove("selected"));
-        if (val === "O") btns[0].classList.add("selected");
-        else btns[1].classList.add("selected");
+        if(val==="O") btns[0].classList.add("selected");
+        else if(val==="X") btns[1].classList.add("selected");
       });
     } else {
       countInput.value = 0;
@@ -196,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = await res.text();
       alert("서버 응답: "+text);
 
-      // UI 초기화
       productSelect.value="";
       productSelect.disabled=false;
       countInput.value="";
@@ -204,7 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
       optionsContainer.style.display="none";
       optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
       duplicateMsg.style.display="none";
-
       checkDate();
     } catch(err){ alert("서버 오류:"+err.message); }
   });
