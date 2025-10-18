@@ -65,6 +65,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 
 <script>
 const scriptUrl = "https://script.google.com/macros/s/AKfycbyo6OcP1J9erEIEb2ZPDBtIZrOm2ti2Geu63vxowWzUBc864vhDxKW-ZxUfIn7zjX-wyQ/exec"; // 실제 Apps Script URL로 변경하세요
+
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
   const productSelect = document.getElementById("product");
@@ -74,43 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmBtn = document.getElementById("confirmBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 오늘 날짜 설정
+  // 오늘 날짜 자동 입력
   dateInput.valueAsDate = new Date();
 
-  // --- 유틸: 모든 폼 초기화 (날짜 변경 시 사용) ---
-  function clearAllFields() {
-    // 제품 선택 초기화 및 비활성화
-    if (productSelect) {
-      productSelect.value = "";
-      productSelect.disabled = true;
-    }
-    // 수량 초기화 및 비활성화
-    if (countInput) {
-      countInput.value = "";
-      countInput.disabled = true;
-    }
-    // OX 숨김 및 선택 초기화
-    if (optionsContainer) {
-      optionsContainer.style.display = "none";
-      optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-    }
-    // 중복 메시지 숨김
-    if (duplicateMsg) duplicateMsg.style.display = "none";
-  }
-
-  // --- 유틸: 제품 관련 필드 초기화 (제품 변경 시) ---
-  function clearProductFields() {
-    if (countInput) {
-      countInput.value = "";
-      countInput.disabled = true;
-    }
-    if (optionsContainer) {
-      optionsContainer.style.display = "none";
-      optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-    }
-  }
-
-  // O/X 버튼 클릭 토글
+  // O/X 버튼 토글
   optionsContainer.querySelectorAll(".option-buttons").forEach(group => {
     group.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -120,100 +88,103 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // --- 날짜 변경: 전체 초기화 후 중복 체크 수행 ---
-  async function onDateChange() {
-    clearAllFields();          // 반드시 먼저 초기화
-    await checkDate();         // 그 다음 기존 중복여부 확인 (이 함수는 product 활성화 여부 결정)
+  // ----- 유틸 함수: 초기화 -----
+  function clearAllInputs() {
+    // 제품은 초기화하지 않음(제품 선택 이벤트에서 호출 시 제품값은 유지)
+    // 수량 초기화 + 비활성화
+    countInput.value = "";
+    countInput.disabled = true;
+    // OX 초기화 + 숨김
+    optionsContainer.style.display = "none";
+    optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+    // 중복 메시지 숨김 & 기존 confirm 핸들러 제거
+    duplicateMsg.style.display = "none";
+    confirmBtn.onclick = null;
   }
 
-  // 날짜 변경 시 처리 등록
-  dateInput.addEventListener("change", onDateChange);
+  function clearProductInputs() {
+    // 제품 선택 변경 시 수량/옵션 모두 초기화
+    countInput.value = "";
+    countInput.disabled = true;
+    optionsContainer.style.display = "none";
+    optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+    duplicateMsg.style.display = "none";
+    confirmBtn.onclick = null;
+  }
 
-  // 기존 동작: 날짜 중복 체크 (서버 호출)
-  async function checkDate() {
-    // 날짜가 빈값이면 초기화 상태 유지
-    if (!dateInput.value) {
-      clearAllFields();
+  // 날짜 클릭/변경 시: 모든 입력/선택 초기화 및 제품 선택 초기화
+  dateInput.addEventListener("change", () => {
+    // 제품 선택 초기화
+    productSelect.value = "";
+    // 기타 입력 초기화
+    clearAllInputs();
+  });
+
+  // ✅ 제품 선택 시 중복확인 실행 (요청하신 로직에 맞춰 동작)
+  productSelect.addEventListener("change", async () => {
+    // 제품 선택이 비어있으면 초기화 후 바로 종료
+    if (!productSelect.value) {
+      clearProductInputs();
       return;
     }
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value }));
+
+    // 요청하신 대로: 제품을 선택하거나 바꿀 때 **먼저 전체 초기화**
+    clearProductInputs();
+
+    if (!dateInput.value) {
+      alert("날짜를 먼저 선택하세요.");
+      productSelect.value = "";
+      return;
+    }
+
+    // 중복 확인 (서버)
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
     try {
       const res = await fetch(`${scriptUrl}?checkInput=${query}`);
       const data = await res.json();
-      if (data.exists) {
-        // 이미 같은 날짜의 데이터가 존재할 경우: 제품선택은 잠깐 비활성화, 사용자 확인으로 풀어줌
+
+      if (data.exists && data.data) {
+        // 중복 데이터가 있으면 메시지 표시 (확인 누르면 값 로드)
         duplicateMsg.style.display = "block";
-        productSelect.disabled = true;
-        // 제품 목록은 서버에서 받은 제품 목록을 통해 다시 채우는 로직이 없다면
-        // 기존 하드코드된 제품 목록 유지됩니다. (제품 리스트를 서버에서 받으려면 getInputProducts 호출 추가)
+
+        // 안전하게 이전 onclick 제거 후 새로 설정
+        confirmBtn.onclick = null;
+        confirmBtn.onclick = () => {
+          // 확인 클릭 시: 메시지 숨기고 입력창 활성화 및 값 로드
+          duplicateMsg.style.display = "none";
+          countInput.disabled = false;
+          optionsContainer.style.display = "block";
+
+          countInput.value = data.data.count || 0;
+          ["A","B","C","D","E"].forEach((k,i)=>{
+            const val = data.data[k];
+            const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
+            btns.forEach(b => b.classList.remove("selected"));
+            if(val==="O") btns[0].classList.add("selected");
+            else if(val==="X") btns[1].classList.add("selected");
+          });
+        };
       } else {
-        duplicateMsg.style.display = "none";
-        productSelect.disabled = false;
-      }
-    } catch (err) {
-      console.error("checkDate error:", err);
-      // 에러 시에도 제품 선택은 활성화하지 않음 — 안전하게 초기상태 유지
-      duplicateMsg.style.display = "none";
-      productSelect.disabled = false;
-    }
-  }
-
-  // 초기 로드 시도 (날짜 기본값으로 체크)
-  checkDate();
-
-  // 확인 버튼 클릭 → 제품 활성화
-  confirmBtn.addEventListener("click", () => {
-    duplicateMsg.style.display = "none";
-    productSelect.disabled = false;
-  });
-
-  // --- 제품 선택 변경 시: 수량 + OX 초기화, 그리고 기존 데이터 불러오기 시 활성화 ---
-  productSelect.addEventListener("change", async () => {
-    // 항상 먼저 초기화 (요청하신 대로 수량도 초기화)
-    clearProductFields();
-
-    if (!productSelect.value) {
-      // 선택 취소이면 아무것도 하지 않음
-      return;
-    }
-
-    // 제품 선택이 있으면 수량 활성화 및 옵션영역 보이게 설정 (우선 기본 동작)
-    countInput.disabled = false;
-    optionsContainer.style.display = "block";
-
-    // 상세 데이터가 있는지 서버에서 확인
-    try {
-      const detailQuery = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
-      const detailRes = await fetch(`${scriptUrl}?checkInput=${detailQuery}`);
-      const detailData = await detailRes.json();
-
-      if (detailData.exists && detailData.data) {
-        // 서버에 저장된 값이 있으면 수량과 OX 복원
-        countInput.value = detailData.data.count || 0;
-        ["A","B","C","D","E"].forEach((k,i)=>{
-          const val = detailData.data[k];
-          const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
-          btns.forEach(b => b.classList.remove("selected"));
-          if(val==="O") btns[0].classList.add("selected");
-          else if(val==="X") btns[1].classList.add("selected");
-        });
-      } else {
-        // 기존 데이터 없음 => 새 입력 (수량은 초기화된 상태, 옵션도 초기화)
+        // 중복 데이터 없음 -> 새 입력: 활성화(빈 상태)
+        countInput.disabled = false;
+        optionsContainer.style.display = "block";
         countInput.value = "";
-        optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+        optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+        duplicateMsg.style.display = "none";
+        confirmBtn.onclick = null;
       }
-    } catch(err) {
-      console.error("productSelect change error:", err);
-      // 에러 발생 시에도 입력칸은 활성화 상태로 둡니다 (사용자가 새로 입력 가능)
+    } catch(err){
+      alert("서버 오류: " + err.message);
+      // 오류 시에도 입력창은 사용자가 입력 가능하도록 활성화
       countInput.disabled = false;
       optionsContainer.style.display = "block";
     }
   });
 
-  // --- 저장 버튼 ---
+  // ✅ 저장
   submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value) return alert("날짜 선택 필요");
-    if (!productSelect.value) return alert("제품 선택 필요");
+    if (!dateInput.value) return alert("날짜를 선택하세요.");
+    if (!productSelect.value) return alert("제품을 선택하세요.");
 
     const payload = {
       date: dateInput.value,
@@ -233,22 +204,15 @@ document.addEventListener("DOMContentLoaded", () => {
         body:"input="+encodeURIComponent(JSON.stringify(payload))
       });
       const text = await res.text();
-      alert("서버 응답: "+text);
+      alert("저장 완료!");
 
-      // 저장 후 기본 초기화 (제품선택 리셋)
+      // 저장 후 초기상태 (제품 선택은 해제)
       productSelect.value="";
-      productSelect.disabled=false;
-      countInput.value="";
-      countInput.disabled=true;
-      optionsContainer.style.display="none";
-      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
-      duplicateMsg.style.display="none";
-      checkDate();
+      clearAllInputs();
     } catch(err){ alert("서버 오류:"+err.message); }
   });
 
 });
 </script>
-
 </body>
 </html>
