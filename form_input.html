@@ -64,7 +64,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyo6OcP1J9erEIEb2ZPDBtIZrOm2ti2Geu63vxowWzUBc864vhDxKW-ZxUfIn7zjX-wyQ/exec"; // 실제 Apps Script URL로 변경하세요
+const scriptUrl = "https://script.google.com/macros/s/AKfycbyL0VlzGfJj0hE56s4zZ796t6BP3FlcwxKpB4s741sAn2tcHarSbkZsOml-Z43YFmvxhA/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
@@ -88,22 +88,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ----- 유틸 함수: 초기화 -----
+  // ----- 초기화 함수 -----
   function clearAllInputs() {
-    // 제품은 초기화하지 않음(제품 선택 이벤트에서 호출 시 제품값은 유지)
-    // 수량 초기화 + 비활성화
     countInput.value = "";
     countInput.disabled = true;
-    // OX 초기화 + 숨김
     optionsContainer.style.display = "none";
     optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-    // 중복 메시지 숨김 & 기존 confirm 핸들러 제거
     duplicateMsg.style.display = "none";
     confirmBtn.onclick = null;
   }
 
   function clearProductInputs() {
-    // 제품 선택 변경 시 수량/옵션 모두 초기화
     countInput.value = "";
     countInput.disabled = true;
     optionsContainer.style.display = "none";
@@ -112,23 +107,19 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmBtn.onclick = null;
   }
 
-  // 날짜 클릭/변경 시: 모든 입력/선택 초기화 및 제품 선택 초기화
+  // 날짜 변경 시 초기화
   dateInput.addEventListener("change", () => {
-    // 제품 선택 초기화
     productSelect.value = "";
-    // 기타 입력 초기화
     clearAllInputs();
   });
 
-  // ✅ 제품 선택 시 중복확인 실행 (요청하신 로직에 맞춰 동작)
+  // 제품 선택 시 중복 확인
   productSelect.addEventListener("change", async () => {
-    // 제품 선택이 비어있으면 초기화 후 바로 종료
     if (!productSelect.value) {
       clearProductInputs();
       return;
     }
 
-    // 요청하신 대로: 제품을 선택하거나 바꿀 때 **먼저 전체 초기화**
     clearProductInputs();
 
     if (!dateInput.value) {
@@ -137,24 +128,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 중복 확인 (서버)
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
     try {
       const res = await fetch(`${scriptUrl}?checkInput=${query}`);
       const data = await res.json();
 
       if (data.exists && data.data) {
-        // 중복 데이터가 있으면 메시지 표시 (확인 누르면 값 로드)
         duplicateMsg.style.display = "block";
-
-        // 안전하게 이전 onclick 제거 후 새로 설정
         confirmBtn.onclick = null;
         confirmBtn.onclick = () => {
-          // 확인 클릭 시: 메시지 숨기고 입력창 활성화 및 값 로드
           duplicateMsg.style.display = "none";
           countInput.disabled = false;
           optionsContainer.style.display = "block";
-
           countInput.value = data.data.count || 0;
           ["A","B","C","D","E"].forEach((k,i)=>{
             const val = data.data[k];
@@ -165,7 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         };
       } else {
-        // 중복 데이터 없음 -> 새 입력: 활성화(빈 상태)
         countInput.disabled = false;
         optionsContainer.style.display = "block";
         countInput.value = "";
@@ -175,51 +159,60 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch(err){
       alert("서버 오류: " + err.message);
-      // 오류 시에도 입력창은 사용자가 입력 가능하도록 활성화
       countInput.disabled = false;
       optionsContainer.style.display = "block";
     }
   });
 
-  // ✅ 저장
-submitBtn.addEventListener("click", async () => {
-  if (!dateInput.value) return alert("날짜를 선택하세요.");
-  if (!productSelect.value) return alert("제품을 선택하세요.");
+  // 저장
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) return alert("날짜를 선택하세요.");
+    if (!productSelect.value) return alert("제품을 선택하세요.");
 
-  const payload = {
-    date: dateInput.value,
-    product: productSelect.value,
-    count: countInput.value || 0,
-    A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected')?.textContent || "",
-    B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected')?.textContent || "",
-    C: optionsContainer.querySelector('.option-row:nth-child(3) .option-buttons button.selected')?.textContent || "",
-    D: optionsContainer.querySelector('.option-row:nth-child(4) .option-buttons button.selected')?.textContent || "",
-    E: optionsContainer.querySelector('.option-row:nth-child(5) .option-buttons button.selected')?.textContent || ""
-  };
-
-  try {
-    const res = await fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "input=" + encodeURIComponent(JSON.stringify(payload))
+    // 필수 입력 체크
+    const missingFields = [];
+    if (!countInput.value) missingFields.push("수량");
+    ["A","B","C","D","E"].forEach((k,i)=>{
+      const btnSelected = optionsContainer.querySelector(`.option-row:nth-child(${i+1}) .option-buttons button.selected`);
+      if(!btnSelected) missingFields.push(optionsContainer.querySelector(`.option-row:nth-child(${i+1}) .option-label`).textContent);
     });
-    
-    // ✅ 서버(GAS)에서 반환된 문구를 그대로 표시
-    const msg = await res.text();
-    alert(msg || "저장 완료!");
 
-    // ✅ 입력창 초기화
-    productSelect.value = "";
-    countInput.value = "";
-    countInput.disabled = true;
-    optionsContainer.style.display = "none";
-    optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-    duplicateMsg.style.display = "none";
-  } catch (err) {
-    alert("서버 오류: " + err.message);
-  }
-});
+    if(missingFields.length>0){
+      alert("다음 항목을 입력 또는 선택해주세요:\n- " + missingFields.join("\n- "));
+      return;
+    }
 
+    const payload = {
+      date: dateInput.value,
+      product: productSelect.value,
+      count: countInput.value,
+      A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected').textContent,
+      B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected').textContent,
+      C: optionsContainer.querySelector('.option-row:nth-child(3) .option-buttons button.selected').textContent,
+      D: optionsContainer.querySelector('.option-row:nth-child(4) .option-buttons button.selected').textContent,
+      E: optionsContainer.querySelector('.option-row:nth-child(5) .option-buttons button.selected').textContent
+    };
+
+    try {
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "input=" + encodeURIComponent(JSON.stringify(payload))
+      });
+      
+      const msg = await res.text();
+      alert(msg || "저장 완료!");
+
+      productSelect.value = "";
+      countInput.value = "";
+      countInput.disabled = true;
+      optionsContainer.style.display = "none";
+      optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+      duplicateMsg.style.display = "none";
+    } catch (err) {
+      alert("서버 오류: " + err.message);
+    }
+  });
 });
 </script>
 </body>
