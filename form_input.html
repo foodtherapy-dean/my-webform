@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ----- 초기화 함수 -----
+  // 초기화 함수
   function clearAllInputs() {
     countInput.value = "";
     countInput.disabled = true;
@@ -115,18 +115,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 제품 선택 시 중복 확인
   productSelect.addEventListener("change", async () => {
-    if (!productSelect.value) {
-      clearProductInputs();
-      return;
-    }
-
+    if (!productSelect.value) { clearProductInputs(); return; }
     clearProductInputs();
-
-    if (!dateInput.value) {
-      alert("날짜를 먼저 선택하세요.");
-      productSelect.value = "";
-      return;
-    }
+    if (!dateInput.value) { alert("날짜를 먼저 선택하세요."); productSelect.value=""; return; }
 
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, product: productSelect.value }));
     try {
@@ -144,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ["A","B","C","D","E"].forEach((k,i)=>{
             const val = data.data[k];
             const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
-            btns.forEach(b => b.classList.remove("selected"));
+            btns.forEach(b=>b.classList.remove("selected"));
             if(val==="O") btns[0].classList.add("selected");
             else if(val==="X") btns[1].classList.add("selected");
           });
@@ -157,11 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
         duplicateMsg.style.display = "none";
         confirmBtn.onclick = null;
       }
-    } catch(err){
-      alert("서버 오류: " + err.message);
-      countInput.disabled = false;
-      optionsContainer.style.display = "block";
-    }
+    } catch(err){ alert("서버 오류: "+err.message); countInput.disabled=false; optionsContainer.style.display="block"; }
   });
 
   // 저장
@@ -176,14 +163,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const btnSelected = optionsContainer.querySelector(`.option-row:nth-child(${i+1}) .option-buttons button.selected`);
       if(!btnSelected) missingFields.push(optionsContainer.querySelector(`.option-row:nth-child(${i+1}) .option-label`).textContent);
     });
+    if(missingFields.length>0){ alert("다음 항목을 입력 또는 선택해주세요:\n- "+missingFields.join("\n- ")); return; }
 
-    if(missingFields.length>0){
-      alert("다음 항목을 입력 또는 선택해주세요:\n- " + missingFields.join("\n- "));
-      return;
-    }
-
+    // payload
     const payload = {
-      date: dateInput.value,
+      date: dateInput.value, // yyyy-MM-dd
       product: productSelect.value,
       count: countInput.value,
       A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected').textContent,
@@ -199,19 +183,17 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "input=" + encodeURIComponent(JSON.stringify(payload))
       });
-      
       const msg = await res.text();
       alert(msg || "저장 완료!");
 
+      // 초기화
       productSelect.value = "";
       countInput.value = "";
       countInput.disabled = true;
       optionsContainer.style.display = "none";
-      optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
-      duplicateMsg.style.display = "none";
-    } catch (err) {
-      alert("서버 오류: " + err.message);
-    }
+      optionsContainer.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+      duplicateMsg.style.display="none";
+    } catch(err){ alert("서버 오류: "+err.message); }
   });
 });
 </script>
