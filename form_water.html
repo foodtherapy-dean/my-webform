@@ -1,130 +1,202 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>지하수 검침기록</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지하수 점검</title>
   <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: sans-serif;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.app-header {
-  flex: 0 0 auto;
-  background-color: #2196F3;
-  color: white;
-  text-align: center;
-  padding: 16px;
-  font-size: 1.5rem;
-}
-
-.app-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 16px;
-  box-sizing: border-box;
-  background-color: #f9f9f9;
-}
-
-.app-footer {
-  flex: 0 0 auto;
-}
-
-label {
-  display: block;
-  margin-top: 20px;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-input[type="date"],
-input[type="number"] {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  box-sizing: border-box;
-  font-size: 1.2rem;
-  text-align: center;
-}
-
-button[type="submit"] {
-  width: 100%;
-  font-size: 1.4rem;
-  padding: 18px 0;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-button[type="submit"]:hover {
-  background-color: #45a049;
-}
+    body {
+      font-family: "Noto Sans KR", sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #f7f9fb;
+    }
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: #0078d7;
+      color: #fff;
+      text-align: center;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 10;
+    }
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 70px 15px 100px 15px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 12px 0 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .ox-group {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .ox-item {
+      background: white;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 10px 0;
+    }
+    .ox-item label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .ox-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+    .ox-btn {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 6px 0;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      background: #f0f0f0;
+    }
+    .ox-btn.active {
+      background: #0078d7;
+      color: white;
+      border-color: #0078d7;
+    }
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    }
+    button {
+      width: 100%;
+      background: #0078d7;
+      color: white;
+      font-size: 18px;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:active {
+      background: #005fa3;
+    }
   </style>
 </head>
 <body>
-  <div class="app-container">
-    <div class="app-header">💧 지하수 검침</div>
+  <header>💧 지하수 점검</header>
 
-    <form id="waterForm" class="app-body">
-      <label for="date">📅 날짜</label>
+  <main>
+    <form id="waterForm">
+      <label>날짜</label>
       <input type="date" id="date" required>
 
-      <label for="value">🔢 수치 (m³)</label>
-      <input type="number" id="value" min="0" step="0.1" required>
-    </form>
+      <label>점검 구분</label>
+      <select id="option" required>
+        <option value="">선택하세요</option>
+        <option value="검침">검침</option>
+        <option value="정기점검">정기점검</option>
+      </select>
 
-    <div class="app-footer">
-      <button type="submit" form="waterForm">📥 서버로 전송</button>
-    </div>
-  </div>
+      <label>수치 (Value)</label>
+      <input type="number" id="value" step="0.01" placeholder="예: 13.7">
+
+      <label>세부 항목 (A~J)</label>
+      <div class="ox-group" id="oxGroup"></div>
+    </form>
+  </main>
+
+  <footer>
+    <button type="button" onclick="submitWater()">저장하기</button>
+  </footer>
 
   <script>
+    // ===== 설정 =====
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbxzscfcMW2ll7rIZ088QRkc7btesVFE4XoZBGakdVla38LgWODrD0DUA-oj4QvMsGSiEw/exec";
+    const oxLabels = ["A","B","C","D","E","F","G","H","I","J"];
+
+    // ===== OX 버튼 UI 생성 =====
+    const group = document.getElementById("oxGroup");
+    oxLabels.forEach(k => {
+      const div = document.createElement("div");
+      div.className = "ox-item";
+      div.innerHTML = `
+        <label>${k}</label>
+        <div class="ox-buttons">
+          <div class="ox-btn" data-key="${k}" data-value="O">O</div>
+          <div class="ox-btn" data-key="${k}" data-value="X">X</div>
+        </div>
+      `;
+      group.appendChild(div);
+    });
+
+    // 버튼 토글 기능
+    document.querySelectorAll(".ox-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.key;
+        document.querySelectorAll(\`.ox-btn[data-key='\${key}']\`).forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
+    // 오늘 날짜 자동입력
     document.getElementById("date").valueAsDate = new Date();
 
-    document.getElementById("waterForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-
+    // ===== 저장 함수 =====
+    function submitWater() {
       const date = document.getElementById("date").value;
-      const value = parseFloat(document.getElementById("value").value);
+      const option = document.getElementById("option").value;
+      const value = document.getElementById("value").value;
 
-      if (!date || isNaN(value)) {
-        alert("날짜와 수치를 모두 입력하세요.");
+      if (!date || !option) {
+        alert("날짜와 점검 구분을 선택해주세요.");
         return;
       }
 
-      const data = { date, value };
-      const formData = new FormData();
-      formData.append("water", JSON.stringify(data));
+      // OX 상태 수집
+      const states = {};
+      oxLabels.forEach(k => {
+        const active = document.querySelector(\`.ox-btn[data-key='\${k}'].active\`);
+        states[k] = active ? active.dataset.value : "";
+      });
 
-      try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbxzscfcMW2ll7rIZ088QRkc7btesVFE4XoZBGakdVla38LgWODrD0DUA-oj4QvMsGSiEw/exec", {
-          method: "POST",
-          body: formData
-        });
+      const payload = { date, option, value, states };
 
-        const result = await response.text();
-        if (response.ok) {
-          alert("✅ 저장 완료!\n\n" + result);
-          document.getElementById("waterForm").reset();
-          document.getElementById("date").valueAsDate = new Date();
-        } else {
-          alert("❌ 서버 오류:\n\n" + result);
-        }
-      } catch (err) {
-        alert("❌ 오류 발생:\n\n" + err.message);
-      }
-    });
+      fetch(BASE_URL, {
+        method: "POST",
+        body: new URLSearchParams({ water: JSON.stringify(payload) }),
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert(msg || "저장 완료");
+        document.getElementById("waterForm").reset();
+        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("date").valueAsDate = new Date();
+      })
+      .catch(err => alert("❌ 오류 발생: " + err));
+    }
   </script>
 </body>
 </html>
