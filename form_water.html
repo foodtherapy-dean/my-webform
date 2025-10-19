@@ -143,29 +143,29 @@
 
     // 기존 데이터 불러오기
     loadBtn.addEventListener("click", ()=>{
-      const date = dateInput.value;
-      const option = optionSelect.value;
-      fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
-        .then(res=>res.json())
-        .then(data=>{
-          if(option==="검침"){
-            valueInput.value = data.data?.value || "";
-            valueInput.disabled = false;
-            checklistDiv.style.display = "none";
-          } else {
-            // OX 버튼 적용
-            Object.keys(data.states||{}).forEach(k=>{
-              const val = data.states[k];
-              if(!val) return;
-              const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
-              if(btn) btn.classList.add("active");
-            });
-            checklistDiv.style.display="block";
-            valueInput.disabled=true;
-          }
-          dupBox.style.display="none";
+  const date = dateInput.value;
+  const option = optionSelect.value;
+  fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
+    .then(res=>res.json())
+    .then(data=>{
+      if(option==="검침"){
+        valueInput.value = data.data?.value || "";
+        valueInput.disabled = false;
+        checklistDiv.style.display = "none";
+      } else {
+        // OX 버튼 적용
+        Object.keys(data.states||{}).forEach(k=>{
+          const val = data.states[k];
+          if(!val) return;
+          const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
+          if(btn) btn.classList.add("active");
         });
+        checklistDiv.style.display="block";
+        valueInput.disabled=true;
+      }
+      dupBox.style.display="none";
     });
+});
 
     // 저장
     document.getElementById("saveBtn").addEventListener("click", ()=>{
