@@ -50,11 +50,11 @@
 </form>
 </main>
 <footer>
-<button id="saveBtn" type="button">저장하기</button>
+  <button id="saveBtn" type="button">저장하기</button>
 </footer>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbw9cz3HUH_MVKRyzf2Zpzkmg9FK4OuxU803d2aWBdCY8Hqh8p9x1nR4WRJlZEIvrl5ygw/exec"; // 구글 앱스크립트 배포 URL
+const BASE_URL = "https://script.google.com/macros/s/AKfycbw9cz3HUH_MVKRyzf2Zpzkmg9FK4OuxU803d2aWBdCY8Hqh8p9x1nR4WRJlZEIvrl5ygw/exec";
 
 const checkItems = [
   "쓰레기 등 불필요한 물건 방치여부",
@@ -80,7 +80,7 @@ const valueInput = document.getElementById("value");
 // 오늘 날짜 기본값
 dateInput.valueAsDate = new Date();
 
-// 체크리스트 구성
+// 체크리스트 생성
 checkItems.forEach((t,i)=>{
   const div = document.createElement("div");
   div.className="item";
@@ -97,8 +97,8 @@ checkItems.forEach((t,i)=>{
 // O/X 버튼 토글
 function initOxButtons(){
   document.querySelectorAll(".ox-btn").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const key = btn.dataset.key;
+    btn.addEventListener("click",()=>{
+      const key=btn.dataset.key;
       document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
     });
@@ -108,8 +108,9 @@ initOxButtons();
 
 // UI 업데이트
 function updateUIForOption(){
-  const option = optionSelect.value;
-  if(option==="검침"){
+  const opt=optionSelect.value;
+  if(opt==="정기점검"){
+    valueInput.value="";
     valueBox.style.display="none";
     checklistDiv.style.display="none";
   } else {
@@ -119,98 +120,91 @@ function updateUIForOption(){
   checkDuplicate();
 }
 
-optionSelect.addEventListener("change", updateUIForOption);
-dateInput.addEventListener("change", updateUIForOption);
-
-// 중복 확인 + 기존 데이터 적용
-let currentData = null;
+// 중복확인
 function checkDuplicate(){
-  const date = dateInput.value;
-  const option = optionSelect.value;
+  const date=dateInput.value;
+  const option=optionSelect.value;
   if(!date||!option) return;
-
   fetch(`${BASE_URL}?checkWater=${JSON.stringify({date,option})}`)
     .then(res=>res.json())
     .then(res=>{
       if(res.exists){
         dupBox.style.display="block";
-        valueInput.disabled = true;
+        valueInput.disabled=true;
+        document.querySelectorAll(".ox-btn").forEach(b=>b.classList.remove("active"));
         checklistDiv.style.display="none";
-        currentData = res.data || null; // 기존 데이터 저장
-        // 기존 데이터 반영: 검침일 경우 수치, 정기점검일 경우 O/X
-        if(currentData){
-          if(option==="검침"){
-            valueInput.value = currentData.value || "";
-          } else {
-            Object.keys(currentData.states||{}).forEach(k=>{
-              const val = currentData.states[k];
-              if(!val) return;
-              const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
-              if(btn) btn.classList.add("active");
-            });
-          }
-        }
       } else {
         dupBox.style.display="none";
-        valueInput.disabled = option==="검침"?false:true;
-        checklistDiv.style.display = option==="정기점검"?"block":"none";
-        currentData = null;
+        if(option==="검침") valueBox.style.display="block";
+        else checklistDiv.style.display="block";
+        valueInput.disabled=false;
       }
-    }).catch(()=>{ dupBox.style.display="none"; valueInput.disabled=false; checklistDiv.style.display = option==="정기점검"?"block":"none"; });
+    }).catch(()=>{
+      dupBox.style.display="none";
+      valueInput.disabled=false;
+    });
 }
 
-// 확인 버튼 클릭
-loadBtn.addEventListener("click", ()=>{
-  const option = optionSelect.value;
-  if(option==="검침"){
-    valueBox.style.display="block";
-    valueInput.disabled = false;
-    checklistDiv.style.display="none";
-  } else {
-    checklistDiv.style.display="block";
-    valueBox.style.display="none";
-  }
-  dupBox.style.display="none";
+// 기존 데이터 불러오기
+loadBtn.addEventListener("click",()=>{
+  const date=dateInput.value;
+  const option=optionSelect.value;
+  fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
+    .then(res=>res.json())
+    .then(data=>{
+      if(option==="검침"){
+        valueInput.value=data.data?.value||"";
+        valueInput.disabled=false;
+        valueBox.style.display="block";
+        checklistDiv.style.display="none";
+      } else {
+        Object.keys(data.data||{}).forEach(k=>{
+          const val=data.data[k];
+          const btn=document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
+          if(btn) btn.classList.add("active");
+        });
+        checklistDiv.style.display="block";
+        valueBox.style.display="none";
+      }
+      dupBox.style.display="none";
+    });
 });
 
 // 저장
-document.getElementById("saveBtn").addEventListener("click", ()=>{
-  const date = dateInput.value;
-  const option = optionSelect.value;
-  const value = valueInput.value;
+document.getElementById("saveBtn").addEventListener("click",()=>{
+  const date=dateInput.value;
+  const option=optionSelect.value;
+  const value=valueInput.value;
 
   if(!date||!option) return alert("날짜와 점검구분을 입력하세요.");
 
-  const states = {};
-  let allSelected = true;
+  const states={};
+  let valid=true;
   checkItems.forEach(t=>{
-    const active = document.querySelector(`.ox-btn[data-key='${t}'].active`);
-    states[t] = active?active.dataset.value:"";
-    if(option==="정기점검" && !active) allSelected=false;
+    const active=document.querySelector(`.ox-btn[data-key='${t}'].active`);
+    states[t]=active?active.dataset.value:"";
+    if(option==="정기점검" && !active) valid=false;
   });
 
-  if(option==="검침" && !value) return alert("수치를 입력해야 합니다.");
-  if(option==="정기점검" && !allSelected) return alert("모든 선택 항목을 선택해야 합니다.");
+  if(option==="검침" && !value) { alert("수치를 입력하세요."); return; }
+  if(option==="정기점검" && !valid){ alert("모든 항목을 선택하세요."); return; }
 
-  const payload = {date, option, value, checklist:states};
+  const payload={date,option,value,states};
 
   fetch(BASE_URL,{
     method:"POST",
     body:new URLSearchParams({water:JSON.stringify(payload)})
- 
-fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({water:JSON.stringify(payload)})
   })
   .then(r=>r.text())
-  .then(msg=>{
-    alert(msg);
-    location.reload();
-  })
+  .then(msg=>{ alert(msg); location.reload(); })
   .catch(err=>alert("❌ 오류: "+err));
 });
 
-// 초기 UI 설정
+// 이벤트
+optionSelect.addEventListener("change",updateUIForOption);
+dateInput.addEventListener("change",updateUIForOption);
+
+// 초기 UI
 updateUIForOption();
 </script>
 </body>
