@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>지하수 점검</title>
+<title>지하수관리</title>
 <style>
   body { font-family: "Noto Sans KR", sans-serif; margin:0; display:flex; flex-direction:column; height:100vh; background:#f4f7fb;}
   header {
@@ -14,9 +14,9 @@
   label {font-weight:600; margin-top:10px; display:block; text-align:left;}
   input, select {
     width:100%; padding:10px; font-size:16px; border:1px solid #ccc;
-    border-radius:8px; box-sizing:border-box; margin-top:5px; text-align:center;
+    border-radius:8px; box-sizing:border-box; margin-top:5px; text-align:left;
   }
-  select { text-align:left; padding-left:10px; }
+  select { padding-left:10px; }
   #valueBox { margin-top:15px; display:none; }
   .checklist { display:none; margin-top:20px; }
   .item { background:#fff; border-radius:10px; padding:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
@@ -31,13 +31,13 @@
     box-shadow:0 -2px 8px rgba(0,0,0,0.1); display:flex; justify-content:center; z-index:10;
   }
   button#saveBtn {
-    width:100%; max-width:500px; background:#0078d7; color:white; border:none;
+    width:100%; background:#0078d7; color:white; border:none;
     padding:16px; font-size:20px; border-radius:10px; font-weight:bold; cursor:pointer;
   }
 </style>
 </head>
 <body>
-<header>💧 지하수 점검</header>
+<header>지하수 관리</header>
 <main>
   <form id="waterForm">
     <label>날짜</label>
@@ -177,8 +177,7 @@ document.getElementById("saveBtn").addEventListener("click", ()=>{
   fetch(BASE_URL,{
     method:"POST",
     body:new URLSearchParams({water:JSON.stringify(payload)})
-  })
-    .then(r=>r.text())
+  }).then(r=>r.text())
     .then(msg=>{ alert(msg); location.reload(); })
     .catch(err=>alert("❌ 오류: "+err));
 });
