@@ -7,9 +7,19 @@
 <style>
   body { font-family: "Noto Sans KR", sans-serif; margin:0; display:flex; flex-direction:column; height:100vh; background:#f4f7fb;}
   header {
-    background:#0078d7; color:white; padding:18px; font-weight:bold;
-    text-align:center; position:fixed; width:100%; top:0; z-index:10; font-size:26px;
-  }
+  background:#0078d7;
+  color:white;
+  font-weight:bold;
+  font-size:26px; /* 글씨 크기 */
+  position:fixed;
+  width:100%;
+  top:0;
+  z-index:10;
+  padding:14px 0; /* 좌우 패딩 제거, 세로 패딩만 */
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
   main {flex:1; overflow-y:auto; padding:90px 15px 100px;}
   label {font-weight:600; margin-top:10px; display:block; text-align:left;}
   input, select {
@@ -68,25 +78,28 @@
 
 <style>
   footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background: #0078d7;
-    padding: 8px 16px; /* 세로 패딩 낮춤 */
-    text-align: center;
-    z-index: 10;
-  }
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #0078d7;
+  padding: 0; /* 좌우 패딩 제거 */
+  text-align: center;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  button#saveBtn {
-    width: 100%;
-    background: transparent;
-    color: white;
-    border: none;
-    font-size: 22px; /* 글씨 크기 조금 낮춤 */
-    font-weight: bold;
-    padding: 8px 0; /* 버튼 세로 패딩 조절 */
-    cursor: pointer;
-  }
+button#saveBtn {
+  width: 100%;
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  padding: 12px 0; /* 버튼 높이만 조절 */
+  cursor: pointer;
+}
 </style>
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbw9cz3HUH_MVKRyzf2Zpzkmg9FK4OuxU803d2aWBdCY8Hqh8p9x1nR4WRJlZEIvrl5ygw/exec";
