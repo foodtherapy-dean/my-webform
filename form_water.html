@@ -1,212 +1,198 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💧 지하수 점검</title>
-<style>
-  body { font-family: "Noto Sans KR", sans-serif; margin:0; display:flex; flex-direction:column; height:100vh; background:#f4f7fb;}
-  header {background:#0078d7; color:white; padding:14px; font-weight:bold; text-align:center; position:fixed; width:100%; top:0; z-index:10;}
-  main {flex:1; overflow-y:auto; padding:70px 15px 100px;}
-  label {font-weight:600; margin-top:10px; display:block;}
-  input, select {width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; margin-top:5px;}
-  #valueBox { margin-top:15px; display:none; }
-  .checklist { display:none; margin-top:20px; }
-  .item { background:#fff; border-radius:10px; padding:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-  .item-title { font-weight:bold; margin-bottom:6px; }
-  .ox-buttons { display:flex; gap:8px; justify-content:center; margin-top:6px; }
-  .ox-btn { flex:1; padding:8px; border-radius:6px; border:1px solid #ccc; background:#f2f2f2; text-align:center; font-weight:bold; cursor:pointer; }
-  .ox-btn.active { background:#0078d7; color:white; border-color:#0078d7; }
-  #dupBox { display:none; margin-top:10px; padding:10px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; }
-  #dupBox button { margin-top:8px; background:#0078d7; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
-  footer { position:fixed; bottom:0; width:100%; background:white; padding:12px 16px; box-shadow:0 -2px 8px rgba(0,0,0,0.1); }
-  button#saveBtn { width:100%; background:#0078d7; color:white; border:none; padding:14px; font-size:18px; border-radius:10px; font-weight:bold; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💧 지하수 점검</title>
+  <style>
+    body { font-family: "Noto Sans KR", sans-serif; margin:0; display:flex; flex-direction:column; height:100vh; background:#f4f7fb;}
+    header {background:#0078d7; color:white; padding:14px; font-weight:bold; text-align:center; position:fixed; width:100%; top:0; z-index:10;}
+    main {flex:1; overflow-y:auto; padding:70px 15px 100px;}
+    label {font-weight:600; margin-top:10px; display:block;}
+    input, select {width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; margin-top:5px;}
+    #valueBox { margin-top:15px; }
+    .checklist { display:none; margin-top:20px; }
+    .item { background:#fff; border-radius:10px; padding:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .item-title { font-weight:bold; margin-bottom:6px; }
+    .ox-buttons { display:flex; gap:8px; justify-content:center; margin-top:6px; }
+    .ox-btn { flex:1; padding:8px; border-radius:6px; border:1px solid #ccc; background:#f2f2f2; text-align:center; font-weight:bold; cursor:pointer; }
+    .ox-btn.active { background:#0078d7; color:white; border-color:#0078d7; }
+    #dupBox { display:none; margin-top:10px; padding:10px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; }
+    #dupBox button { margin-top:8px; background:#0078d7; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+    footer { position:fixed; bottom:0; width:100%; background:white; padding:12px 16px; box-shadow:0 -2px 8px rgba(0,0,0,0.1); }
+    button#saveBtn { width:100%; background:#0078d7; color:white; border:none; padding:14px; font-size:18px; border-radius:10px; font-weight:bold; }
+  </style>
 </head>
 <body>
-<header>💧 지하수 점검</header>
-<main>
-<form id="waterForm">
-  <label>날짜</label>
-  <input type="date" id="date" required />
+  <header>💧 지하수 점검</header>
+  <main>
+    <form id="waterForm">
+      <label>날짜</label>
+      <input type="date" id="date" required />
 
-  <label>점검 구분</label>
-  <select id="option" required>
-    <option value="검침" selected>검침</option>
-    <option value="정기점검">정기점검</option>
-  </select>
+      <label>점검 구분</label>
+      <select id="option" required>
+        <option value="검침" selected>검침</option>
+        <option value="정기점검">정기점검</option>
+      </select>
 
-  <div id="dupBox">
-    <span>⚠️ 기존 데이터가 있습니다.</span><br>
-    <button type="button" id="loadBtn">확인</button>
-  </div>
+      <div id="dupBox">
+        <span>⚠️ 기존 데이터가 있습니다.</span><br>
+        <button type="button" id="loadBtn">확인</button>
+      </div>
 
-  <div id="valueBox">
-    <label>수치 입력</label>
-    <input type="number" id="value" step="0.01" placeholder="예: 12.4" />
-  </div>
+      <div id="valueBox">
+        <label>수치 입력</label>
+        <input type="number" id="value" step="0.01" placeholder="예: 12.4" />
+      </div>
 
-  <div class="checklist" id="checklist"></div>
-</form>
-</main>
-<footer>
-  <button id="saveBtn" type="button">저장하기</button>
-</footer>
+      <div class="checklist" id="checklist"></div>
+    </form>
+  </main>
+  <footer>
+    <button id="saveBtn" type="button">저장하기</button>
+  </footer>
 
-<script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbw9cz3HUH_MVKRyzf2Zpzkmg9FK4OuxU803d2aWBdCY8Hqh8p9x1nR4WRJlZEIvrl5ygw/exec";
+  <script>
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbw9cz3HUH_MVKRyzf2Zpzkmg9FK4OuxU803d2aWBdCY8Hqh8p9x1nR4WRJlZEIvrl5ygw/exec";
 
-const checkItems = [
-  "쓰레기 등 불필요한 물건 방치여부",
-  "청소상태 양호여부",
-  "잠금장치 상태",
-  "오염원 양호여부",
-  "저수조 균열여부",
-  "저수조내 침전물 상태",
-  "저수조내 부유물 상태",
-  "배관 누수 상태",
-  "급수펌프 작동유무",
-  "접합부 고정여부"
-];
+    const checkItems = [
+      "쓰레기 등 불필요한 물건 방치여부",
+      "청소상태 양호여부",
+      "잠금장치 상태",
+      "오염원 양호여부",
+      "저수조 균열여부",
+      "저수조내 침전물 상태",
+      "저수조내 부유물 상태",
+      "배관 누수 상태",
+      "급수펌프 작동유무",
+      "접합부 고정여부"
+    ];
 
-const dateInput = document.getElementById("date");
-const optionSelect = document.getElementById("option");
-const valueBox = document.getElementById("valueBox");
-const checklistDiv = document.getElementById("checklist");
-const dupBox = document.getElementById("dupBox");
-const loadBtn = document.getElementById("loadBtn");
-const valueInput = document.getElementById("value");
+    const dateInput = document.getElementById("date");
+    const optionSelect = document.getElementById("option");
+    const valueBox = document.getElementById("valueBox");
+    const checklistDiv = document.getElementById("checklist");
+    const dupBox = document.getElementById("dupBox");
+    const loadBtn = document.getElementById("loadBtn");
+    const valueInput = document.getElementById("value");
 
-// 오늘 날짜 기본값
-dateInput.valueAsDate = new Date();
+    // 오늘 날짜 기본값
+    dateInput.valueAsDate = new Date();
 
-// 체크리스트 생성
-checkItems.forEach((t,i)=>{
-  const div = document.createElement("div");
-  div.className="item";
-  div.innerHTML=`
-    <div class="item-title">${i+1}. ${t}</div>
-    <div class="ox-buttons">
-      <div class="ox-btn" data-key="${t}" data-value="O">O</div>
-      <div class="ox-btn" data-key="${t}" data-value="X">X</div>
-    </div>
-  `;
-  checklistDiv.appendChild(div);
-});
-
-// O/X 버튼 토글
-function initOxButtons(){
-  document.querySelectorAll(".ox-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      const key=btn.dataset.key;
-      document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
+    // 체크리스트 구성
+    checkItems.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="item-title">${i+1}. ${t}</div>
+        <div class="ox-buttons">
+          <div class="ox-btn" data-key="${t}" data-value="O">O</div>
+          <div class="ox-btn" data-key="${t}" data-value="X">X</div>
+        </div>
+      `;
+      checklistDiv.appendChild(div);
     });
-  });
-}
-initOxButtons();
 
-// UI 업데이트
-function updateUIForOption(){
-  const opt=optionSelect.value;
-  if(opt==="정기점검"){
-    valueInput.value="";
-    valueBox.style.display="none";
-    checklistDiv.style.display="none";
-  } else {
-    valueBox.style.display="none";
-    checklistDiv.style.display="none";
-  }
-  checkDuplicate();
-}
+    // 버튼 토글
+    function initOxButtons(){
+      document.querySelectorAll(".ox-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const key = btn.dataset.key;
+          document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b=>b.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      });
+    }
+    initOxButtons();
 
-// 중복확인
-function checkDuplicate(){
-  const date=dateInput.value;
-  const option=optionSelect.value;
-  if(!date||!option) return;
-  fetch(`${BASE_URL}?checkWater=${JSON.stringify({date,option})}`)
-    .then(res=>res.json())
-    .then(res=>{
-      if(res.exists){
-        dupBox.style.display="block";
-        valueInput.disabled=true;
-        document.querySelectorAll(".ox-btn").forEach(b=>b.classList.remove("active"));
-        checklistDiv.style.display="none";
+    // 옵션 전환 UI
+    function updateUIForOption(){
+      if(optionSelect.value==="정기점검"){
+        valueInput.value="";
+        valueBox.style.display="none";
+        checklistDiv.style.display="block";
       } else {
-        dupBox.style.display="none";
-        if(option==="검침") valueBox.style.display="block";
-        else checklistDiv.style.display="block";
-        valueInput.disabled=false;
+        valueBox.style.display="block";
+        checklistDiv.style.display="none";
       }
-    }).catch(()=>{
-      dupBox.style.display="none";
-      valueInput.disabled=false;
-    });
-}
+      checkDuplicate();
+    }
+    optionSelect.addEventListener("change", updateUIForOption);
+    dateInput.addEventListener("change", checkDuplicate);
 
-// 기존 데이터 불러오기
-loadBtn.addEventListener("click",()=>{
-  const date=dateInput.value;
-  const option=optionSelect.value;
+    // 중복 확인
+    function checkDuplicate(){
+      const date = dateInput.value;
+      const option = optionSelect.value;
+      if(!date||!option) return;
+      fetch(`${BASE_URL}?checkWater=${JSON.stringify({date,option})}`)
+        .then(res=>res.json())
+        .then(res=>{
+          if(res.exists){
+            dupBox.style.display="block";
+            valueInput.disabled = true;
+            document.querySelectorAll(".ox-btn").forEach(b=>b.classList.remove("active"));
+          } else {
+            dupBox.style.display="none";
+            valueInput.disabled = false;
+            checklistDiv.style.display = option==="정기점검"?"block":"none";
+          }
+        }).catch(()=>{dupBox.style.display="none"; valueInput.disabled=false;});
+    }
+
+    // 기존 데이터 불러오기
+    loadBtn.addEventListener("click", ()=>{
+  const date = dateInput.value;
+  const option = optionSelect.value;
   fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
     .then(res=>res.json())
     .then(data=>{
       if(option==="검침"){
-        valueInput.value=data.data?.value||"";
-        valueInput.disabled=false;
-        valueBox.style.display="block";
-        checklistDiv.style.display="none";
+        valueInput.value = data.data?.value || "";
+        valueInput.disabled = false;
+        checklistDiv.style.display = "none";
       } else {
-        // 정기점검 O/X 버튼 반영
-        Object.keys(data.data?.states||{}).forEach(k=>{
-          const val = data.data.states[k];
+        // OX 버튼 적용
+        Object.keys(data.states||{}).forEach(k=>{
+          const val = data.states[k];
+          if(!val) return;
           const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
           if(btn) btn.classList.add("active");
         });
         checklistDiv.style.display="block";
-        valueBox.style.display="none";
+        valueInput.disabled=true;
       }
       dupBox.style.display="none";
     });
 });
 
-// 저장
-document.getElementById("saveBtn").addEventListener("click",()=>{
-  const date=dateInput.value;
-  const option=optionSelect.value;
-  const value=valueInput.value;
+    // 저장
+    document.getElementById("saveBtn").addEventListener("click", ()=>{
+      const date = dateInput.value;
+      const option = optionSelect.value;
+      const value = valueInput.value;
+      if(!date||!option) return alert("날짜와 점검구분을 입력하세요.");
 
-  if(!date||!option) return alert("날짜와 점검구분을 입력하세요.");
+      const states = {};
+      checkItems.forEach(t=>{
+        const active = document.querySelector(`.ox-btn[data-key='${t}'].active`);
+        states[t] = active?active.dataset.value:"";
+      });
 
-  const states={};
-  let valid=true;
-  checkItems.forEach(t=>{
-    const active=document.querySelector(`.ox-btn[data-key='${t}'].active`);
-    states[t]=active?active.dataset.value:"";
-    if(option==="정기점검" && !active) valid=false;
-  });
+      const payload = {date, option, value, checklist:states};
 
-  if(option==="검침" && !value) { alert("수치를 입력하세요."); return; }
-  if(option==="정기점검" && !valid){ alert("모든 항목을 선택하세요."); return; }
+      fetch(BASE_URL,{
+        method:"POST",
+        body:new URLSearchParams({water:JSON.stringify(payload)})
+      })
+        .then(r=>r.text())
+        .then(msg=>{ alert(msg); location.reload(); })
+        .catch(err=>alert("❌ 오류: "+err));
+    });
 
-  const payload={date,option,value,states};
-
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({water:JSON.stringify(payload)})
-  })
-  .then(r=>r.text())
-  .then(msg=>{ alert(msg); location.reload(); })
-  .catch(err=>alert("❌ 오류: "+err));
-});
-
-// 이벤트
-optionSelect.addEventListener("change",updateUIForOption);
-dateInput.addEventListener("change",updateUIForOption);
-
-// 초기 UI
-updateUIForOption();
-</script>
+    // 초기 옵션 상태
+    updateUIForOption();
+  </script>
 </body>
 </html>
