@@ -158,9 +158,10 @@ loadBtn.addEventListener("click",()=>{
         valueBox.style.display="block";
         checklistDiv.style.display="none";
       } else {
-        Object.keys(data.data||{}).forEach(k=>{
-          const val=data.data[k];
-          const btn=document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
+        // 정기점검 O/X 버튼 반영
+        Object.keys(data.data?.states||{}).forEach(k=>{
+          const val = data.data.states[k];
+          const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
           if(btn) btn.classList.add("active");
         });
         checklistDiv.style.display="block";
