@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>지하수 점검</title>
   <style>
     body {
@@ -11,29 +11,28 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      background: #f7f9fb;
+      background: #f4f7fb;
     }
     header {
-      position: fixed;
-      top: 0;
-      width: 100%;
       background: #0078d7;
-      color: #fff;
-      text-align: center;
+      color: white;
       padding: 14px;
-      font-size: 18px;
       font-weight: bold;
+      text-align: center;
+      position: fixed;
+      width: 100%;
+      top: 0;
       z-index: 10;
     }
     main {
       flex: 1;
       overflow-y: auto;
-      padding: 70px 15px 100px 15px;
+      padding: 70px 15px 100px;
     }
     label {
-      font-weight: bold;
+      font-weight: 600;
+      margin-top: 10px;
       display: block;
-      margin: 12px 0 5px;
     }
     input, select {
       width: 100%;
@@ -42,44 +41,61 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       box-sizing: border-box;
+      margin-top: 5px;
     }
-    .ox-group {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      margin-top: 10px;
+    #valueBox { margin-top: 15px; }
+    .checklist {
+      display: none;
+      margin-top: 20px;
     }
-    .ox-item {
-      background: white;
-      border-radius: 12px;
-      text-align: center;
+    .item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      padding: 10px 0;
     }
-    .ox-item label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 5px;
+    .item-title {
+      font-weight: bold;
+      margin-bottom: 6px;
     }
     .ox-buttons {
       display: flex;
+      gap: 8px;
       justify-content: center;
-      gap: 6px;
+      margin-top: 6px;
     }
     .ox-btn {
       flex: 1;
+      padding: 8px;
+      border-radius: 6px;
       border: 1px solid #ccc;
-      padding: 6px 0;
+      background: #f2f2f2;
       text-align: center;
-      border-radius: 8px;
-      cursor: pointer;
       font-weight: bold;
-      background: #f0f0f0;
+      cursor: pointer;
     }
     .ox-btn.active {
       background: #0078d7;
       color: white;
       border-color: #0078d7;
+    }
+    #dupBox {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 8px;
+    }
+    #dupBox button {
+      margin-top: 8px;
+      background: #0078d7;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
     }
     footer {
       position: fixed;
@@ -89,19 +105,15 @@
       padding: 12px 16px;
       box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
-    button {
+    button#saveBtn {
       width: 100%;
       background: #0078d7;
       color: white;
-      font-size: 18px;
-      padding: 12px;
       border: none;
+      padding: 14px;
+      font-size: 18px;
       border-radius: 10px;
-      cursor: pointer;
       font-weight: bold;
-    }
-    button:active {
-      background: #005fa3;
     }
   </style>
 </head>
@@ -111,92 +123,159 @@
   <main>
     <form id="waterForm">
       <label>날짜</label>
-      <input type="date" id="date" required>
+      <input type="date" id="date" required />
 
       <label>점검 구분</label>
       <select id="option" required>
-        <option value="">선택하세요</option>
-        <option value="검침">검침</option>
+        <option value="검침" selected>검침</option>
         <option value="정기점검">정기점검</option>
       </select>
 
-      <label>수치 (Value)</label>
-      <input type="number" id="value" step="0.01" placeholder="예: 13.7">
+      <div id="dupBox">
+        <span>⚠️ 기존 데이터가 있습니다.</span><br>
+        <button type="button" id="loadBtn">확인</button>
+      </div>
 
-      <label>세부 항목 (A~J)</label>
-      <div class="ox-group" id="oxGroup"></div>
+      <div id="valueBox">
+        <label>수치 입력</label>
+        <input type="number" id="value" step="0.01" placeholder="예: 12.4" />
+      </div>
+
+      <div class="checklist" id="checklist"></div>
     </form>
   </main>
 
   <footer>
-    <button type="button" onclick="submitWater()">저장하기</button>
+    <button id="saveBtn" type="button">저장하기</button>
   </footer>
 
   <script>
-    // ===== 설정 =====
     const BASE_URL = "https://script.google.com/macros/s/AKfycbxzscfcMW2ll7rIZ088QRkc7btesVFE4XoZBGakdVla38LgWODrD0DUA-oj4QvMsGSiEw/exec";
-    const oxLabels = ["A","B","C","D","E","F","G","H","I","J"];
 
-    // ===== OX 버튼 UI 생성 =====
-    const group = document.getElementById("oxGroup");
-    oxLabels.forEach(k => {
+    const checkItems = [
+      "쓰레기 등 불필요한 물건 방치여부",
+      "청소상태 양호여부",
+      "잠금장치 상태",
+      "오염원 양호여부",
+      "저수조 균열여부",
+      "저수조내 침전물 상태",
+      "저수조내 부유물 상태",
+      "배관 누수 상태",
+      "급수펌프 작동유무",
+      "접합부 고정여부"
+    ];
+
+    const dateInput = document.getElementById("date");
+    const optionSelect = document.getElementById("option");
+    const valueBox = document.getElementById("valueBox");
+    const checklistDiv = document.getElementById("checklist");
+    const dupBox = document.getElementById("dupBox");
+    const loadBtn = document.getElementById("loadBtn");
+
+    // 오늘 날짜 기본값
+    dateInput.valueAsDate = new Date();
+
+    // 체크리스트 구성
+    checkItems.forEach((t, i) => {
       const div = document.createElement("div");
-      div.className = "ox-item";
+      div.className = "item";
       div.innerHTML = `
-        <label>${k}</label>
+        <div class="item-title">${i + 1}. ${t}</div>
         <div class="ox-buttons">
-          <div class="ox-btn" data-key="${k}" data-value="O">O</div>
-          <div class="ox-btn" data-key="${k}" data-value="X">X</div>
+          <div class="ox-btn" data-key="${t}" data-value="O">O</div>
+          <div class="ox-btn" data-key="${t}" data-value="X">X</div>
         </div>
       `;
-      group.appendChild(div);
+      checklistDiv.appendChild(div);
     });
 
-    // 버튼 토글 기능
+    // 버튼 토글
     document.querySelectorAll(".ox-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const key = btn.dataset.key;
-        document.querySelectorAll(\`.ox-btn[data-key='\${key}']\`).forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
       });
     });
 
-    // 오늘 날짜 자동입력
-    document.getElementById("date").valueAsDate = new Date();
+    // 옵션 전환 시 UI 변경
+    optionSelect.addEventListener("change", () => {
+      if (optionSelect.value === "정기점검") {
+        document.getElementById("value").value = "";
+        valueBox.style.display = "none";
+        checklistDiv.style.display = "block";
+      } else {
+        valueBox.style.display = "block";
+        checklistDiv.style.display = "none";
+      }
+      checkDuplicate();
+    });
 
-    // ===== 저장 함수 =====
-    function submitWater() {
-      const date = document.getElementById("date").value;
-      const option = document.getElementById("option").value;
+    dateInput.addEventListener("change", checkDuplicate);
+
+    // 중복 확인
+    function checkDuplicate() {
+      const date = dateInput.value;
+      const option = optionSelect.value;
+      if (!date || !option) return;
+
+      fetch(`${BASE_URL}?checkWater=${JSON.stringify({ date, option })}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.exists) dupBox.style.display = "block";
+          else dupBox.style.display = "none";
+        })
+        .catch(() => dupBox.style.display = "none");
+    }
+
+    // 기존 데이터 불러오기
+    loadBtn.addEventListener("click", () => {
+      const date = dateInput.value;
+      const option = optionSelect.value;
+      fetch(`${BASE_URL}?getWater=${JSON.stringify({ date, option })}`)
+        .then(res => res.json())
+        .then(data => {
+          if (option === "검침") {
+            document.getElementById("value").value = data.value || "";
+          } else {
+            Object.keys(data.states || {}).forEach(k => {
+              const val = data.states[k];
+              if (!val) return;
+              const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
+              if (btn) btn.classList.add("active");
+            });
+          }
+          dupBox.style.display = "none";
+        });
+    });
+
+    // 저장
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const date = dateInput.value;
+      const option = optionSelect.value;
       const value = document.getElementById("value").value;
 
-      if (!date || !option) {
-        alert("날짜와 점검 구분을 선택해주세요.");
-        return;
-      }
+      if (!date || !option) return alert("날짜와 점검구분을 입력하세요.");
 
-      // OX 상태 수집
       const states = {};
-      oxLabels.forEach(k => {
-        const active = document.querySelector(\`.ox-btn[data-key='\${k}'].active\`);
-        states[k] = active ? active.dataset.value : "";
+      checkItems.forEach(t => {
+        const active = document.querySelector(`.ox-btn[data-key='${t}'].active`);
+        states[t] = active ? active.dataset.value : "";
       });
 
       const payload = { date, option, value, states };
 
       fetch(BASE_URL, {
         method: "POST",
-        body: new URLSearchParams({ water: JSON.stringify(payload) }),
+        body: new URLSearchParams({ water: JSON.stringify(payload) })
       })
-      .then(res => res.text())
-      .then(msg => {
-        alert(msg || "저장 완료");
-        document.getElementById("waterForm").reset();
-        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-        document.getElementById("date").valueAsDate = new Date();
-      })
-      .catch(err => alert("❌ 오류 발생: " + err));
-    }
+        .then(r => r.text())
+        .then(msg => {
+          alert(msg);
+          location.reload();
+        })
+        .catch(err => alert("❌ 오류: " + err));
+    });
   </script>
 </body>
 </html>
