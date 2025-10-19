@@ -150,132 +150,137 @@
   </footer>
 
   <script>
-    const BASE_URL = "https://script.google.com/macros/s/AKfycbwKgMIoLZEry7gCt3ovyYmBc8z0y5mJsjH_9wQp3y9D-tTuG-B8BMnKjVjoU2VzB79FhQ/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwKgMIoLZEry7gCt3ovyYmBc8z0y5mJsjH_9wQp3y9D-tTuG-B8BMnKjVjoU2VzB79FhQ/exec";
+const dateInput = document.getElementById("date");
+const optionSelect = document.getElementById("option");
+const valueInput = document.getElementById("valueInput");
+const checklistContainer = document.getElementById("checklistContainer");
+const saveBtn = document.getElementById("saveBtn");
 
-    const checkItems = [
-      "쓰레기 등 불필요한 물건 방치여부",
-      "청소상태 양호여부",
-      "잠금장치 상태",
-      "오염원 양호여부",
-      "저수조 균열여부",
-      "저수조내 침전물 상태",
-      "저수조내 부유물 상태",
-      "배관 누수 상태",
-      "급수펌프 작동유무",
-      "접합부 고정여부"
-    ];
+let currentOption = "검침";
+let currentChecklist = {}; // OX 상태 저장
 
-    const dateInput = document.getElementById("date");
-    const optionSelect = document.getElementById("option");
-    const valueBox = document.getElementById("valueBox");
-    const checklistDiv = document.getElementById("checklist");
-    const dupBox = document.getElementById("dupBox");
-    const loadBtn = document.getElementById("loadBtn");
+// ✅ 1️⃣ 옵션 선택시 동작
+optionSelect.addEventListener("change", async () => {
+  currentOption = optionSelect.value;
+  checklistContainer.innerHTML = "";
+  valueInput.value = "";
+  valueInput.disabled = true;
+  saveBtn.disabled = true;
 
-    // 오늘 날짜 기본값
-    dateInput.valueAsDate = new Date();
+  if (!dateInput.value) {
+    alert("날짜를 먼저 선택해주세요.");
+    optionSelect.value = "";
+    return;
+  }
 
-    // 체크리스트 구성
-    checkItems.forEach((t, i) => {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div class="item-title">${i + 1}. ${t}</div>
-        <div class="ox-buttons">
-          <div class="ox-btn" data-key="${t}" data-value="O">O</div>
-          <div class="ox-btn" data-key="${t}" data-value="X">X</div>
-        </div>
-      `;
-      checklistDiv.appendChild(div);
-    });
+  // 🔹 1. 중복 여부 확인
+  const payload = { date: dateInput.value, option: currentOption };
+  const res = await fetch(`${BASE_URL}?checkWater=${JSON.stringify(payload)}`);
+  const data = await res.json();
 
-    // 버튼 토글
-    document.querySelectorAll(".ox-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const key = btn.dataset.key;
-        document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-      });
-    });
-
-    // 옵션 전환 시 UI 변경
-    optionSelect.addEventListener("change", () => {
-      if (optionSelect.value === "정기점검") {
-        document.getElementById("value").value = "";
-        valueBox.style.display = "none";
-        checklistDiv.style.display = "block";
-      } else {
-        valueBox.style.display = "block";
-        checklistDiv.style.display = "none";
+  if (data.exists) {
+    // 🔸 중복데이터 존재 → 메시지 띄우기
+    if (confirm(`이미 '${currentOption}' 데이터가 존재합니다. 불러오시겠습니까?`)) {
+      // ✅ 기존 데이터 불러오기
+      const fetchRes = await fetch(`${BASE_URL}?getWater=${JSON.stringify(payload)}`);
+      const result = await fetchRes.json();
+      if (result.exists) {
+        if (currentOption === "검침") {
+          valueInput.disabled = false;
+          valueInput.value = result.data.value || "";
+        } else if (currentOption === "정기점검") {
+          renderChecklist(result.data);
+        }
       }
-      checkDuplicate();
-    });
-
-    dateInput.addEventListener("change", checkDuplicate);
-
-    // 중복 확인
-    function checkDuplicate() {
-      const date = dateInput.value;
-      const option = optionSelect.value;
-      if (!date || !option) return;
-
-      fetch(`${BASE_URL}?checkWater=${JSON.stringify({ date, option })}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.exists) dupBox.style.display = "block";
-          else dupBox.style.display = "none";
-        })
-        .catch(() => dupBox.style.display = "none");
+      saveBtn.disabled = false;
     }
+  } else {
+    // 🔹 새 데이터
+    if (currentOption === "검침") {
+      valueInput.disabled = false;
+      checklistContainer.innerHTML = "";
+    } else if (currentOption === "정기점검") {
+      renderChecklist(); // 신규 체크리스트 렌더링
+    }
+    saveBtn.disabled = false;
+  }
+});
 
-    // 기존 데이터 불러오기
-    loadBtn.addEventListener("click", () => {
-      const date = dateInput.value;
-      const option = optionSelect.value;
-      fetch(`${BASE_URL}?getWater=${JSON.stringify({ date, option })}`)
-        .then(res => res.json())
-        .then(data => {
-          if (option === "검침") {
-            document.getElementById("value").value = data.value || "";
-          } else {
-            Object.keys(data.states || {}).forEach(k => {
-              const val = data.states[k];
-              if (!val) return;
-              const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
-              if (btn) btn.classList.add("active");
-            });
-          }
-          dupBox.style.display = "none";
-        });
+// ✅ 2️⃣ 정기점검 체크리스트 UI 생성
+function renderChecklist(dataObj = {}) {
+  const items = [
+    "쓰레기 등 불필요한 물건 방치여부",
+    "청소상태 양호여부",
+    "장금장치 상태",
+    "오염원 양호여부",
+    "저수조 균열여부",
+    "저수조내 침전물 상태",
+    "저수조내 부유물 상태",
+    "배관 누수 상태",
+    "급수펌프 작동유무",
+    "접합부 고정여부",
+  ];
+
+  checklistContainer.innerHTML = "";
+  valueInput.disabled = true;
+
+  items.forEach((label, idx) => {
+    const div = document.createElement("div");
+    div.className = "check-row";
+    div.innerHTML = `
+      <label>${label}</label>
+      <button type="button" class="ox-btn" data-key="${idx}" data-val="O">O</button>
+      <button type="button" class="ox-btn" data-key="${idx}" data-val="X">X</button>
+    `;
+    checklistContainer.appendChild(div);
+
+    // 기존값 반영
+    if (dataObj[`col${idx+4}`]) {
+      const val = dataObj[`col${idx+4}`];
+      currentChecklist[idx] = val;
+      const btn = div.querySelector(`button[data-val="${val}"]`);
+      if (btn) btn.classList.add("selected");
+    }
+  });
+
+  checklistContainer.querySelectorAll(".ox-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const key = e.target.dataset.key;
+      const val = e.target.dataset.val;
+      currentChecklist[key] = val;
+      // 토글 처리
+      e.target.parentElement.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("selected"));
+      e.target.classList.add("selected");
     });
+  });
+}
 
-    // 저장
-    document.getElementById("saveBtn").addEventListener("click", () => {
-      const date = dateInput.value;
-      const option = optionSelect.value;
-      const value = document.getElementById("value").value;
+// ✅ 3️⃣ 저장
+saveBtn.addEventListener("click", async () => {
+  if (!dateInput.value || !currentOption) return alert("날짜와 옵션을 선택하세요.");
 
-      if (!date || !option) return alert("날짜와 점검구분을 입력하세요.");
+  let payload = { date: dateInput.value, option: currentOption };
 
-      const states = {};
-      checkItems.forEach(t => {
-        const active = document.querySelector(`.ox-btn[data-key='${t}'].active`);
-        states[t] = active ? active.dataset.value : "";
-      });
+  if (currentOption === "검침") {
+    if (!valueInput.value) return alert("수치를 입력하세요.");
+    payload.value = valueInput.value;
+  } else if (currentOption === "정기점검") {
+    payload.checklist = Object.values(currentChecklist);
+  }
 
-      const payload = { date, option, value, states };
+  const params = new URLSearchParams();
+  params.append("water", JSON.stringify(payload));
 
-      fetch(BASE_URL, {
-        method: "POST",
-        body: new URLSearchParams({ water: JSON.stringify(payload) })
-      })
-        .then(r => r.text())
-        .then(msg => {
-          alert(msg);
-          location.reload();
-        })
-        .catch(err => alert("❌ 오류: " + err));
-    });
-  </script>
+  const res = await fetch(`${BASE_URL}`, {
+    method: "POST",
+    body: params,
+  });
+
+  const text = await res.text();
+  alert(text);
+});
+</script>
+
 </body>
 </html>
