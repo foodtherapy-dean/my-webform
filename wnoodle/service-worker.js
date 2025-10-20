@@ -1,0 +1,28 @@
+﻿﻿const CACHE_NAME = "my-webform-cache-v1";
+const urlsToCache = [
+  "form_wnoodle.html",
+  "Waterdrop.png",
+  "manifest.json"
+];
+
+// 설치 단계: 기본 파일 캐싱
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
+  );
+});
+
+// 요청 가로채기
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // 캐시에 있으면 반환, 없으면 네트워크 요청
+        return response || fetch(event.request);
+      })
+      .catch(() => caches.match("form_magnet.html"))
+  );
+});
+
