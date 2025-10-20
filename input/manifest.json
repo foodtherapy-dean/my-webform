@@ -1,4 +1,4 @@
-﻿﻿{
+﻿{
   "name": "입고검수 check",
   "short_name": "입고검수",
   "start_url": "/my-webform/input/form_input.html",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
