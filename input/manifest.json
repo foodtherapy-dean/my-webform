@@ -1,7 +1,7 @@
 ﻿﻿{
   "name": "입고검수 check",
   "short_name": "입고검수",
-  "start_url": "/my-webform/wash/form_input.html",
+  "start_url": "/my-webform/input/form_input.html",
   "display": "standalone",
   "background_color": "#4CAF50",
   "theme_color": "#4CAF50",
@@ -17,4 +17,5 @@
       "type": "image/png"
     }
   ]
+
 }
