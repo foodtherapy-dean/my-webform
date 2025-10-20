@@ -1,0 +1,20 @@
+﻿{
+  "name": "용수관리 CHECK",
+  "short_name": "용수관리",
+  "start_url": "/my-webform/form_water.html",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "Water.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Water.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

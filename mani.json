@@ -1,0 +1,20 @@
+﻿{
+  "name": "방재실태 점검",
+  "short_name": "방충방서",
+  "start_url": "/my-webform/form.html",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "bug.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "bug.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

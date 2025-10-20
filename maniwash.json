@@ -1,0 +1,20 @@
+﻿{
+  "name": "위생/공정 CHECK",
+  "short_name": "위생점검",
+  "start_url": "/my-webform/form_wash.html",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "handwash.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "handwash.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
