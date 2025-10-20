@@ -1,8 +1,8 @@
 ﻿const CACHE_NAME = "my-webform-cache-v1";
 const urlsToCache = [
-  "form_magnet.html",
+  "form.html",
   "bug.png",
-  "mani.json"
+  "manifest.json"
 ];
 
 // 설치 단계: 기본 파일 캐싱
@@ -25,3 +25,4 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match("form_magnet.html"))
   );
 });
+
