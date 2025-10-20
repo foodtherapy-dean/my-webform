@@ -1,7 +1,7 @@
 ﻿{
   "name": "주정공정 check",
   "short_name": "생면공정",
-  "start_url": "/my-webform/wnoodle/form_wnoodle.html",
+  "start_url": "/my-webform/wnoodle/form_Wnoodle.html",
   "display": "standalone",
   "background_color": "#4CAF50",
   "theme_color": "#4CAF50",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
