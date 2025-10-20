@@ -7,16 +7,17 @@
   "theme_color": "#4CAF50",
   "icons": [
     {
-      "src": "Noddles.png",
+      "src": "Noodles.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "Noddles.png",
+      "src": "Noodles.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ]
 }
+
 
 
