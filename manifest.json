@@ -1,0 +1,20 @@
+﻿{
+  "name": "금속검출 점검",
+  "short_name": "금속검출",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "magnet.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "magnet.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
