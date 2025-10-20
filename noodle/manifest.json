@@ -1,0 +1,20 @@
+﻿﻿{
+  "name": "건조공정 check",
+  "short_name": "견면공정",
+  "start_url": "/my-webform/water/form_noodle.html",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "Noodles.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Noodles.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
