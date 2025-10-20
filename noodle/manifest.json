@@ -1,7 +1,7 @@
 ﻿{
   "name": "건조공정 check",
   "short_name": "건조공정",
-  "start_url": "/my-webform/noodle/form_noddle.html",
+  "start_url": "/my-webform/noodle/form_noodle.html",
   "display": "standalone",
   "background_color": "#4CAF50",
   "theme_color": "#4CAF50",
@@ -18,4 +18,5 @@
     }
   ]
 }
+
 
