@@ -40,10 +40,16 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
     <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
 
     <label for="lotInput">총생산 LOT 수</label>
-    <select id="lotInput">
-      <option value="0" selected>0</option>
-      ${Array.from({length:20},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-    </select>
+    <select id="lotInput"></select>
+
+<script>
+  const lotSelect = document.getElementById("lotInput");
+  lotSelect.innerHTML = `
+    <option value="0" selected>0</option>
+    ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
+  `;
+</script>
+
 
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
