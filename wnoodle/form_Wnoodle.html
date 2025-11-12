@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ✅ LOT 옵션 동적 생성
   lotInput.innerHTML = `
     <option value="0" selected>0</option>
-    ${Array.from({ length: 40 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
+    ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
   `;
 
   // LOT 선택 시 1~N차 표시 및 기본 3포 선택
