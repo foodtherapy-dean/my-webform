@@ -187,8 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   dateInput.addEventListener("change", () => {
+    // LOT 입력창 초기화
+    lotInput.value = "0";
+    createRounds(0); // 차수 버튼 숨기기 및 데이터 초기화
+    roundData = {};  // 기존 선택값 초기화
     if (dateInput.value) checkDuplicate(dateInput.value);
-  });
+});
 
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
