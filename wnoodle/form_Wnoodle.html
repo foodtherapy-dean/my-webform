@@ -92,24 +92,52 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       roundsDiv.appendChild(row);
 
-      // 초기값: 3포 선택
       const btn3 = row.querySelector(".btn[data-type='3포']");
       const btn2 = row.querySelector(".btn[data-type='2포']");
+      const resultEl = row.querySelector(".result");
+
+      // 초기값: 3포 선택
       btn3.classList.add("selected");
       roundData[i] = { no: 60, value: 1 };
-      row.querySelector(".result").textContent = `주정 1 kg`;
+      resultEl.textContent = `주정 1 kg`;
 
       // 버튼 클릭 이벤트
       [btn3, btn2].forEach(btn => {
         btn.addEventListener("click", (e) => {
-          if (btn.classList.contains("selected")) return; // 이미 선택되어 있으면 무시
-          row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          const type = btn.dataset.type;
-          const value = (type === "3포") ? 1 : 0.7;
-          const no = (type === "3포") ? 60 : 40;
-          roundData[i] = { no, value };
-          row.querySelector(".result").textContent = `주정 ${value} kg`;
+          const roundIndex = parseInt(row.dataset.round);
+
+          if (btn.classList.contains("selected")) {
+            // 선택 해제 → 해당 차수 제거 후 뒤 차수 앞으로 이동
+            const keys = Object.keys(roundData).map(k => parseInt(k)).sort((a,b)=>a-b);
+            const newRoundData = {};
+            let newIdx = 1;
+            keys.forEach(k => {
+              if (k !== roundIndex) {
+                newRoundData[newIdx] = roundData[k];
+                const rEl = roundsDiv.querySelector(`.row[data-round='${k}']`);
+                if(rEl) rEl.dataset.round = newIdx;
+                const lbl = rEl.querySelector(".label");
+                lbl.textContent = `${newIdx}차`;
+                newIdx++;
+              }
+            });
+            roundData = newRoundData;
+
+            // LOT 수 select 업데이트
+            lotInput.value = Object.keys(roundData).length;
+
+            // 차수 UI 재생성
+            createRounds(Object.keys(roundData).length);
+          } else {
+            // 버튼 선택
+            row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            const type = btn.dataset.type;
+            const value = (type === "3포") ? 1 : 0.7;
+            const no = (type === "3포") ? 60 : 40;
+            roundData[roundIndex] = { no, value };
+            resultEl.textContent = `주정 ${value} kg`;
+          }
         });
       });
     }
@@ -157,12 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingMsg.style.display = "none";
 
       if (data && data.values) {
-        const noValues = data.values.slice(0, 20); // B~U열
+        const noValues = data.values.slice(0, 20);
         const lotCount = noValues.filter(v => v !== "").length;
         lotInput.value = lotCount;
         createRounds(lotCount);
 
-        // 기존 데이터 적용
         noValues.forEach((v, idx) => {
           const rowEl = roundsDiv.querySelector(`.row[data-round='${idx+1}']`);
           if (!rowEl) return;
@@ -193,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createRounds(0);
     roundData = {};
     if (dateInput.value) checkDuplicate(dateInput.value);
-});
+  });
 
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
