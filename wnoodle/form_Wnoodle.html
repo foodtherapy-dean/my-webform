@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 기존 데이터 복원
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
-    loadingMsg.textContent = "데이터를 가져오고 있습니다.";
+    loadingMsg.textContent = "⏳데이터를 가져오고 있습니다.";
     try {
       const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
