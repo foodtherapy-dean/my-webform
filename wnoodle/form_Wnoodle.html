@@ -4,18 +4,30 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>생면공정(주정)</title>
+<link rel="icon" type="image/png" sizes="192x192" href="Waterdrop.png">
+<link rel="apple-touch-icon" href="Waterdrop.png">
+<meta name="theme-color" content="#4CAF50">
+<link rel="manifest" href="manifest.json">
 <style>
-body, html { margin:0; padding:0; font-family:sans-serif; }
-.app-container { display:flex; flex-direction:column; height:100vh; }
+body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
+.app-container { display:flex; flex-direction:column; height:100%; }
 .app-header { background:#4CAF50; color:#fff; text-align:center; padding:20px; font-size:2rem; }
-.app-body { flex:1; overflow-y:auto; padding:20px; background:#f9f9f9; }
+.app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
 .app-footer { flex:0 0 auto; }
-.row { display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#fff; padding:16px; border-radius:10px; }
-.label { flex:0 0 60px; font-weight:bold; font-size:1.4rem; }
-.btn { flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; background:#e0e0e0; font-weight:bold; }
-.btn.selected { background:#4CAF50; color:#fff; }
-.result { min-width:80px; text-align:right; font-weight:bold; }
-#duplicateMsg { display:none; background:#ffcccc; padding:12px; border-radius:6px; margin-bottom:10px; }
+#submitBtn { width:100%; font-size:1.8rem; padding:24px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; }
+
+.row { display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex-wrap:nowrap; }
+.label { flex:0 0 60px; font-weight:bold; font-size:1.4rem; cursor:pointer; }
+.btn { flex:1 1 0; min-width:0; padding:16px 12px; border-radius:8px; cursor:pointer; border:none; font-size:1.4rem; font-weight:bold; background:#e0e0e0; color:#333; transition:background .2s,color .2s,box-shadow .2s; }
+.btn.selected { background:#4CAF50; color:#fff; box-shadow:inset 0 0 0 2px #2e7d32; }
+.result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.4rem; font-weight:bold; color:#333; }
+
+#loadingMsg { display:none; margin:10px 0; font-size:1.2rem; color:#555; font-weight:bold; }
+#duplicateMsg { display:none; background:#ffcccc; color:#900; padding:14px; margin-top:8px; border:1px solid #900; border-radius:6px; font-weight:bold; font-size:1.2rem; }
+#duplicateMsg button { margin-left:14px; background:#900; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:1rem; }
+
+#rounds { display:none; }
+#lotInput { font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px; }
 </style>
 </head>
 <body>
@@ -23,11 +35,12 @@ body, html { margin:0; padding:0; font-family:sans-serif; }
   <div class="app-header">생면공정 점검 입력</div>
   <div class="app-body">
     <label for="date">날짜</label>
-    <input type="date" id="date" style="width:100%; padding:10px; margin-bottom:10px;" />
+    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
 
     <label for="lotInput">총생산 LOT 수</label>
     <select id="lotInput"></select>
 
+    <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
@@ -37,7 +50,7 @@ body, html { margin:0; padding:0; font-family:sans-serif; }
     <div id="rounds"></div>
   </div>
   <div class="app-footer">
-    <button id="submitBtn" style="width:100%; padding:20px; font-size:1.5rem; background:#4CAF50; color:#fff;">저장하기</button>
+    <button id="submitBtn">📥 저장하기</button>
   </div>
 </div>
 
@@ -56,15 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   dateInput.valueAsDate = new Date();
   let roundData = {};
-  let duplicateData = null; // 중복 데이터 저장용
+  let duplicateData = null;
 
-  // LOT 옵션 동적 생성
+  // LOT 옵션 생성
   lotInput.innerHTML = `
     <option value="0" selected>0</option>
-    ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
+    ${Array.from({ length: 20 }, (_, i) => `<option value="${i+1}">${i+1}</option>`).join("")}
   `;
 
-  // LOT 선택 시 차수 생성 및 버튼 이벤트 설정
   function createRounds(lotCount, prefill = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
@@ -76,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 1; i <= lotCount; i++) {
       const row = document.createElement("div");
       row.className = "row";
-      row.setAttribute('data-round', i);
+      row.dataset.round = i;
       row.innerHTML = `
         <div class="label">${i}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
@@ -86,9 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
       roundsDiv.appendChild(row);
     }
 
-    // 버튼 클릭 이벤트
     roundsDiv.querySelectorAll(".btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", e => {
         const rowEl = e.target.closest(".row");
         const round = parseInt(rowEl.dataset.round);
         const type = e.target.dataset.type;
@@ -110,10 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     roundsDiv.style.display = "block";
 
-    // 기본 선택 또는 중복 데이터 복원
     for (let i = 1; i <= lotCount; i++) {
       const rowEl = roundsDiv.querySelector(`.row[data-round='${i}']`);
-      const type = prefill && prefill[i - 1] ? (prefill[i - 1].no === 60 ? "3포" : "2포") : "3포";
+      let type = "3포";
+      if (prefill && prefill[i-1]) type = (prefill[i-1].no === 60) ? "3포" : "2포";
       const btn = rowEl.querySelector(`.btn[data-type='${type}']`);
       btn.click();
     }
@@ -123,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     createRounds(parseInt(lotInput.value));
   });
 
-  // 중복 확인
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
@@ -138,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data && data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
-        duplicateData = data; // 중복 데이터 저장
+        duplicateData = data;
       } else {
         duplicateMsg.style.display = "none";
         roundsDiv.style.display = "none";
@@ -155,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  // 중복 확인 후 확인 클릭 시
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     submitBtn.disabled = false;
@@ -172,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
     dateInput.valueAsDate = new Date();
   });
 
-  // 저장
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (parseInt(lotInput.value) === 0) return alert("총생산 LOT 수를 선택하세요.");
@@ -209,6 +217,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
-
 </body>
 </html>
