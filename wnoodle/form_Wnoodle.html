@@ -30,24 +30,19 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 <body>
 <div class="app-container">
   <div class="app-header">생면공정 점검 입력</div>
-
   <div class="app-body">
     <label for="date">날짜</label>
     <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
-
     <label for="lotInput">총생산 LOT 수</label>
     <select id="lotInput"></select>
-
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
       <button id="duplicateCancelBtn">취소</button>
     </div>
-
     <div id="rounds"></div>
   </div>
-
   <div class="app-footer">
     <button id="submitBtn">📥 저장하기</button>
   </div>
@@ -75,10 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
   `;
 
+  // 차수 생성 함수
   function createRounds(lotCount) {
     roundsDiv.innerHTML = "";
     roundData = {};
-
+    if (lotCount <= 0) {
+      roundsDiv.style.display = "none";
+      return;
+    }
     for (let i = 1; i <= lotCount; i++) {
       const row = document.createElement("div");
       row.className = "row";
@@ -113,18 +112,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    roundsDiv.style.display = lotCount > 0 ? "block" : "none";
+    roundsDiv.style.display = "block";
+    roundsDiv.querySelectorAll(".row .btn[data-type='3포']").forEach(btn => btn.click());
   }
 
   lotInput.addEventListener("change", () => {
     const lotCount = parseInt(lotInput.value);
     createRounds(lotCount);
-    // 기본 3포 버튼 선택
-    roundsDiv.querySelectorAll(".row .btn[data-type='3포']").forEach(btn => btn.click());
   });
 
+  // 중복 확인
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
+    loadingMsg.textContent = "⏳ 중복 확인 중...";
     duplicateMsg.style.display = "none";
     roundsDiv.style.display = "none";
     submitBtn.disabled = true;
@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         duplicateMsg.style.display = "block";
       } else {
         duplicateMsg.style.display = "none";
+        roundsDiv.style.display = "none";
         submitBtn.disabled = false;
       }
     } catch (err) {
@@ -147,17 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 중복 확인 후 버튼 및 LOT 복원
+  // 기존 데이터 복원
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
+    loadingMsg.textContent = "데이터를 가져오고 있습니다.";
     try {
       const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
 
       if (data && data.values) {
-        // B~U열 데이터만 사용
-        const noValues = data.values.slice(0, 20); // B~U
+        const noValues = data.values.slice(0, 20); // B~U열
         const lotCount = noValues.filter(v => v !== "").length;
         lotInput.value = lotCount;
         createRounds(lotCount);
@@ -192,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dateInput.valueAsDate = new Date();
   });
 
+  // 저장
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (parseInt(lotInput.value) === 0) return alert("총생산 LOT 수를 선택하세요.");
@@ -219,7 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("저장 완료: " + text);
       lotInput.value = "0";
       roundsDiv.innerHTML = "";
-      checkDuplicate(dateInput.value);
+      roundData = {};
+      // ✅ 저장 후 중복 확인 호출 제거
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
