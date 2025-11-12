@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const loadingMsg = document.getElementById("loadingMsg");
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbwxB7tqUIGTM80abaGHhwq0eJk7j2LCETCqcXWUHVjwZH6sq-hsGpmKcXBTekrNL2Xd3Q/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbySHHEpy5vUQ15gMs5UM5SzRGuaj67dRo5-F1x2YPdWmyiePc8ia_9vI37mRl88tA_F0w/exec";
 
   dateInput.valueAsDate = new Date();
   let roundData = {};
@@ -73,11 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 차수 생성 함수
   function createRounds(lotCount) {
     roundsDiv.innerHTML = "";
-    roundData = {};
     if (lotCount <= 0) {
       roundsDiv.style.display = "none";
+      roundData = {};
       return;
     }
+
     for (let i = 1; i <= lotCount; i++) {
       const row = document.createElement("div");
       row.className = "row";
@@ -113,12 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     roundsDiv.style.display = "block";
-    roundsDiv.querySelectorAll(".row .btn[data-type='3포']").forEach(btn => btn.click());
   }
 
   lotInput.addEventListener("change", () => {
-    const lotCount = parseInt(lotInput.value);
-    createRounds(lotCount);
+    createRounds(parseInt(lotInput.value));
   });
 
   // 중복 확인
@@ -139,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
         duplicateMsg.style.display = "block";
       } else {
         duplicateMsg.style.display = "none";
-        roundsDiv.style.display = "none";
         submitBtn.disabled = false;
       }
     } catch (err) {
@@ -151,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 기존 데이터 복원
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
-    loadingMsg.textContent = "데이터를 가져오고 있습니다.";
+    loadingMsg.textContent = "⏳데이터를 가져오고 있습니다.";
     try {
       const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
@@ -163,13 +161,23 @@ document.addEventListener('DOMContentLoaded', () => {
         lotInput.value = lotCount;
         createRounds(lotCount);
 
+        // 버튼 상태 직접 적용
         noValues.forEach((v, idx) => {
           const rowEl = roundsDiv.querySelector(`.row[data-round='${idx+1}']`);
           if (!rowEl) return;
           const btn3 = rowEl.querySelector(".btn[data-type='3포']");
           const btn2 = rowEl.querySelector(".btn[data-type='2포']");
-          if (v == 60) btn3.click();
-          else if (v == 40) btn2.click();
+          const resultEl = rowEl.querySelector(".result");
+
+          if (v == 60) {
+            btn3.classList.add("selected");
+            roundData[idx + 1] = { no: 60, value: 1 };
+            resultEl.textContent = `주정 1 kg`;
+          } else if (v == 40) {
+            btn2.classList.add("selected");
+            roundData[idx + 1] = { no: 40, value: 0.7 };
+            resultEl.textContent = `주정 0.7 kg`;
+          }
         });
       }
     } catch (err) {
@@ -219,10 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const text = await res.text();
       alert("저장 완료: " + text);
-      lotInput.value = "0";
-      roundsDiv.innerHTML = "";
-      roundData = {};
-      // ✅ 저장 후 중복 확인 호출 제거
+      // ✅ 저장 후 입력 상태 그대로 유지
     } catch (err) {
       alert("에러 발생: " + err.message);
     }
