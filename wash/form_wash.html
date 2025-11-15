@@ -130,42 +130,24 @@ dateInput.valueAsDate = new Date();
 const optionSelect = document.getElementById("option");
 const oxContainer = document.getElementById("oxContainer");
 let oxValues = {};
+let completionCache = {}; // 옵션별 완료 상태 캐시
 
 const items = {
-  "작업전": [
-    "개인위생 - 복장구분 보관여부",
-    "개인위생 - 건강/장신구/위생복 착용여부",
-    "개인위생 - 위생설비 이상/위생처리",
-    "방충방서 - 밀폐상태/방충시설",
-    "설비 - 파손,고장 설비유무",
-    "보관 - 보관소 정리정돈 상태"
-  ],
-  "작업중": [
-    "공정관리 - 구역분리 및 오염관리",
-    "공정관리 - 완제품 포장상태",
-    "공정관리 - 반제품 적재기준",
-    "공정관리 - 포장라인 위해요소 여부"
-  ],
-  "작업후": [
-    "방충방서 - 생산부산물 별도구획 보관 및 반출",
-    "청소소독 - 작업장/설비/위생시설",
-    "설비 - 파손/고장 설비 유무",
-    "점검 - CCP점검 상태/개선조치 여부",
-    "보관 - 원부재료 오염방지 보관여부"
-  ],
-  "수시점검": [
-    "입고검수 - 원부재료 입고검수 준수여부"
-  ]
+  "작업전": ["개인위생 - 복장구분 보관여부","개인위생 - 건강/장신구/위생복 착용여부","개인위생 - 위생설비 이상/위생처리","방충방서 - 밀폐상태/방충시설","설비 - 파손,고장 설비유무","보관 - 보관소 정리정돈 상태"],
+  "작업중": ["공정관리 - 구역분리 및 오염관리","공정관리 - 완제품 포장상태","공정관리 - 반제품 적재기준","공정관리 - 포장라인 위해요소 여부"],
+  "작업후": ["방충방서 - 생산부산물 별도구획 보관 및 반출","청소소독 - 작업장/설비/위생시설","설비 - 파손/고장 설비 유무","점검 - CCP점검 상태/개선조치 여부","보관 - 원부재료 오염방지 보관여부"],
+  "수시점검": ["입고검수 - 원부재료 입고검수 준수여부"]
 };
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz7oSZRDqJ63fAbpLDoBq9lczEFm29I1_iv6Ze7B4ycCa337CXy3BiEIXq0hVhOhd8NuA/exec";
 
 // ===============================
-// 옵션 자동 완료 표시
+// 옵션 자동 완료 표시 (캐시 저장)
 // ===============================
 async function updateOptionCompletion() {
   const date = dateInput.value;
   if (!date) return;
+  completionCache = {}; // 초기화
 
   for (let i = 0; i < optionSelect.options.length; i++) {
     const opt = optionSelect.options[i];
@@ -176,9 +158,14 @@ async function updateOptionCompletion() {
       const query = encodeURIComponent(JSON.stringify({ date, option: value }));
       const res = await fetch(`${GAS_URL}?checkWash=${query}`);
       const result = await res.json();
-      opt.textContent = result.exists ? `${value} (완료)` : value;
+
+      const completed = result.exists;
+      completionCache[value] = completed;
+      opt.textContent = completed ? `${value} (완료)` : value;
+
     } catch (err) {
       console.error("옵션 자동완료 체크 오류:", err);
+      completionCache[value] = false;
     }
   }
 }
@@ -189,12 +176,13 @@ dateInput.addEventListener("change", () => {
   optionSelect.value = "";
   oxContainer.innerHTML = "";
   oxValues = {};
+  completionCache = {};
   document.getElementById("duplicateMsg").style.display = "none";
   updateOptionCompletion();
 });
 
 // ===============================
-// 옵션 선택 시 UI 생성 + 기존 데이터 표시
+// 옵션 선택 시 UI 생성 + 기존 데이터 표시 (캐시 활용)
 // ===============================
 optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
@@ -207,28 +195,23 @@ optionSelect.addEventListener("change", async (e) => {
 
   let existingValues = null;
 
-  try {
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
-    const res = await fetch(`${GAS_URL}?checkWash=${query}`);
-    const result = await res.json();
-
-    if (result.exists) {
-      existingValues = result.values;
-      document.getElementById("duplicateText").innerText =
-        `⚠️ ${dateInput.value} / ${opt} 기존 데이터가 있습니다.`;
-      document.getElementById("duplicateMsg").style.display = "block";
-    } else {
-      document.getElementById("duplicateMsg").style.display = "none";
+  // 완료 표시가 이미 있는 경우, 서버 중복 체크 생략
+  if (completionCache[opt]) {
+    // 서버 호출 최소화: 필요한 데이터만 가져오기
+    try {
+      const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
+      const res = await fetch(`${GAS_URL}?checkWash=${query}`);
+      const result = await res.json();
+      if (result.exists) existingValues = result.values;
+    } catch (err) {
+      console.error("중복 체크 오류:", err);
     }
-
-  } catch (err) {
-    console.error("중복 체크 오류:", err);
   }
 
   document.getElementById("loadingMsg").style.display = "none";
 
   optionSelect.options[optionSelect.selectedIndex].text =
-    existingValues ? `${opt} (완료)` : opt;
+    completionCache[opt] ? `${opt} (완료)` : opt;
 
   items[opt].forEach((label, i) => {
     const saved = (existingValues && existingValues[i]) ? existingValues[i] : "";
@@ -278,7 +261,6 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     return;
   }
 
-  // 필수 체크
   for (const label of items[opt]) {
     if (!oxValues[label]) {
       alert(`'${label}' 항목을 선택하세요.`);
@@ -300,11 +282,9 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
 
   try {
     const response = await fetch(GAS_URL, { method: "POST", body: fd });
-    const msg = await response.text();  // ★ 서버에서 반환한 메시지를 그대로 받음
+    const msg = await response.text();
+    alert(msg);
 
-    alert(msg);  // ★ 신규 저장 / 수정 저장 메시지 그대로 표시
-
-    // 초기화
     e.target.reset();
     oxContainer.innerHTML = "";
     oxValues = {};
