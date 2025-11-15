@@ -310,7 +310,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   const data = {
     date: dateInput.value,
     option: opt,
-    values: Object.values(oxValues)
+    values: Object.values(oxValues)   // ← 이름 values로 변경됨
   };
 
   const fd = new FormData();
@@ -336,6 +336,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     } else {
       alert("오류 발생:\n" + text);
     }
+
   } catch (err) {
     alert("저장 오류: " + err.message);
   }
