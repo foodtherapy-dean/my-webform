@@ -319,8 +319,14 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     const response = await fetch(GAS_URL, { method: "POST", body: fd });
     const text = await response.text();
 
-    if (response.ok) {
-      alert("저장 완료!");
+    fetch(url, options)
+  .then(response => response.text())
+  .then(msg => {
+    alert(msg);   // ★ 서버에서 보내준 “신규/수정 메시지” 그대로 출력
+  })
+  .catch(err => {
+    alert("오류 발생: " + err);
+  });
 
       e.target.reset();
       oxContainer.innerHTML = "";
