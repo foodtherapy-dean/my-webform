@@ -161,16 +161,18 @@ const items = {
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwhNLdVSlrrli-VXrTLoYSpfq8AIY7VSMeiEUA1PecQCrT-4waIbUigX9d5MRwUE5x5FA/exec";
 
 // ===============================
-// 🔥 전체 완료여부 로딩 (날짜 변경 시 1회만 실행)
+// 🔥 전체 완료여부 로딩 (한 번에)
 // ===============================
 async function loadOptionStatus() {
   const date = dateInput.value;
   if (!date) return;
 
   try {
+    const allOptions = Object.keys(items);
+
     const query = encodeURIComponent(JSON.stringify({
       date,
-      allOptions: Object.keys(items)
+      allOptions
     }));
 
     const res = await fetch(`${GAS_URL}?checkAllWash=${query}`);
@@ -178,16 +180,16 @@ async function loadOptionStatus() {
 
     optionSelect.innerHTML = `<option value="">점검 옵션 선택</option>`;
 
-    Object.keys(items).forEach(name => {
-      let opt = document.createElement("option");
+    allOptions.forEach(name => {
+      const opt = document.createElement("option");
       opt.value = name;
 
       if (result[name]) {
         opt.textContent = `${name} (완료)`;
-        opt.disabled = true;        // 완료된 항목은 선택 불가
+        opt.disabled = true;        // 완료된 항목 선택 불가
         opt.style.color = "#888";   // 회색 처리
       } else {
-        opt.textContent = name;     // 미완료 항목
+        opt.textContent = name;
       }
 
       optionSelect.appendChild(opt);
@@ -198,13 +200,13 @@ async function loadOptionStatus() {
   }
 }
 
-// 최초 로딩, 날짜 변경 시 실행
+// 최초 로딩 및 날짜 변경 시 실행
 document.addEventListener("DOMContentLoaded", loadOptionStatus);
 dateInput.addEventListener("change", async () => {
   optionSelect.value = "";
   oxContainer.innerHTML = "";
   oxValues = {};
-  loadOptionStatus();
+  await loadOptionStatus();
 });
 
 // ===============================
@@ -242,7 +244,7 @@ optionSelect.addEventListener("change", async (e) => {
     console.error("중복 체크 오류:", err);
   }
 
-  // UI 생성
+  // O/X UI 생성
   items[opt].forEach((label, i) => {
     const saved = (existingValues && existingValues[i]) ? existingValues[i] : "";
     oxValues[label] = saved;
@@ -261,7 +263,7 @@ optionSelect.addEventListener("change", async (e) => {
 });
 
 // ===============================
-// O/X 버튼
+// O/X 버튼 토글
 // ===============================
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("ox")) {
@@ -307,7 +309,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     values: orderedStates
   };
 
-  let fd = new FormData();
+  const fd = new FormData();
   fd.append("inspect", JSON.stringify(data));
 
   try {
