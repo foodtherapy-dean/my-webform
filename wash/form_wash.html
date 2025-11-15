@@ -186,7 +186,7 @@ optionSelect.addEventListener("change", async (e) => {
     }));
 
     const url =
-      `https://script.google.com/macros/s/AKfycby3aVNTZepumfjHMZr5bcPB0Nc4C_6oYe8zXj4TU-3i8vmUVBe8Yt_gJu5CJbZNee8YRA/exec?checkWash=${query}`;
+      `https://script.google.com/macros/s/AKfycbzbN-p_xMhi9lT5uBmUqa007_6FLqYGGQ1orj_uMfmGhqRZjl89uWEWSrHCQ1hQrZOPvg/exec?checkWash=${query}`;
 
     const res = await fetch(url);
     const result = await res.json();
@@ -284,7 +284,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
 
   try {
     const response = await fetch(
-      "https://script.google.com/macros/s/AKfycby3aVNTZepumfjHMZr5bcPB0Nc4C_6oYe8zXj4TU-3i8vmUVBe8Yt_gJu5CJbZNee8YRA/exec",
+      "https://script.google.com/macros/s/AKfycbzbN-p_xMhi9lT5uBmUqa007_6FLqYGGQ1orj_uMfmGhqRZjl89uWEWSrHCQ1hQrZOPvg/exec",
       { method: "POST", body: fd }
     );
 
