@@ -4,14 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>건면공정 모니터링</title>
-    <!- 홈화면/바로가기용 아이콘 지정 ->
 <link rel="icon" type="image/png" sizes="192x192" href="Noodles.png">
 <link rel="apple-touch-icon" href="Noodles.png">
 <meta name="theme-color" content="#4CAF50">
-
-<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
 <link rel="manifest" href="manifest.json"> 
 <style>
+/* 기존 스타일 유지 + 약간 정리 */
 body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-container { display:flex; flex-direction:column; height:100%; }
 .app-header { background:#4CAF50; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
@@ -174,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ====== 중복 확인 ======
+  // internal=true : 내부 선로드용(메시지 미표시) / internal=false : 사용자 호출(메시지 표시)
   async function checkDuplicate(date, group, internal=false) {
     if (!date || !group) return false;
 
@@ -186,24 +185,37 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingMsg.style.display = "none";
       submitBtn.disabled = false;
 
+      // 저장해둠 (다른 옵션 추천시간 계산에 사용)
       loadedData[group] = { fetched:true, data: data.data || null };
 
-      if (!internal && data.exists) {
-        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
-
+      // 항상 기존값을 자동 채움(내부로드든 사용자 호출이든)
+      if (data && data.exists && data.data) {
         const d = data.data;
-        if (d) {
-          hourSelect.value = d.hour || "";
-          minuteSelect.value = d.minute || "";
-          tempInput.value = d.temp || "";
-          humidityInput.value = d.humi || "";
-          productSelect.value = d.product || "";
-          countInput.value = d.count || "";
-        }
+        hourSelect.value = d.hour || "";
+        minuteSelect.value = d.minute || "";
+        tempInput.value = d.temp || "";
+        humidityInput.value = d.humi || "";      // server uses 'humi'
+        productSelect.value = d.product || "";
+        countInput.value = d.count || "";
+      } else {
+        // 없는 경우는 입력 필드 초기화(선택 상황에 따라)
+        hourSelect.value = "";
+        minuteSelect.value = "";
+        tempInput.value = "";
+        humidityInput.value = "";
+        productSelect.value = "";
+        countInput.value = "";
       }
 
-      // 중복 확인 완료 후 입력창과 추천시간 표시
+      // 메시지 표시: 내부 호출이면 메시지 숨기고, 사용자 호출이면 보여줌
+      if (!internal && data.exists) {
+        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다. (불러오기 완료)`;
+        duplicateMsg.style.display = "block";
+      } else {
+        duplicateMsg.style.display = "none";
+      }
+
+      // UI 업데이트(필드 보이기, 추천시간)
       updateInputFields();
       updateSuggestion();
 
@@ -215,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         duplicateText.textContent="중복 확인 오류!";
         duplicateMsg.style.display="block";
       }
+      console.error("checkDuplicate error:", err);
       return false;
     }
   }
@@ -258,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
     suggestionSpan.textContent = suggestedText;
   }
 
-  // 🔧 시간 계산 함수
   function addTime(hour, minute, addHours) {
     let h = parseInt(hour, 10);
     let m = parseInt(minute, 10);
@@ -269,13 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 입력 필드 표시 ======
   function updateInputFields() {
     const g = groupSelect.value;
-    // 우선 모두 숨김
     timeRow.style.display = "none";
     thRow.style.display = "none";
     productRow.style.display = "none";
     suggestionSpan.style.display = "none";
 
-    // 필요한 입력창만 표시
     if (g === "시스템ON" || g === "시스템OFF") {
       timeRow.style.display = "flex";
       suggestionSpan.style.display = "block";
@@ -296,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   groupSelect.addEventListener("change", async () => {
-    // 즉시 모든 입력창과 추천시간 숨김
+    // 즉시 모든 입력창 숨기고 메시지 초기화
     timeRow.style.display = "none";
     thRow.style.display = "none";
     productRow.style.display = "none";
@@ -307,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selected = groupSelect.value;
     const idx = orderMap.indexOf(selected);
 
-    // 입력 초기화
+    // 입력 초기화 (we will refill if server has data)
     hourSelect.value = "";
     minuteSelect.value = "";
     tempInput.value = "";
@@ -315,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
     productSelect.value = "";
     countInput.value = "";
 
-    // 📌 시스템OFF 선택 시에도 반드시 2차점검/시스템ON 데이터 선로드
+    // Preload previous steps if needed
     if (selected === "시스템OFF") {
       if (!loadedData["2차점검"]) {
         await checkDuplicate(dateInput.value, "2차점검", true);
@@ -323,14 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!loadedData["시스템ON"]) {
         await checkDuplicate(dateInput.value, "시스템ON", true);
       }
-    }
-
-    // 직전 옵션 데이터 없으면 internal=true 로 불러오기
-    else if (idx > 0 && !loadedData[orderMap[idx-1]]) {
+    } else if (idx > 0 && !loadedData[orderMap[idx-1]]) {
       await checkDuplicate(dateInput.value, orderMap[idx-1], true);
     }
 
-    // 현재 옵션 중복확인 진행
+    // 현재 옵션 중복확인(사용자 호출) - 이 호출은 자동으로 입력창을 채워줍니다
     if (dateInput.value && selected) {
       await checkDuplicate(dateInput.value, selected, false);
     }
@@ -397,6 +404,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOptionCompletion(dateInput.value);
 });
 </script>
-
 </body>
 </html>
