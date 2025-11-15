@@ -158,65 +158,66 @@ const items = {
   ]
 };
 
-// GAS URL
-const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbz7oSZRDqJ63fAbpLDoBq9lczEFm29I1_iv6Ze7B4ycCa337CXy3BiEIXq0hVhOhd8NuA/exec";
+// ★★★ 여기에 본인의 GAS URL 입력 ★★★
+const GAS_URL = "https://script.google.com/macros/s/AKfycbz7oSZRDqJ63fAbpLDoBq9lczEFm29I1_iv6Ze7B4ycCa337CXy3BiEIXq0hVhOhd8NuA/exec";
 
 // ===============================
-// 🔥 깜빡임 방지 플래그
-// ===============================
-let isCheckingOptions = false;
-
-// ===============================
-// 옵션 자동 완료 표시
+// 🔥 한꺼번에 옵션 완료여부 가져오기 (깜빡임 완전 제거)
 // ===============================
 async function updateOptionCompletion() {
-  if (isCheckingOptions) return;
-  isCheckingOptions = true;
-
   const date = dateInput.value;
-  if (!date) {
-    isCheckingOptions = false;
-    return;
-  }
+  if (!date) return;
 
-  // 옵션별로 완료여부 표시
-  for (let i = 0; i < optionSelect.options.length; i++) {
-    const opt = optionSelect.options[i];
-    const value = opt.value;
-    if (!value || !items[value]) continue;
+  try {
+    // GAS에 전체옵션을 한번에 전송
+    const query = encodeURIComponent(JSON.stringify({
+      date,
+      allOptions: Object.keys(items)
+    }));
 
-    try {
-      const query = encodeURIComponent(JSON.stringify({ date, option: value }));
-      const res = await fetch(`${GAS_URL}?checkWash=${query}`);
-      const result = await res.json();
+    const res = await fetch(`${GAS_URL}?checkAllWash=${query}`);
+    const result = await res.json();  // {"작업전": true/false, ...}
 
-      opt.textContent = result.exists ? `${value} (완료)` : value;
-    } catch (err) {
-      console.error("옵션 자동완료 체크 오류:", err);
+    // 전체 옵션 한꺼번에 갱신
+    for (let i = 0; i < optionSelect.options.length; i++) {
+      const opt = optionSelect.options[i];
+      const name = opt.value;
+
+      if (!name || !result.hasOwnProperty(name)) continue;
+
+      opt.textContent = result[name] ? `${name} (완료)` : name;
     }
-  }
 
-  isCheckingOptions = false;
+  } catch (err) {
+    console.error("전체 옵션 완료여부 갱신 오류:", err);
+  }
 }
 
+// ===============================
+// select 클릭하기 전에 완료여부 최신화
+// ===============================
+// **옵션창을 클릭(mousedown)하면 + 전체 완료여부 로딩 이후 → select가 열림**
+optionSelect.addEventListener("mousedown", async () => {
+  await updateOptionCompletion();
+});
+
+// 최초 로딩 시에도 업데이트
 document.addEventListener("DOMContentLoaded", updateOptionCompletion);
 
-// 날짜 변경 시 자동완료 다시 실행
-dateInput.addEventListener("change", () => {
+// 날짜 선택 변경
+dateInput.addEventListener("change", async () => {
   optionSelect.value = "";
   oxContainer.innerHTML = "";
   oxValues = {};
   document.getElementById("duplicateMsg").style.display = "none";
-  updateOptionCompletion();
+
+  await updateOptionCompletion();
 });
 
 // ===============================
-// 옵션 선택 시 UI 생성 + 기존 데이터 표시
+// 옵션 선택 시 UI 생성 (이전 코드 그대로)
 // ===============================
 optionSelect.addEventListener("change", async (e) => {
-  if (isCheckingOptions) return; // 🔥 깜빡임 방지
-
   oxContainer.innerHTML = "";
   oxValues = {};
 
@@ -251,11 +252,11 @@ optionSelect.addEventListener("change", async (e) => {
 
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 옵션명 (완료) 표시
+  // 옵션명 (완료) 갱신
   optionSelect.options[optionSelect.selectedIndex].text =
     existingValues ? `${opt} (완료)` : opt;
 
-  // OX 버튼 UI 생성
+  // UI 생성
   items[opt].forEach((label, i) => {
     const saved = (existingValues && existingValues[i]) ? existingValues[i] : "";
     oxValues[label] = saved;
@@ -274,8 +275,6 @@ optionSelect.addEventListener("change", async (e) => {
 });
 
 // ===============================
-// O/X 버튼 선택
-// ===============================
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("ox")) {
     const btn = e.target;
@@ -293,7 +292,7 @@ document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
 });
 
 // ===============================
-// 저장
+// 저장 (이전 그대로)
 // ===============================
 document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -304,7 +303,6 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     return;
   }
 
-  // 필수 체크
   for (const label of items[opt]) {
     if (!oxValues[label]) {
       alert(`'${label}' 항목을 선택하세요.`);
@@ -325,15 +323,11 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   fd.append("inspect", JSON.stringify(data));
 
   try {
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      body: fd
-    });
+    const response = await fetch(GAS_URL, { method: "POST", body: fd });
+    const msg = await response.text();
 
-    const msg = await response.text();  // 신규/수정 메시지 그대로 사용
     alert(msg);
 
-    // 초기화
     e.target.reset();
     oxContainer.innerHTML = "";
     oxValues = {};
@@ -341,7 +335,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     dateInput.valueAsDate = new Date();
     document.getElementById("duplicateMsg").style.display = "none";
 
-    updateOptionCompletion();
+    await updateOptionCompletion();
 
   } catch (err) {
     alert("저장 오류: " + err.message);
