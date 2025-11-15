@@ -163,7 +163,7 @@ const GAS_URL =
 
 
 // ===============================
-// ⭐ 모든 옵션 자동 중복 체크 → (완료) 자동 표시
+// ⭐ 옵션 자동 완료 표시
 // ===============================
 async function updateOptionCompletion() {
   const date = dateInput.value;
@@ -172,7 +172,6 @@ async function updateOptionCompletion() {
   for (let i = 0; i < optionSelect.options.length; i++) {
     const opt = optionSelect.options[i];
     const value = opt.value;
-
     if (!value || !items[value]) continue;
 
     try {
@@ -188,22 +187,19 @@ async function updateOptionCompletion() {
   }
 }
 
-// 최초 접속 시 자동 검사
 document.addEventListener("DOMContentLoaded", updateOptionCompletion);
 
-// 날짜 변경 시 자동 검사
 dateInput.addEventListener("change", () => {
   optionSelect.value = "";
   oxContainer.innerHTML = "";
   oxValues = {};
   document.getElementById("duplicateMsg").style.display = "none";
-
   updateOptionCompletion();
 });
 
 
 // ===============================
-// ⭐ 옵션 선택 → UI 생성 + 기존 데이터 적용
+// ⭐ 옵션 선택 시 UI 생성 + 기존 데이터 표시
 // ===============================
 optionSelect.addEventListener("change", async (e) => {
   oxContainer.innerHTML = "";
@@ -240,7 +236,7 @@ optionSelect.addEventListener("change", async (e) => {
 
   document.getElementById("loadingMsg").style.display = "none";
 
-  // 옵션명에 (완료) 표시 적용
+  // 선택 옵션명에도 (완료) 표시
   optionSelect.options[optionSelect.selectedIndex].text =
     existingValues ? `${opt} (완료)` : opt;
 
@@ -266,7 +262,7 @@ optionSelect.addEventListener("change", async (e) => {
 
 
 // ===============================
-// ⭐ OX 버튼 선택
+// ⭐ O/X 버튼 선택
 // ===============================
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("ox")) {
@@ -281,7 +277,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// 중복 확인 닫기
 document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
   document.getElementById("duplicateMsg").style.display = "none";
 });
@@ -307,10 +302,14 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     }
   }
 
+  // 하위 항목 순서대로 값 배열 생성
+  const orderedStates = items[opt].map(lbl => oxValues[lbl]);
+
   const data = {
     date: dateInput.value,
     option: opt,
-    values: Object.values(oxValues)   // ← 이름 values로 변경됨
+    states: orderedStates,  // GAS 호환
+    values: orderedStates   // 기존 코드 호환
   };
 
   const fd = new FormData();
@@ -323,7 +322,6 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     if (response.ok) {
       alert("저장 완료!");
 
-      // 초기화
       e.target.reset();
       oxContainer.innerHTML = "";
       oxValues = {};
@@ -342,6 +340,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 
 
 </body>
