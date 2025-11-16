@@ -13,6 +13,26 @@
     th{background:#f5f5f5}
     .small{font-size:13px;color:#666}
     .loading{margin-left:8px;font-size:13px}
+ /* 요일 헤더 전체 */
+th:nth-child(2) {
+  background: #eeeeee !important; /* 옅은 회색 */
+}
+
+/* 요일 열 전체 */
+td.weekday {
+  background: #f5f5f5;  /* 옅은 회색 */
+}
+
+/* 일요일 줄 */
+tr.sunday {
+  background: #ffecec;  /* 연한 빨강 계열 */
+}
+
+/* 토요일 줄 */
+tr.saturday {
+  background: #e9f2ff;  /* 연한 파랑 계열 */
+}
+  
   </style>
 </head>
 <body>
@@ -20,8 +40,8 @@
   <div class="controls">
     <label for="monthSelector">월 선택: </label>
     <select id="monthSelector"></select>
-    <button id="prevBtn">&lt; 이전</button>
-    <button id="nextBtn">다음 &gt;</button>
+    <button id="prevBtn">&lt;</button>
+    <button id="nextBtn">&gt;</button>
     <span id="statusText" class="loading"></span>
   </div>
 
@@ -110,19 +130,29 @@
   }
 
   function renderTable(data) {
-    const tbody = document.querySelector("#statusTable tbody");
-    tbody.innerHTML = "";
-    const weekDays = ["일","월","화","수","목","금","토"];
-    data.forEach(item => {
-      const dt = new Date(item.date);
-      const day = dt.getDate();
-      const w = weekDays[dt.getDay()];
-      const tr = document.createElement("tr");
-      // 날짜, 요일 그리고 7개 상태
-      tr.innerHTML = `<td>${day}</td><td>${w}</td>${item.status.map(s=>`<td>${s}</td>`).join('')}`;
-      tbody.appendChild(tr);
-    });
-  }
+  const tbody = document.querySelector("#statusTable tbody");
+  tbody.innerHTML = "";
+  const weekDays = ["일","월","화","수","목","금","토"];
+
+  data.forEach(item => {
+    const dt = new Date(item.date);
+    const day = dt.getDate();
+    const w = weekDays[dt.getDay()];
+
+    const tr = document.createElement("tr");
+
+    // 👉 토요일/일요일이면 클래스 적용
+    if (w === "일") tr.classList.add("sunday");
+    if (w === "토") tr.classList.add("saturday");
+
+    tr.innerHTML = `
+      <td>${day}</td>
+      <td class="weekday">${w}</td>
+      ${item.status.map(s => `<td>${s}</td>`).join("")}
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
   window.onload = init;
 </script>
