@@ -1,6 +1,6 @@
 ﻿{
   "name": "Total check",
-  "short_name": "작성현황",
+  "short_name": "월별체크",
   "start_url": "/my-webform/total/form_test.html",
   "display": "standalone",
   "background_color": "#4CAF50",
@@ -18,4 +18,6 @@
     }
   ]
 }
+
+
 
