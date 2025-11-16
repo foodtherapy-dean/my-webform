@@ -1,7 +1,7 @@
 ﻿﻿const CACHE_NAME = "my-webform-cache-v1";
 const urlsToCache = [
-  "form_test.html",
-  "total.png",
+  "form_noodle.html",
+  "Noodles.png",
   "manifest.json"
 ];
 
@@ -22,7 +22,8 @@ self.addEventListener("fetch", (event) => {
         // 캐시에 있으면 반환, 없으면 네트워크 요청
         return response || fetch(event.request);
       })
-      .catch(() => caches.match("form_test.html"))
+      .catch(() => caches.match("form_noodle.html"))
   );
 });
+
 
