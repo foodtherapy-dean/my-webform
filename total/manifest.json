@@ -1,0 +1,21 @@
+﻿{
+  "name": "Total check",
+  "short_name": "작성현황",
+  "start_url": "/my-webform/total/form_test.html",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "total.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "total.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
