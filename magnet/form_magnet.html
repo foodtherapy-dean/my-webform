@@ -174,7 +174,12 @@ async function handleOptionChange(opt){
       loadedData = resVal.ok? await resVal.json():null;
 
       if(loadedData){
-        if(loadedData.hour && loadedData.minute) document.getElementById("time").value = `${loadedData.hour.padStart(2,"0")}:${loadedData.minute.padStart(2,"0")}`;
+        // 시간 적용 (0시 0분도 처리)
+        if (loadedData.hour !== undefined && loadedData.hour !== "" &&
+            loadedData.minute !== undefined && loadedData.minute !== "") {
+          document.getElementById("time").value = 
+            `${String(loadedData.hour).padStart(2,"0")}:${String(loadedData.minute).padStart(2,"0")}`;
+        }
         if(loadedData.product) productInput.value = loadedData.product;
       }
     }
