@@ -114,7 +114,6 @@ const optionItems = ["작업전","1차점검","2차점검","작업후","최종�
 // OX 항목
 let oxValues = {};
 const oxContainer = document.getElementById("oxContainer");
-const oxItems = ["Fe","Sus","제품","제품+Fe","제품+Sus"];
 
 // ===== 렌더 옵션 =====
 function renderOptions(existing=[]) {
@@ -127,7 +126,7 @@ function renderOptions(existing=[]) {
   });
 }
 
-// ===== 커스텀 드롭다운 =====
+// ===== 커스텀 드롭다운 클릭 =====
 customOption.addEventListener("click", e => {
   if(e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
   if(e.target.tagName==="LI"){
@@ -144,10 +143,12 @@ document.addEventListener("click", e => {
 // ===== 옵션 변경 처리 =====
 async function handleOptionChange(opt){
   if(!opt || !dateInput.value) return;
+
   const dateVal = dateInput.value;
   const subInputs = document.getElementById("subInputs");
   const productInput = document.getElementById("product");
   const timeLabel = document.getElementById("timeLabel");
+  const timeInput = document.getElementById("time");
   const countContainer = document.getElementById("countContainer");
 
   // 초기화
@@ -159,6 +160,10 @@ async function handleOptionChange(opt){
   oxValues={};
   document.querySelectorAll(".ox.selected").forEach(b=>b.classList.remove("selected"));
   document.getElementById("duplicateMsg").style.display="none";
+  timeInput.value = "";
+  productInput.value = "";
+  document.getElementById("passCount").value="";
+  document.getElementById("detectCount").value="";
 
   // 중복 데이터 체크 및 로드
   let loadedData = null;
@@ -171,9 +176,9 @@ async function handleOptionChange(opt){
       document.getElementById("duplicateText").innerText = `⚠️ 이미 ${dateVal} ${opt} 데이터가 존재합니다.`;
       document.getElementById("duplicateMsg").style.display="block";
       loadedData = result;
-      // 기존 데이터 적용
+
       if(loadedData.hour !== undefined && loadedData.minute !== undefined && loadedData.hour !== "" && loadedData.minute !== "") {
-        document.getElementById("time").value = `${String(loadedData.hour).padStart(2,"0")}:${String(loadedData.minute).padStart(2,"0")}`;
+        timeInput.value = `${String(loadedData.hour).padStart(2,"0")}:${String(loadedData.minute).padStart(2,"0")}`;
       }
       if(loadedData.product) productInput.value = loadedData.product;
       if(loadedData.passCount) document.getElementById("passCount").value = loadedData.passCount;
@@ -187,12 +192,12 @@ async function handleOptionChange(opt){
   oxContainer.style.display="block";
 
   let oxLabels = [];
-  if(opt==="작업전"||opt==="작업후"){
+  if(opt==="작업전" || opt==="작업후"){
     timeLabel.style.display="block";
     productInput.closest("label").style.display="none";
     countContainer.style.display="none";
     oxLabels = ["Fe","Sus"];
-  } else if(opt==="1차점검"||opt==="2차점검"){
+  } else if(opt==="1차점검" || opt==="2차점검"){
     timeLabel.style.display="block";
     productInput.closest("label").style.display="block";
     countContainer.style.display="none";
@@ -219,7 +224,7 @@ async function handleOptionChange(opt){
     oxContainer.appendChild(oxSet);
   });
 
-  // ⚡ 기존 데이터 버튼 값 적용
+  // 기존 데이터 버튼 값 적용
   if(loadedData && loadedData.states){
     for(const [label,val] of Object.entries(loadedData.states)){
       const btn = oxContainer.querySelector(`.ox[data-label="${label}"][data-value="${val}"]`);
@@ -252,7 +257,7 @@ document.getElementById("magnetForm").addEventListener("submit", async e=>{
   let hour="",minute="";
   if(timeInput) [hour,minute]=timeInput.split(":");
 
-  if((currentOption==="1차점검"||currentOption==="2차점검") && !productInput.value.trim()){
+  if((currentOption==="1차점검" || currentOption==="2차점검") && !productInput.value.trim()){
     alert("제품명을 선택하세요.");
     productInput.focus();
     return;
@@ -299,7 +304,6 @@ function resetForm(form, keepDate){
   document.getElementById("subInputs").style.display="none";
   document.getElementById("countContainer").style.display="none";
   document.getElementById("duplicateMsg").style.display="none";
-  updateOptionCompletion(savedDate);
 }
 
 // 날짜 변경 시 리셋
@@ -307,7 +311,7 @@ dateInput.addEventListener("change", ()=>{
   resetForm(document.getElementById("magnetForm"), dateInput.value);
 });
 
-// ===== 완료 표시 =====
+// 옵션 완료 표시
 async function updateOptionCompletion(dateVal){
   try{
     const query = encodeURIComponent(JSON.stringify({date:dateVal}));
@@ -320,6 +324,7 @@ async function updateOptionCompletion(dateVal){
 // DOMContentLoaded
 document.addEventListener("DOMContentLoaded",()=>updateOptionCompletion(dateInput.value));
 </script>
+
 
 
 
