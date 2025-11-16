@@ -200,7 +200,7 @@ async function handleOptionChange(opt){
   oxLabels.forEach(label=>{
     const oxSet = document.createElement("div");
     oxSet.className="ox-set";
-    oxSet.dataset.label = label; // ⚡ dataset로 라벨 저장
+    oxSet.dataset.label = label;
     oxSet.innerHTML=`
       <div>${label}</div>
       <div class="ox-buttons">
@@ -214,19 +214,21 @@ async function handleOptionChange(opt){
   if(loadedData && loadedData.states){
     oxValues = loadedData.states;
     for(const [label,val] of Object.entries(oxValues)){
-      // 동일 label & value 버튼 찾기
       const btn = oxContainer.querySelector(`.ox[data-label="${label}"][data-value="${val}"]`);
       if(btn) btn.classList.add("selected");
     }
   }
 }
-// ===== OX 버튼 선택 =====
+
+// ===== OX 버튼 클릭 처리 =====
 document.addEventListener("click", e=>{
   if(e.target.classList.contains("ox")){
-    const btn=e.target;
-    const label=btn.dataset.label;
-    oxValues[label]=btn.dataset.value;
-    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b=>{
+    const btn = e.target;
+    const label = btn.dataset.label;
+    const value = btn.dataset.value;
+    oxValues[label] = value;
+    // 동일 label의 버튼만 선택
+    oxContainer.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b=>{
       b.classList.toggle("selected", b===btn);
     });
   }
@@ -247,7 +249,7 @@ document.getElementById("magnetForm").addEventListener("submit", async e=>{
 
   // OX 선택 확인
   document.querySelectorAll(".ox-set").forEach(oxSet=>{
-    const label = oxSet.querySelector("div").innerText;
+    const label = oxSet.dataset.label;
     if(!(label in oxValues)) throw alert(`${label} 선택 필요`);
   });
 
@@ -284,7 +286,7 @@ async function updateOptionCompletion(dateVal){
   } catch{}
 }
 
-// ===== 폼 리셋 =====
+// ===== resetForm =====
 function resetForm(form, keepDate){
   const savedDate = keepDate||dateInput.value;
   form.reset();
@@ -299,7 +301,7 @@ function resetForm(form, keepDate){
   updateOptionCompletion(savedDate);
 }
 
-// 날짜 변경 시 폼 리셋
+// 날짜 변경 시 리셋
 dateInput.addEventListener("change", ()=>{
   resetForm(document.getElementById("magnetForm"), dateInput.value);
 });
