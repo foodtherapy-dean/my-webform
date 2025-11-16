@@ -114,7 +114,6 @@ const optionItems = ["작업전","1차점검","2차점검","작업후","최종�
 // OX 항목
 let oxValues = {};
 const oxContainer = document.getElementById("oxContainer");
-const oxItems = ["Fe","Sus","제품","제품+Fe","제품+Sus"];
 
 // ===== 렌더 옵션 =====
 function renderOptions(existing=[]) {
@@ -176,12 +175,19 @@ async function handleOptionChange(opt){
       loadedData = resVal.ok? await resVal.json():null;
 
       if(loadedData){
+        // 시간 적용
         if (loadedData.hour !== undefined && loadedData.hour !== "" &&
             loadedData.minute !== undefined && loadedData.minute !== "") {
           document.getElementById("time").value = 
             `${String(loadedData.hour).padStart(2,"0")}:${String(loadedData.minute).padStart(2,"0")}`;
         }
+        // 제품명
         if(loadedData.product) productInput.value = loadedData.product;
+        // 통과수량 / 검출수량
+        const passInput = document.querySelector('input[name="passCount"]');
+        const detectInput = document.querySelector('input[name="detectCount"]');
+        if(passInput && loadedData.passCount != null) passInput.value = loadedData.passCount;
+        if(detectInput && loadedData.detectCount != null) detectInput.value = loadedData.detectCount;
       }
     }
   } catch{ /* 무시 */ }
@@ -231,7 +237,7 @@ async function handleOptionChange(opt){
     oxContainer.style.display="none";
   }
 
-  // ⚡ 기존 데이터 버튼 값 적용 (버튼 생성 후)
+  // ⚡ 기존 데이터 버튼 값 적용 (OX)
   if(loadedData && loadedData.states){
     oxValues = loadedData.states;
     for(const [label,val] of Object.entries(oxValues)){
