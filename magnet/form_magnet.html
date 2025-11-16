@@ -96,273 +96,242 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </div>
 
 <script>
-/* ---------------------------------------------------------
-   ⭐ BASE URL
---------------------------------------------------------- */
+// ===== BASE_URL =====
 const BASE_URL = "https://script.google.com/macros/s/AKfycbzp-KHiGjYdGkBhQm2efhsJNuagYVnVc0VA_aEIntBaPfTlVkRiN8Dcl2f-kxFZY2MySw/exec";
 
-/* ---------------------------------------------------------
-   ⭐ 날짜 기본값 설정
---------------------------------------------------------- */
+// 기본 날짜 설정
 const dateInput = document.getElementById("date");
 dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
-/* ---------------------------------------------------------
-   ⭐ 점검 옵션 목록
---------------------------------------------------------- */
-const optionItems = ["작업전", "1차점검", "2차점검", "작업후"];
-
-/* ---------------------------------------------------------
-   ⭐ OX 항목
---------------------------------------------------------- */
-const oxItemsFull = ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"];
-const oxItemsShort = ["Fe", "Sus"];
-
-let oxValues = {};  // 선택된 OX 값 저장
-let currentOption = "";
-
-/* ---------------------------------------------------------
-   ⭐ 커스텀 옵션 드롭다운 처리
---------------------------------------------------------- */
+// 옵션
 const customOption = document.getElementById("customOption");
 const selectedDiv = customOption.querySelector(".selected-option");
 const optionsList = customOption.querySelector(".options");
+let currentOption = "";
+const optionItems = ["작업전","1차점검","2차점검","작업후"];
 
-function renderOptions(completed = []) {
+// OX 값 저장
+let oxValues = {};
+const oxContainer = document.getElementById("oxContainer");
+const oxItems = ["Fe","Sus","제품","제품+Fe","제품+Sus"];
+
+// 옵션 렌더링
+function renderOptions(existing=[]) {
   optionsList.innerHTML = "";
   optionItems.forEach(opt => {
     const li = document.createElement("li");
     li.dataset.value = opt;
-    li.textContent = completed.includes(opt) ? `${opt} (완료)` : opt;
+    li.textContent = existing.includes(opt) ? `${opt} (완료)` : opt;
     optionsList.appendChild(li);
   });
 }
 
+// 드롭다운
 customOption.addEventListener("click", e => {
-  if (e.target.classList.contains("selected-option")) {
-    customOption.classList.toggle("open");
-  }
-
-  if (e.target.tagName === "LI") {
+  if(e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
+  if(e.target.tagName==="LI"){
     currentOption = e.target.dataset.value;
     selectedDiv.textContent = e.target.textContent;
     customOption.classList.remove("open");
     handleOptionChange(currentOption);
   }
 });
-
 document.addEventListener("click", e => {
-  if (!customOption.contains(e.target)) customOption.classList.remove("open");
+  if(!customOption.contains(e.target)) customOption.classList.remove("open");
 });
 
-/* ---------------------------------------------------------
-   ⭐ 옵션 변경 처리
---------------------------------------------------------- */
-async function handleOptionChange(opt) {
-  if (!opt || !dateInput.value) return;
+// ⭐ UI 적용 + 중복데이터 로딩 처리
+async function handleOptionChange(opt){
+  if(!opt || !dateInput.value) return;
 
   const dateVal = dateInput.value;
   const subInputs = document.getElementById("subInputs");
-  const productLabel = document.getElementById("product").closest("label");
+  const productInput = document.getElementById("product");
   const timeLabel = document.getElementById("timeLabel");
 
-  // 화면 초기화
-  subInputs.style.display = "none";
-  productLabel.style.display = "none";
-  timeLabel.style.display = "none";
-  oxValues = {};
-  document.getElementById("oxContainer").innerHTML = "";
-  document.getElementById("duplicateMsg").style.display = "none";
+  // 기본 숨기기
+  subInputs.style.display="none";
+  productInput.closest("label").style.display="none";
+  timeLabel.style.display="none";
+  oxContainer.style.display="none";
 
-  /* ⭐ 기존 데이터 체크 및 불러오기 */
-  const query = encodeURIComponent(JSON.stringify({ date: dateVal, option: opt }));
-  const duplicateRes = await fetch(`${BASE_URL}?checkMagnet=${query}`);
-  const duplicateData = duplicateRes.ok ? await duplicateRes.json() : { exists: false };
+  oxValues={};
 
-  if (duplicateData.exists) {
-    document.getElementById("duplicateText").innerText =
-      `⚠️ ${dateVal} ${opt} 데이터가 이미 존재합니다.`;
-    document.getElementById("duplicateMsg").style.display = "block";
+  // 중복 데이터 체크
+  let hasDuplicate = false;
+  let loadedData = null;
 
-    const dataRes = await fetch(`${BASE_URL}?getMagnetData=${query}`);
-    const saved = dataRes.ok ? await dataRes.json() : null;
+  try {
+    const query = encodeURIComponent(JSON.stringify({date:dateVal, option:opt}));
+    const res = await fetch(`${BASE_URL}?checkMagnet=${query}`);
+    const result = res.ok ? await res.json() : {};
 
-    if (saved && saved.exists) {
-      loadSavedData(saved, opt);
+    if(result.exists){
+      document.getElementById("duplicateText").innerText =
+        `⚠️ 이미 ${dateVal} ${opt} 데이터가 존재합니다.`;
+      document.getElementById("duplicateMsg").style.display="block";
+      hasDuplicate = true;
+
+      // 기존 데이터 불러오기
+      const resVal = await fetch(`${BASE_URL}?getMagnetData=${query}`);
+      loadedData = resVal.ok ? await resVal.json() : null;
+    } else {
+      document.getElementById("duplicateMsg").style.display="none";
+    }
+  } catch {
+    document.getElementById("duplicateMsg").style.display="none";
+  }
+
+  // ⭐ UI 생성 먼저 진행
+  if(opt==="작업전" || opt==="작업후"){
+    timeLabel.style.display="block";
+    oxContainer.style.display="block";
+    subInputs.style.display="block";
+
+    oxContainer.innerHTML = "";
+    ["Fe","Sus"].forEach(label=>{
+      oxContainer.innerHTML += `
+        <div class="ox-set">
+          <div>${label}</div>
+          <div class="ox-buttons">
+            <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+            <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+          </div>
+        </div>`;
+    });
+
+  } else { // 1차·2차점검
+    subInputs.style.display="block";
+    timeLabel.style.display="block";
+    productInput.closest("label").style.display="block";
+    oxContainer.style.display="block";
+
+    oxContainer.innerHTML = "";
+    oxItems.forEach(label=>{
+      oxContainer.innerHTML += `
+        <div class="ox-set">
+          <div>${label}</div>
+          <div class="ox-buttons">
+            <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
+            <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  // ⭐ 생성된 UI에 기존 데이터 반영 (중복일 경우)
+  if(hasDuplicate && loadedData){
+    // 시간
+    if(loadedData.hour && loadedData.minute){
+      document.getElementById("time").value =
+        `${loadedData.hour.padStart(2,"0")}:${loadedData.minute.padStart(2,"0")}`;
+    }
+
+    // 제품명
+    if(loadedData.product) productInput.value = loadedData.product;
+
+    // OX 선택값
+    if(loadedData.states){
+      oxValues = loadedData.states;
+      for(const [label,value] of Object.entries(oxValues)){
+        const btn = document.querySelector(`.ox[data-label="${label}"][data-value="${value}"]`);
+        if(btn) btn.classList.add("selected");
+      }
     }
   }
-
-  /* ⭐ 옵션에 따라 입력창 표시 설정 */
-
-  // 작업전 & 작업후 → 시간 + Fe/Sus
-  if (opt === "작업전" || opt === "작업후") {
-    timeLabel.style.display = "block";
-    subInputs.style.display = "block";
-
-    renderOXButtons(oxItemsShort);
-  }
-
-  // 1차점검 / 2차점검 → 시간, 제품명, Fe/Sus/제품/제품+Fe/제품+Sus
-  else {
-    subInputs.style.display = "block";
-    productLabel.style.display = "block";
-
-    renderOXButtons(oxItemsFull);
-  }
 }
 
-/* ---------------------------------------------------------
-   ⭐ 기존 데이터 로드
---------------------------------------------------------- */
-function loadSavedData(data, opt) {
-  const timeInput = document.getElementById("time");
-  if (data.hour && data.minute) {
-    timeInput.value = `${String(data.hour).padStart(2, "0")}:${String(data.minute).padStart(2, "0")}`;
-  }
-
-  if (data.product) {
-    document.getElementById("product").value = data.product;
-  }
-
-  oxValues = data.states || {};
-
-  // 로딩 직후 버튼이 만들어지기 전에 호출되면 적용이 안되므로 약간 지연
-  setTimeout(() => {
-    for (const [label, value] of Object.entries(oxValues)) {
-      const btn = document.querySelector(`.ox[data-label="${label}"][data-value="${value}"]`);
-      if (btn) btn.classList.add("selected");
-    }
-  }, 150);
-}
-
-/* ---------------------------------------------------------
-   ⭐ OX 버튼 렌더링
---------------------------------------------------------- */
-function renderOXButtons(list) {
-  const container = document.getElementById("oxContainer");
-  container.style.display = "block";
-  container.innerHTML = "";
-
-  list.forEach(label => {
-    const box = document.createElement("div");
-    box.className = "ox-set";
-    box.innerHTML = `
-      <div>${label}</div>
-      <div class="ox-buttons">
-        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>
-    `;
-    container.appendChild(box);
-  });
-}
-
-/* ---------------------------------------------------------
-   ⭐ OX 버튼 클릭 처리
---------------------------------------------------------- */
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("ox")) {
-    const label = e.target.dataset.label;
-    const value = e.target.dataset.value;
-    oxValues[label] = value;
-
-    document.querySelectorAll(`.ox[data-label="${label}"]`)
-      .forEach(btn => btn.classList.toggle("selected", btn === e.target));
+// ⭐ OX 버튼 선택
+document.addEventListener("click", e=>{
+  if(e.target.classList.contains("ox")){
+    const btn=e.target;
+    const label=btn.dataset.label;
+    oxValues[label]=btn.dataset.value;
+    document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b=>{
+      b.classList.toggle("selected", b===btn);
+    });
   }
 });
 
-/* ---------------------------------------------------------
-   ⭐ 제출 처리
---------------------------------------------------------- */
-document.getElementById("magnetForm").addEventListener("submit", async (e) => {
+// ⭐ 저장
+document.getElementById("magnetForm").addEventListener("submit", async e=>{
   e.preventDefault();
 
-  if (!currentOption) return alert("점검옵션을 선택하세요.");
+  const form = e.target;
+  if(!currentOption) return alert("점검옵션을 선택하세요.");
 
-  // 제품명 필수 옵션
-  if ((currentOption === "1차점검" || currentOption === "2차점검") &&
-      !document.getElementById("product").value.trim()) {
-    alert("제품명을 입력하세요.");
+  // 제품명 체크
+  const productInput = form.querySelector("#product");
+  if((currentOption==="1차점검" || currentOption==="2차점검") &&
+     !productInput.value.trim()){
+    alert("제품명을 선택하세요.");
     return;
   }
 
-  // OX 필수 확인
-  const requiredOX = (currentOption === "작업전" || currentOption === "작업후")
-    ? oxItemsShort
-    : oxItemsFull;
+  // OX 선택값 체크
+  document.querySelectorAll(".ox-set").forEach(set=>{
+    const label = set.querySelector("div").innerText;
+    if(!(label in oxValues)) throw alert(`${label} 선택 필요`);
+  });
 
-  for (const label of requiredOX) {
-    if (!oxValues[label]) {
-      return alert(`${label} 선택 필요`);
-    }
-  }
-
-  let hour = "", minute = "";
-  if (time.value) [hour, minute] = time.value.split(":");
+  // 시간 분리
+  let hour="", minute="";
+  if(form.time?.value) [hour,minute]=form.time.value.split(":");
 
   const data = {
-    type: "data",
-    date: dateInput.value,
-    option: currentOption,
-    hour, minute,
-    product: document.getElementById("product").value,
+    type:"data",
+    date:form.date.value,
+    option:currentOption,
+    hour,minute,
+    product: productInput.value,
     states: oxValues
   };
 
   const fd = new FormData();
   fd.append("magnet", JSON.stringify(data));
 
-  try {
-    const res = await fetch(BASE_URL, { method: "POST", body: fd });
-    alert("저장 완료!");
-  } catch (err) {
-    alert("저장 오류: " + err.message);
+  try{
+    const res = await fetch(BASE_URL,{method:"POST",body:fd});
+    const text = await res.text();
+    alert(res.ok ? "✔ 저장 완료\n" + text : "❌ 에러\n" + text);
+  } catch(err){
+    alert("❌ 저장 오류: " + err.message);
   }
-
-  resetForm();
 });
 
-/* ---------------------------------------------------------
-   ⭐ 완료 옵션 체크
---------------------------------------------------------- */
-async function updateOptionCompletion(date) {
-  const q = encodeURIComponent(JSON.stringify({ date }));
-  const res = await fetch(`${BASE_URL}?getMagnet=${q}`);
-  const data = res.ok ? await res.json() : {};
-  renderOptions(data.options || []);
+// ===== 완료 옵션표시 =====
+async function updateOptionCompletion(dateVal){
+  try{
+    const query = encodeURIComponent(JSON.stringify({date:dateVal}));
+    const res = await fetch(`${BASE_URL}?getMagnet=${query}`);
+    const data = res.ok ? await res.json() : {};
+    renderOptions(data.options || []);
+  } catch{}
 }
 
-/* ---------------------------------------------------------
-   ⭐ 전체 초기화
---------------------------------------------------------- */
-function resetForm() {
-  const keepDate = dateInput.value;
+// ===== 폼 리셋 =====
+function resetForm(form, keepDate){
+  const savedDate = keepDate || dateInput.value;
+  form.reset();
 
-  document.getElementById("magnetForm").reset();
-  oxValues = {};
+  dateInput.value = savedDate;
   currentOption = "";
   selectedDiv.textContent = "선택하세요";
 
-  document.getElementById("subInputs").style.display = "none";
-  document.getElementById("oxContainer").innerHTML = "";
-  document.getElementById("duplicateMsg").style.display = "none";
+  oxValues={};
 
-  dateInput.value = keepDate;
-  updateOptionCompletion(keepDate);
+  document.getElementById("subInputs").style.display="none";
+  document.getElementById("duplicateMsg").style.display="none";
+
+  updateOptionCompletion(savedDate);
 }
 
-/* ---------------------------------------------------------
-   ⭐ 날짜 변경 시 완전 초기화
---------------------------------------------------------- */
-dateInput.addEventListener("change", () => {
-  resetForm();
+dateInput.addEventListener("change", ()=>{
+  resetForm(document.getElementById("magnetForm"), dateInput.value);
 });
 
-/* ---------------------------------------------------------
-   ⭐ 최초 페이지 로딩 시 완료표시 업데이트
---------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded",()=>{
   updateOptionCompletion(dateInput.value);
 });
 </script>
