@@ -4,6 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>월별 데이터 취합</title>
+      <!- 홈화면 바로가기용 아이콘 지정 ->
+<link rel="icon" type="image/png" sizes="192x192" href="total.png">
+<link rel="apple-touch-icon" href="total.png">
+<meta name="theme-color" content="#4CAF50">
+
+<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
+<link rel="manifest" href="manifest.json">
   <style>
     body{font-family:Arial,Helvetica,sans-serif;margin:16px}
     .controls{display:flex;gap:8px;align-items:center}
@@ -76,7 +83,7 @@ th a {
 
 <script>
   // 배포 URL(사용자 제공)
-  const BASE_URL = "https://script.google.com/macros/s/AKfycbxaDUGKeljXJP6cNeV8z4nOgyYH76Pv5ZxGMMOo42A9YZUe71Ha6ONTsL5V_rdp88JOAQ/exec";
+  const BASE_URL = "https://script.google.com/macros/s/AKfycbzdMxsyB2_HzncC4Ru9ROVX_R14PyByHeOIFTAGtmiZ2Tuow3BxE30sh5L_LVm6leQG0Q/exec";
 
   const monthSel = document.getElementById("monthSelector");
   const statusText = document.getElementById("statusText");
