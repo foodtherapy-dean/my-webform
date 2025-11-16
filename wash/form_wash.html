@@ -186,8 +186,8 @@ async function loadOptionStatus() {
 
       if (result[name]) {
         opt.textContent = `${name} (완료)`;
-        opt.disabled = true;        // 완료된 항목 선택 불가
-        opt.style.color = "#888";   // 회색 처리
+        // opt.disabled = true;  // ✅ 완료 항목도 클릭 가능하도록 수정
+        opt.style.color = "#000";   // 선택 가능하도록 색상 원래대로
       } else {
         opt.textContent = name;
       }
@@ -330,6 +330,7 @@ document.getElementById("inspectForm").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
 
 
 
