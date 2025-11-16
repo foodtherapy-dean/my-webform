@@ -172,6 +172,7 @@ async function handleOptionChange(opt){
       // 기존 데이터 가져오기
       const resVal = await fetch(`${BASE_URL}?getMagnetData=${query}`);
       loadedData = resVal.ok? await resVal.json():null;
+
       if(loadedData){
         if(loadedData.hour && loadedData.minute) document.getElementById("time").value = `${loadedData.hour.padStart(2,"0")}:${loadedData.minute.padStart(2,"0")}`;
         if(loadedData.product) productInput.value = loadedData.product;
@@ -199,6 +200,7 @@ async function handleOptionChange(opt){
   oxLabels.forEach(label=>{
     const oxSet = document.createElement("div");
     oxSet.className="ox-set";
+    oxSet.dataset.label = label; // ⚡ dataset로 라벨 저장
     oxSet.innerHTML=`
       <div>${label}</div>
       <div class="ox-buttons">
@@ -208,16 +210,16 @@ async function handleOptionChange(opt){
     oxContainer.appendChild(oxSet);
   });
 
-  // 기존 데이터 버튼 값 적용
+  // ⚡ 기존 데이터 버튼 값 적용 (버튼 생성 후)
   if(loadedData && loadedData.states){
     oxValues = loadedData.states;
     for(const [label,val] of Object.entries(oxValues)){
-      const btn = document.querySelector(`.ox[data-label="${label}"][data-value="${val}"]`);
+      // 동일 label & value 버튼 찾기
+      const btn = oxContainer.querySelector(`.ox[data-label="${label}"][data-value="${val}"]`);
       if(btn) btn.classList.add("selected");
     }
   }
 }
-
 // ===== OX 버튼 선택 =====
 document.addEventListener("click", e=>{
   if(e.target.classList.contains("ox")){
