@@ -119,23 +119,39 @@ input, select {
 </div>
 
 <script>
-  // ===== URL 날짜 파라미터 자동 반영 & 중복검사 =====
-window.addEventListener("DOMContentLoaded", function () {
+ window.addEventListener("DOMContentLoaded", async function () {
   const dateInput = document.getElementById("date");
   const params = new URLSearchParams(location.search);
   const paramDate = params.get("date");
 
+  // ① 날짜 세팅
   if (dateInput) {
     if (paramDate) {
-      // ① URL 파라미터가 있으면 해당 날짜 세팅
-      dateInput.value = paramDate;
-      if (typeof loadExistingData === "function") loadExistingData();
+      dateInput.value = paramDate; // URL 파라미터 날짜
     } else {
-      // ② URL 파라미터 없으면 기존 로직
       const today = new Date();
       dateInput.value = today.toISOString().split("T")[0]; // 오늘 날짜
-      if (typeof loadExistingData === "function") loadExistingData();
     }
+  }
+
+  // ② 날짜 변경 시 UI 초기화
+  const optionSelect = document.getElementById("option");
+  const oxContainer = document.getElementById("oxContainer");
+  let oxValues = {};
+
+  dateInput.addEventListener("change", async () => {
+    optionSelect.value = "";
+    oxContainer.innerHTML = "";
+    oxValues = {};
+    await loadOptionStatus();
+  });
+
+  // ③ 최초 로딩 시 옵션 상태 로드
+  await loadOptionStatus();
+
+  // ④ URL 파라미터가 있으면 기존 데이터 불러오기
+  if (paramDate && typeof loadExistingData === "function") {
+    loadExistingData();
   }
 });
 
