@@ -121,18 +121,20 @@ input, select {
 <script>
   // ===== URL 날짜 파라미터 자동 반영 & 중복검사 =====
 window.addEventListener("DOMContentLoaded", function () {
-  const params = new URLSearchParams(location.search);
-  const d = params.get("date");
   const dateInput = document.getElementById("date");
+  const params = new URLSearchParams(location.search);
+  const paramDate = params.get("date");
 
   if (dateInput) {
-    if (d) {
-      // URL 파라미터가 있으면 해당 날짜 세팅
-      dateInput.value = d;
-    }
-    // 날짜 입력 후 자동 조회/중복검사
-    if (typeof loadExistingData === "function") {
-      loadExistingData();
+    if (paramDate) {
+      // ① URL 파라미터가 있으면 해당 날짜 세팅
+      dateInput.value = paramDate;
+      if (typeof loadExistingData === "function") loadExistingData();
+    } else {
+      // ② URL 파라미터 없으면 기존 로직
+      const today = new Date();
+      dateInput.value = today.toISOString().split("T")[0]; // 오늘 날짜
+      if (typeof loadExistingData === "function") loadExistingData();
     }
   }
 });
