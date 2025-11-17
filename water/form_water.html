@@ -212,6 +212,23 @@ button#saveBtn {
 }
 </style>
 <script>
+         // ===== URL 날짜 파라미터 자동 반영 =====
+window.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(location.search);
+  const d = params.get("date");
+
+  if (d) {
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+      dateInput.value = d;
+
+      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
+      if (typeof loadExistingData === "function") {
+        loadExistingData();
+      }
+    }
+  }
+});
 const BASE_URL = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
 const checkItems = [
   "쓰레기 등 불필요한 물건 방치여부","청소상태 양호여부","잠금장치 상태","오염원 양호여부",
