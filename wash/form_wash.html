@@ -119,6 +119,23 @@ input, select {
 </div>
 
 <script>
+   // ===== URL 날짜 파라미터 자동 반영 =====
+window.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(location.search);
+  const d = params.get("date");
+
+  if (d) {
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+      dateInput.value = d;
+
+      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
+      if (typeof loadExistingData === "function") {
+        loadExistingData();
+      }
+    }
+  }
+});
 // ===============================
 // 기본 설정
 // ===============================
