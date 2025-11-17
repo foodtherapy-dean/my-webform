@@ -104,6 +104,23 @@ input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px soli
 </div>
 
 <script>
+// ===== URL 날짜 파라미터 자동 반영 =====
+window.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(location.search);
+  const d = params.get("date");
+
+  if (d) {
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+      dateInput.value = d;
+
+      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
+      if (typeof loadExistingData === "function") {
+        loadExistingData();
+      }
+    }
+  }
+});
 document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
