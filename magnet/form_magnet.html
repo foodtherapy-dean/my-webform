@@ -96,29 +96,25 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </div>
 
 <script>
-   // ===== URL 날짜 파라미터 자동 반영 =====
+  // ===== URL 날짜 파라미터 자동 반영 =====
 window.addEventListener("DOMContentLoaded", function () {
   const params = new URLSearchParams(location.search);
-  const d = params.get("date");
+  const paramDate = params.get("date");
 
-  if (d) {
-    const dateInput = document.getElementById("date");
-    if (dateInput) {
-      dateInput.value = d;
-
-      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
-      if (typeof loadExistingData === "function") {
-        loadExistingData();
-      }
+  const dateInput = document.getElementById("date");
+  if (dateInput) {
+    if (paramDate) {
+      dateInput.value = paramDate;
+    } else {
+      dateInput.valueAsDate = new Date();
     }
   }
 });
+
 // ===== BASE_URL =====
 const BASE_URL = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
 
-// 날짜 기본값
 const dateInput = document.getElementById("date");
-dateInput.valueAsDate = new Date();
 dateInput.classList.add("selected");
 
 // 옵션 관련
@@ -132,7 +128,7 @@ const optionItems = ["작업전","1차점검","2차점검","작업후","최종�
 let oxValues = {};
 const oxContainer = document.getElementById("oxContainer");
 
-// ===== 렌더 옵션 =====
+// 렌더 옵션
 function renderOptions(existing=[]) {
   optionsList.innerHTML = "";
   optionItems.forEach(opt => {
@@ -143,7 +139,7 @@ function renderOptions(existing=[]) {
   });
 }
 
-// ===== 커스텀 드롭다운 =====
+// 커스텀 드롭다운
 customOption.addEventListener("click", e => {
   if(e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
   if(e.target.tagName==="LI"){
@@ -247,7 +243,6 @@ async function handleOptionChange(opt){
       oxContainer.appendChild(oxSet);
     });
   } else if(opt==="최종취합"){
-    // 최종취합: 제품명 + 통과/검출 수량 필수
     productInput.closest("label").style.display="block";
     summaryInputs.style.display="block";
     timeLabel.style.display="none";
@@ -264,7 +259,7 @@ async function handleOptionChange(opt){
   }
 }
 
-// ===== OX 버튼 클릭 처리 =====
+// OX 버튼 클릭 처리
 document.addEventListener("click", e=>{
   if(e.target.classList.contains("ox")){
     const btn = e.target;
@@ -277,7 +272,7 @@ document.addEventListener("click", e=>{
   }
 });
 
-// ===== 제출 처리 =====
+// 제출 처리
 document.getElementById("magnetForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const form = e.target;
@@ -332,10 +327,10 @@ document.getElementById("magnetForm").addEventListener("submit", async e=>{
     const txt = await res.text();
     alert(res.ok? "✅ 저장 완료:\n"+txt : "❌ 오류:\n"+txt);
   } catch(err){ alert("❌ 저장 오류:\n"+err.message); }
-  finally{ resetForm(form,new Date().toISOString().split("T")[0]); }
+  finally{ resetForm(form,dateInput.value); }
 });
 
-// ===== 완료 표시 =====
+// 완료 표시
 async function updateOptionCompletion(dateVal){
   try{
     const query = encodeURIComponent(JSON.stringify({date:dateVal}));
@@ -345,7 +340,7 @@ async function updateOptionCompletion(dateVal){
   } catch{}
 }
 
-// ===== resetForm =====
+// resetForm
 function resetForm(form, keepDate){
   const savedDate = keepDate||dateInput.value;
   form.reset();
@@ -360,9 +355,10 @@ function resetForm(form, keepDate){
   updateOptionCompletion(savedDate);
 }
 
-// 날짜 변경 시 리셋
+// 날짜 변경 시 리셋 및 중복 검사
 dateInput.addEventListener("change", ()=>{
   resetForm(document.getElementById("magnetForm"), dateInput.value);
+  if(currentOption) handleOptionChange(currentOption);
 });
 
 // DOMContentLoaded 시 완료 표시
