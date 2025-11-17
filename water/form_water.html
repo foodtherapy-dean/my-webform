@@ -212,23 +212,6 @@ button#saveBtn {
 }
 </style>
 <script>
-         // ===== URL 날짜 파라미터 자동 반영 =====
-window.addEventListener("DOMContentLoaded", function () {
-  const params = new URLSearchParams(location.search);
-  const d = params.get("date");
-
-  if (d) {
-    const dateInput = document.getElementById("date");
-    if (dateInput) {
-      dateInput.value = d;
-
-      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
-      if (typeof loadExistingData === "function") {
-        loadExistingData();
-      }
-    }
-  }
-});
 const BASE_URL = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
 const checkItems = [
   "쓰레기 등 불필요한 물건 방치여부","청소상태 양호여부","잠금장치 상태","오염원 양호여부",
@@ -239,112 +222,134 @@ const checkItems = [
 const dateInput = document.getElementById("date");
 const optionSelect = document.getElementById("option");
 const valueBox = document.getElementById("valueBox");
+const valueInput = document.getElementById("value");
 const checklistDiv = document.getElementById("checklist");
 const dupBox = document.getElementById("dupBox");
 const loadBtn = document.getElementById("loadBtn");
-const valueInput = document.getElementById("value");
+const saveBtn = document.getElementById("saveBtn");
 
-dateInput.valueAsDate = new Date();
+// URL 파라미터 날짜 적용
+const params = new URLSearchParams(location.search);
+const paramDate = params.get("date");
+if (paramDate) dateInput.value = paramDate;
+else dateInput.valueAsDate = new Date();
 
-checkItems.forEach((t,i)=>{
-  const div=document.createElement("div");
-  div.className="item";
-  div.innerHTML=`<div class="item-title">${i+1}. ${t}</div>
+// O/X 버튼 UI 생성
+checkItems.forEach((item, idx) => {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `
+    <div class="item-title">${idx+1}. ${item}</div>
     <div class="ox-buttons">
-      <div class="ox-btn" data-key="${t}" data-value="O">O</div>
-      <div class="ox-btn" data-key="${t}" data-value="X">X</div>
+      <div class="ox-btn" data-key="${item}" data-value="O">O</div>
+      <div class="ox-btn" data-key="${item}" data-value="X">X</div>
     </div>`;
   checklistDiv.appendChild(div);
 });
 
-function initOxButtons(){
-  document.querySelectorAll(".ox-btn").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+function initOxButtons() {
+  document.querySelectorAll(".ox-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
       const key = btn.dataset.key;
-      document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
     });
   });
 }
 initOxButtons();
 
-function updateUIForOption(){
-  valueBox.style.display="none";
-  checklistDiv.style.display="none";
+// 옵션 선택 시 UI 전환
+function updateUIForOption() {
+  valueBox.style.display = "none";
+  checklistDiv.style.display = "none";
   checkDuplicate();
 }
 optionSelect.addEventListener("change", updateUIForOption);
 dateInput.addEventListener("change", checkDuplicate);
 
-function checkDuplicate(){
+// 중복 체크
+function checkDuplicate() {
   const date = dateInput.value;
   const option = optionSelect.value;
-  if(!date||!option) return;
+  if (!date || !option) return;
+
   fetch(`${BASE_URL}?checkWater=${JSON.stringify({date,option})}`)
-  .then(res=>res.json())
-  .then(res=>{
-    if(res.exists){
-      dupBox.style.display="block";
-      valueInput.disabled = true;
-      document.querySelectorAll(".ox-btn").forEach(b=>b.classList.remove("active"));
-    } else {
-      dupBox.style.display="none";
-      if(option==="검침") valueBox.style.display="block";
-      else checklistDiv.style.display="block";
-    }
-  }).catch(()=>{dupBox.style.display="none"; valueInput.disabled=false;});
+    .then(res => res.json())
+    .then(res => {
+      if (res.exists) {
+        dupBox.style.display = "block";
+        valueInput.disabled = true;
+        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
+      } else {
+        dupBox.style.display = "none";
+        if (option === "검침") valueBox.style.display = "block";
+        else checklistDiv.style.display = "block";
+        valueInput.disabled = false;
+      }
+    })
+    .catch(() => {
+      dupBox.style.display = "none";
+      valueInput.disabled = false;
+    });
 }
 
-loadBtn.addEventListener("click", ()=>{
+// 기존 데이터 로드
+loadBtn.addEventListener("click", () => {
   const date = dateInput.value;
   const option = optionSelect.value;
+  if (!date || !option) return;
+
   fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
-    .then(res=>res.json())
-    .then(data=>{
-      dupBox.style.display="none";
-      if(option==="검침"){
+    .then(res => res.json())
+    .then(data => {
+      dupBox.style.display = "none";
+      if(option === "검침") {
         valueInput.value = data.data?.value || "";
-        valueBox.style.display="block"; valueInput.disabled=false;
-        checklistDiv.style.display="none";
+        valueBox.style.display = "block"; 
+        valueInput.disabled = false;
+        checklistDiv.style.display = "none";
       } else {
-        document.querySelectorAll(".ox-btn").forEach(b=>b.classList.remove("active"));
+        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
         const states = data.states || data.data?.states || {};
-        Object.keys(states).forEach(k=>{
+        Object.keys(states).forEach(k => {
           const val = states[k];
           const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
-          if(btn) btn.classList.add("active");
+          if (btn) btn.classList.add("active");
         });
-        checklistDiv.style.display="block"; valueBox.style.display="none";
+        checklistDiv.style.display = "block";
+        valueBox.style.display = "none";
       }
     });
 });
 
-document.getElementById("saveBtn").addEventListener("click", ()=>{
+// 저장
+saveBtn.addEventListener("click", () => {
   const date = dateInput.value;
   const option = optionSelect.value;
   const value = valueInput.value;
-  if(!date||!option) return alert("날짜와 점검구분을 입력하세요.");
+  if (!date || !option) return alert("날짜와 점검구분을 입력하세요.");
 
-  if(option==="검침" && (!value || value==="")) return alert("수치 입력은 필수입니다.");
+  if (option === "검침" && (!value || value === "")) return alert("수치 입력은 필수입니다.");
 
-  const states={}; let allSelected=true;
-  checkItems.forEach(t=>{
-    const active = document.querySelector(`.ox-btn[data-key='${t}'].active`);
-    states[t] = active?active.dataset.value:"";
-    if(option==="정기점검" && !active) allSelected=false;
+  const states = {};
+  let allSelected = true;
+  checkItems.forEach(item => {
+    const active = document.querySelector(`.ox-btn[data-key='${item}'].active`);
+    states[item] = active ? active.dataset.value : "";
+    if(option === "정기점검" && !active) allSelected = false;
   });
-  if(option==="정기점검" && !allSelected) return alert("정기점검은 모든 항목의 O/X 버튼을 선택해야 합니다.");
+  if(option === "정기점검" && !allSelected) return alert("정기점검은 모든 항목의 O/X 버튼을 선택해야 합니다.");
 
-  const payload = {date, option, value, checklist:states};
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({water:JSON.stringify(payload)})
-  }).then(r=>r.text())
-    .then(msg=>{ alert(msg); location.reload(); })
-    .catch(err=>alert("❌ 오류: "+err));
+  const payload = { date, option, value, checklist: states };
+  fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) })
+    .then(r => r.text())
+    .then(msg => { alert(msg); location.reload(); })
+    .catch(err => alert("❌ 오류: " + err));
 });
 
+// 초기 UI 적용
 updateUIForOption();
 </script>
+
 </body>
 </html>
