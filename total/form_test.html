@@ -4,85 +4,102 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>월별 데이터 취합</title>
-      <!- 홈화면 / 바로가기용 아이콘 지정 ->
+
 <link rel="icon" type="image/png" sizes="192x192" href="total.png">
 <link rel="apple-touch-icon" href="total.png">
 <meta name="theme-color" content="#4CAF50">
-<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
 <link rel="manifest" href="manifest.json">
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:16px}
-    .controls{display:flex;gap:8px;align-items:center}
-    select, button{padding:6px 10px;font-size:14px}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border:1px solid #ccc;padding:6px;text-align:center}
-    th{background:#f5f5f5}
-    .small{font-size:13px;color:#666}
-    .loading{margin-left:8px;font-size:13px}
 
- /* 요일 헤더 전체 */
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:16px}
+.controls{display:flex;gap:8px;align-items:center}
+select, button{padding:6px 10px;font-size:14px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #ccc;padding:6px;text-align:center}
+th{background:#f5f5f5}
+.small{font-size:13px;color:#666}
+.loading{margin-left:8px;font-size:13px}
+
+/* 요일 헤더 */
 th:nth-child(2) {
-  background: #eeeeee !important; /* 옅은 회색 */
+  background: #eeeeee !important;
 }
 
-/* 요일 열 전체 */
+/* 요일 열 */
 td.weekday {
-  background: #f5f5f5;  /* 옅은 회색 */
+  background: #f5f5f5;
 }
 
 /* 일요일 줄 */
-tr.sunday {
-  background: #ffecec;  /* 연한 빨강 계열 */
-}
+tr.sunday { background: #ffecec; }
 
 /* 토요일 줄 */
-tr.saturday {
-  background: #e9f2ff;  /* 연한 파랑 계열 */
-}
+tr.saturday { background: #e9f2ff; }
 
-/* 🔗 헤더 링크 스타일 */
+/* 해드 링크 */
 th a {
-  color: inherit; 
-  text-decoration: none; 
-  display: block; 
+  color: inherit;
+  text-decoration: none;
+  display: block;
   width: 100%;
   height: 100%;
 }
 
-  </style>
+/* 클릭 가능한 데이터 칸 */
+td.clickable {
+  cursor: pointer;
+  font-weight: bold;
+  color: #2a5db0;
+}
+td.clickable:hover {
+  background: #dcecff;
+}
+</style>
 </head>
+
 <body>
-  <h2>월별 데이터 취합</h2>
-  <div class="controls">
-    <label for="monthSelector">월 선택: </label>
-    <select id="monthSelector"></select>
-    <button id="prevBtn">&lt;</button>
-    <button id="nextBtn">&gt;</button>
-    <span id="statusText" class="loading"></span>
-  </div>
+<h2>월별 데이터 취합</h2>
 
-  <table id="statusTable">
-    <thead>
-      <tr>
-        <th>일</th>
-        <th>요일</th>
+<div class="controls">
+  <label for="monthSelector">월 선택: </label>
+  <select id="monthSelector"></select>
+  <button id="prevBtn">&lt;</button>
+  <button id="nextBtn">&gt;</button>
+  <span id="statusText" class="loading"></span>
+</div>
 
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/wash/form_wash.html" target="_blank">위생</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/noodle/form_noodle.html" target="_blank">건면</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/wnoodle/form_Wnoodle.html" target="_blank">생면</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/magnet/form_magnet.html" target="_blank">금속</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/input/form_input.html" target="_blank">입고</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/bug/form_bug.html" target="_blank">방재</a></th>
-        <th><a href="https://foodtherapy-dean.github.io/my-webform/water/form_water.html" target="_blank">급수</a></th>
+<table id="statusTable">
+  <thead>
+    <tr>
+      <th>일</th>
+      <th>요일</th>
 
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/wash/form_wash.html" target="_blank">위생</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/noodle/form_noodle.html" target="_blank">건면</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/wnoodle/form_Wnoodle.html" target="_blank">생면</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/magnet/form_magnet.html" target="_blank">금속</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/input/form_input.html" target="_blank">입고</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/bug/form_bug.html" target="_blank">방재</a></th>
+      <th><a href="https://foodtherapy-dean.github.io/my-webform/water/form_water.html" target="_blank">급수</a></th>
+
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
 <script>
-  // 배포 URL(사용자 제공)
   const BASE_URL = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
+
+  // 웹폼 매핑
+  const FORM_MAP = [
+    "https://foodtherapy-dean.github.io/my-webform/wash/form_wash.html",
+    "https://foodtherapy-dean.github.io/my-webform/noodle/form_noodle.html",
+    "https://foodtherapy-dean.github.io/my-webform/wnoodle/form_Wnoodle.html",
+    "https://foodtherapy-dean.github.io/my-webform/magnet/form_magnet.html",
+    "https://foodtherapy-dean.github.io/my-webform/input/form_input.html",
+    "https://foodtherapy-dean.github.io/my-webform/bug/form_bug.html",
+    "https://foodtherapy-dean.github.io/my-webform/water/form_water.html"
+  ];
 
   const monthSel = document.getElementById("monthSelector");
   const statusText = document.getElementById("statusText");
@@ -146,6 +163,20 @@ th a {
     }
   }
 
+  // ★ 클릭 시 해당 웹폼 날짜 자동 전달
+  function createClickableCell(status, formURL, dateString) {
+    const td = document.createElement("td");
+    td.textContent = status;
+
+    td.classList.add("clickable");
+
+    td.onclick = () => {
+      const url = `${formURL}?date=${dateString}`;
+      window.location.href = url;
+    };
+    return td;
+  }
+
   function renderTable(data) {
     const tbody = document.querySelector("#statusTable tbody");
     tbody.innerHTML = "";
@@ -155,22 +186,31 @@ th a {
       const dt = new Date(item.date);
       const day = dt.getDate();
       const w = weekDays[dt.getDay()];
+      const dateString = item.date;
 
       const tr = document.createElement("tr");
-
       if (w === "일") tr.classList.add("sunday");
       if (w === "토") tr.classList.add("saturday");
 
+      // 첫 두 칸
       tr.innerHTML = `
         <td>${day}</td>
         <td class="weekday">${w}</td>
-        ${item.status.map(s => `<td>${s}</td>`).join("")}
       `;
+
+      // 7개 항목 상태 + 클릭 기능 추가
+      item.status.forEach((s, idx) => {
+        const formURL = FORM_MAP[idx];
+        const td = createClickableCell(s, formURL, dateString);
+        tr.appendChild(td);
+      });
+
       tbody.appendChild(tr);
     });
   }
 
   window.onload = init;
 </script>
+
 </body>
 </html>
