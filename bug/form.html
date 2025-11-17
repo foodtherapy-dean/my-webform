@@ -147,6 +147,23 @@ button[type="submit"]:hover {
   </div>
 
   <script>
+    // ===== URL 날짜 파라미터 자동 반영 =====
+window.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(location.search);
+  const d = params.get("date");
+
+  if (d) {
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+      dateInput.value = d;
+
+      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
+      if (typeof loadExistingData === "function") {
+        loadExistingData();
+      }
+    }
+  }
+});
     const structure = {
       "포충등(입구)": ["파리", "나방", "모기", "하루살이", "기타"],
       "포충등(포장실)": ["파리", "나방", "모기", "하루살이", "기타"],
