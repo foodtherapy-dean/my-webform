@@ -49,24 +49,12 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 </div>
 
 <script>
-   // ===== URL 날짜 파라미터 자동 반영 =====
-window.addEventListener("DOMContentLoaded", function () {
+const scriptUrl = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
+
+document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
-  const d = params.get("date");
+  const paramDate = params.get("date");
 
-  if (d) {
-    const dateInput = document.getElementById("date");
-    if (dateInput) {
-      dateInput.value = d;
-
-      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
-      if (typeof loadExistingData === "function") {
-        loadExistingData();
-      }
-    }
-  }
-});
-document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById("date");
   const lotInput = document.getElementById("lotInput");
   const submitBtn = document.getElementById("submitBtn");
@@ -76,18 +64,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const loadingMsg = document.getElementById("loadingMsg");
-  const scriptUrl = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
 
-  dateInput.valueAsDate = new Date();
+  dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
   let roundData = {};
 
-  // LOT 옵션 생성
+  // LOT 옵션 생성 (0~20)
   lotInput.innerHTML = `
     <option value="0" selected>0</option>
-    ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("")}
+    ${Array.from({length: 20}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join("")}
   `;
 
-  // 차수 생성 함수
   function createRounds(lotCount) {
     roundsDiv.innerHTML = "";
     roundData = {};
@@ -118,13 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
       roundData[i] = { no: 60, value: 1 };
       resultEl.textContent = `주정 1 kg`;
 
-      // 버튼 클릭 이벤트
       [btn3, btn2].forEach(btn => {
-        btn.addEventListener("click", (e) => {
+        btn.addEventListener("click", () => {
           const roundIndex = parseInt(row.dataset.round);
-
           if (btn.classList.contains("selected")) {
-            // 선택 해제 → 해당 차수 제거 후 뒤 차수 앞으로 이동
+            // 선택 해제 → 재정렬
             const keys = Object.keys(roundData).map(k => parseInt(k)).sort((a,b)=>a-b);
             const newRoundData = {};
             let newIdx = 1;
@@ -132,21 +116,17 @@ document.addEventListener('DOMContentLoaded', () => {
               if (k !== roundIndex) {
                 newRoundData[newIdx] = roundData[k];
                 const rEl = roundsDiv.querySelector(`.row[data-round='${k}']`);
-                if(rEl) rEl.dataset.round = newIdx;
-                const lbl = rEl.querySelector(".label");
-                lbl.textContent = `${newIdx}차`;
+                if(rEl) {
+                  rEl.dataset.round = newIdx;
+                  rEl.querySelector(".label").textContent = `${newIdx}차`;
+                }
                 newIdx++;
               }
             });
             roundData = newRoundData;
-
-            // LOT 수 select 업데이트
             lotInput.value = Object.keys(roundData).length;
-
-            // 차수 UI 재생성
             createRounds(Object.keys(roundData).length);
           } else {
-            // 버튼 선택
             row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
             btn.classList.add("selected");
             const type = btn.dataset.type;
@@ -158,13 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     }
-
     roundsDiv.style.display = "block";
   }
 
-  lotInput.addEventListener("change", () => {
-    createRounds(parseInt(lotInput.value));
-  });
+  lotInput.addEventListener("change", () => createRounds(parseInt(lotInput.value)));
 
   // 중복 확인
   async function checkDuplicate(date) {
@@ -175,11 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
 
     try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
 
-      if (data && data.exists) {
+      if (data.exists) {
         duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
       } else {
@@ -197,11 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingMsg.style.display = "block";
     loadingMsg.textContent = "⏳데이터를 가져오고 있습니다.";
     try {
-      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
 
-      if (data && data.values) {
+      if (data.values) {
         const noValues = data.values.slice(0, 20);
         const lotCount = noValues.filter(v => v !== "").length;
         lotInput.value = lotCount;
@@ -215,15 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const resultEl = rowEl.querySelector(".result");
 
           rowEl.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-          if (v == 60) {
-            btn3.classList.add("selected");
-            roundData[idx + 1] = { no: 60, value: 1 };
-            resultEl.textContent = `주정 1 kg`;
-          } else if (v == 40) {
-            btn2.classList.add("selected");
-            roundData[idx + 1] = { no: 40, value: 0.7 };
-            resultEl.textContent = `주정 0.7 kg`;
-          }
+          if (v == 60) { btn3.classList.add("selected"); roundData[idx+1]={no:60,value:1}; resultEl.textContent="주정 1 kg"; }
+          else if (v == 40) { btn2.classList.add("selected"); roundData[idx+1]={no:40,value:0.7}; resultEl.textContent="주정 0.7 kg"; }
         });
       }
     } catch (err) {
@@ -258,22 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const lotCount = parseInt(lotInput.value);
     const noArr = [], valueArr = [];
     for (let i = 1; i <= lotCount; i++) {
-      if (roundData[i]) {
-        noArr.push(roundData[i].no);
-        valueArr.push(roundData[i].value);
-      } else {
-        noArr.push("");
-        valueArr.push("");
-      }
+      if (roundData[i]) { noArr.push(roundData[i].no); valueArr.push(roundData[i].value); }
+      else { noArr.push(""); valueArr.push(""); }
     }
 
     const payload = { date: dateInput.value, lot: lotCount, no: noArr, value: valueArr };
 
     try {
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        body: new URLSearchParams({ saengmyeon: JSON.stringify(payload) })
-      });
+      const res = await fetch(scriptUrl, { method:"POST", body: new URLSearchParams({ saengmyeon: JSON.stringify(payload) }) });
       const text = await res.text();
       alert("저장 완료: " + text);
     } catch (err) {
@@ -284,5 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
+
 </body>
 </html>
