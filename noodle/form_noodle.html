@@ -2,197 +2,304 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>정기검증 입력폼</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>건면공정 모니터링</title>
+    <!- 홈화면  바로가기용 아이콘 지정 ->
+<link rel="icon" type="image/png" sizes="192x192" href="Noodles.png">
+<link rel="apple-touch-icon" href="Noodles.png">
+<meta name="theme-color" content="#4CAF50">
+
+<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
+<link rel="manifest" href="manifest.json"> 
 <style>
-  body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
-  
-  /* 상단바(고정) */
-  .header {
-    position: fixed; top:0; left:0; right:0;
-    background:#4caf50; color:#fff;
-    padding:16px; font-size:20px; font-weight:bold;
-    text-align:center; z-index:100;
-  }
-
-  /* 하단 저장 버튼(고정) */
-  .footer {
-    position: fixed; bottom:0; left:0; right:0;
-    background:#fff; padding:10px; border-top:1px solid #ccc; z-index:100;
-    text-align:center;
-  }
-  #saveBtn {
-    width:100%; padding:16px; font-size:18px;
-    border:none; border-radius:8px;
-    background:#4caf50; color:#fff; cursor:pointer;
-  }
-
-  /* 본문 영역 */
-  .content { padding:100px 16px 90px; }
-
-  .input-box { 
-    background:white; padding:14px; margin-top:10px; 
-    border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1);
-  }
-
-  label { font-size:18px; display:block; margin-bottom:6px; }
-  select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
-
-  .toggle-btn {
-    flex:1; padding:14px 0; font-size:17px;
-    border-radius:12px; border:1px solid #333;
-    cursor:pointer; text-align:center; margin-right:8px;
-  }
-  .toggle-btn:last-child { margin-right:0; }
-  .toggle-row { display:flex; gap:8px; margin-top:10px; }
-  .toggle-btn.active { background:#4caf50; color:white; }
-  .toggle-btn.inactive, .toggle-btn.default { background:none; color:#333; }
-
-  .hidden { display:none; }
+body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
+.app-container { display:flex; flex-direction:column; height:100%; }
+.app-header { background:#4CAF50; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
+.app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
+.app-footer { flex:0 0 auto; }
+#submitBtn { width:100%; font-size:1.5rem; padding:20px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; }
+.inline-row { display:flex; gap:20px; margin-top:10px; }
+.inline-row > * { flex:1; }
+label { display:block; margin-bottom:6px; }
+input, select { width:100%; padding:14px 16px; font-size:1.2rem; border:1px solid #ccc; border-radius:6px; }
+#duplicateMsg { display:none; background:#ffcccc; color:#900; padding:12px; margin-top:6px; border:1px solid #900; border-radius:6px; font-weight:bold; }
+#duplicateMsg button { margin-left:12px; background:#900; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; }
+#loadingMsg { display:none; background:#ffe599; color:#333; padding:8px; margin-bottom:10px; border-radius:6px; font-weight:bold; }
 </style>
 </head>
 <body>
+<div class="app-container">
+  <div class="app-header">건면공정 점검 입력</div>
 
-<div class="header">정기검증 입력폼</div>
+  <div class="app-body">
+    <!-- 날짜 -->
+    <label for="date">날짜</label>
+    <input type="date" id="date" required />
 
-<div class="content">
-  <div class="input-box">
-    <label>날짜</label>
-    <input type="date" id="dateInput">
-  </div>
-
-  <div class="input-box">
-    <label>주기 선택</label>
-    <select id="periodSelect">
-      <option value="">-- 선택하세요 --</option>
-      <option value="주간">주간</option>
-      <option value="월간">월간</option>
-      <option value="분기">분기</option>
-      <option value="반기">반기</option>
-      <option value="연간">연간</option>
+    <!-- 점검 옵션 -->
+    <label for="group" style="margin-top:20px;">점검 옵션</label>
+    <select id="group" required>
+      <option value="">선택하세요</option>
+      <option value="생산제품">생산제품</option>
+      <option value="시스템ON">시스템ON</option>
+      <option value="1차점검">1차점검</option>
+      <option value="2차점검">2차점검</option>
+      <option value="시스템OFF">시스템OFF</option>
     </select>
-  </div>
 
-  <div class="input-box hidden" id="itemBox">
-    <label>항목 선택</label>
-    <select id="itemSelect">
-      <option value="">-- 선택하세요 --</option>
-    </select>
-  </div>
+    <!-- 중복 메시지 -->
+    <div id="duplicateMsg">
+      <span id="duplicateText"></span>
+      <button id="duplicateConfirmBtn">확인</button>
+    </div>
 
-  <div class="input-box hidden" id="statusBox">
-    <label>점검상태</label>
-    <div class="toggle-row">
-      <div id="btnDone" class="toggle-btn default">완료</div>
-      <div id="btnNot" class="toggle-btn active">미완료</div>
+    <!-- 로딩 메시지 -->
+    <div id="loadingMsg">중복 확인 중...</div>
+
+    <!-- 시간 입력 -->
+    <div class="inline-row" id="timeRow">
+      <div>
+        <label for="hour">시간 (시)</label>
+        <select id="hour"></select>
+      </div>
+      <div>
+        <label for="minute">시간 (분)</label>
+        <select id="minute"></select>
+      </div>
+    </div>
+
+    <!-- 온도 / 습도 입력 -->
+    <div class="inline-row" id="thRow">
+      <div>
+        <label for="temp">온도(℃)</label>
+        <input type="number" id="temp" step="0.1" min="0" max="100" />
+      </div>
+      <div>
+        <label for="humidity">습도(%)</label>
+        <input type="number" id="humidity" step="0.1" min="0" max="100" />
+      </div>
+    </div>
+
+    <!-- 생산제품 입력 -->
+    <div class="inline-row" id="productRow" style="display:none;">
+      <div>
+        <label for="product">제품명</label>
+        <select id="product">
+          <option value="">선택하세요</option>
+          <option value="일반국수">일반국수</option>
+          <option value="치자국수">치자국수</option>
+          <option value="메밀국수">메밀국수</option>
+        </select>
+      </div>
+      <div>
+        <label for="count">수량</label>
+        <input type="number" id="count" min="1" />
+      </div>
     </div>
   </div>
-</div>
 
-<div class="footer">
-  <button id="saveBtn">저장</button>
+  <div class="app-footer">
+    <button id="submitBtn">📥 서버로 전송</button>
+  </div>
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxzWzWsoARsJ-gQ3-M-05xHo1ACpSXqCq75VJZPYJdxq-Lye7ki2aYEpAb-c9c8oEjhew/exec"; // Apps Script WebApp URL
+window.addEventListener("DOMContentLoaded", async function () {
+  const params = new URLSearchParams(location.search);
+  const paramDate = params.get("date");
 
-const itemsMap = {
-  "주간": ["방재점검","위생복세탁","비공정청소"],
-  "월간": ["CCP검증표","위생교육"],
-  "분기": ["자가품질검사"],
-  "반기": ["용수탱크청소","에어필터점검"],
-  "연간": ["지하수검사","검교정","유효성평가"]
-};
+  const dateInput = document.getElementById("date");
+  if (dateInput) {
+    if (paramDate) dateInput.value = paramDate;
+    else dateInput.valueAsDate = new Date();
+  }
 
-const dateInput = document.getElementById("dateInput");
-const periodSelect = document.getElementById("periodSelect");
-const itemBox = document.getElementById("itemBox");
-const itemSelect = document.getElementById("itemSelect");
-const statusBox = document.getElementById("statusBox");
-const btnDone = document.getElementById("btnDone");
-const btnNot = document.getElementById("btnNot");
-const saveBtn = document.getElementById("saveBtn");
+  const groupSelect = document.getElementById("group");
+  const hourSelect = document.getElementById("hour");
+  const minuteSelect = document.getElementById("minute");
+  const tempInput = document.getElementById("temp");
+  const humidityInput = document.getElementById("humidity");
+  const productRow = document.getElementById("productRow");
+  const productSelect = document.getElementById("product");
+  const countInput = document.getElementById("count");
+  const submitBtn = document.getElementById("submitBtn");
+  const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
+  const loadingMsg = document.getElementById("loadingMsg");
+  const timeRow = document.getElementById("timeRow");
+  const thRow = document.getElementById("thRow");
+  const suggestionSpan = document.createElement("span");
+  suggestionSpan.style.display = "block";
+  suggestionSpan.style.marginTop = "4px";
+  suggestionSpan.style.fontSize = "0.9em";
+  suggestionSpan.style.color = "blue";
+  timeRow.insertAdjacentElement("afterend", suggestionSpan);
 
-// 오늘 날짜 자동 설정
-window.onload = () => {
-  dateInput.value = new Date().toISOString().split("T")[0];
-  statusBox.classList.add("hidden");
-  itemBox.classList.add("hidden");
-};
+  const scriptUrl = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
+  const orderMap = ["시스템ON","1차점검","2차점검","시스템OFF"];
+  let loadedData = {};
 
-// 주기 선택
-periodSelect.addEventListener("change", () => {
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  statusBox.classList.add("hidden");
-  const period = periodSelect.value;
-  if (!period) { itemBox.classList.add("hidden"); return; }
+  // 시/분 옵션 채우기
+  function fillTimeOptions() {
+    hourSelect.innerHTML = '<option value=""></option>';
+    for (let h = 1; h <= 24; h++) hourSelect.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
+    minuteSelect.innerHTML = '<option value=""></option>';
+    for (let m = 0; m < 60; m+=10) minuteSelect.innerHTML += `<option value="${m.toString().padStart(2,"0")}">${m.toString().padStart(2,"0")}</option>`;
+  }
+  fillTimeOptions();
 
-  itemsMap[period].forEach(item=>{
-    const op = document.createElement("option");
-    op.value = item; op.textContent = item;
-    itemSelect.appendChild(op);
-  });
-  itemBox.classList.remove("hidden");
-});
+  // ====== 옵션 완료 표시 함수 ======
+  async function updateOptionCompletion(dateVal) {
+    try {
+      if (!dateVal) return;
+      const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+      const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
+      const data = res.ok ? await res.json() : {};
+      const existingGroups = data.options || [];
 
-// 항목 선택
-itemSelect.addEventListener("change", () => {
-  if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
-  statusBox.classList.remove("hidden");
-  // 기본 미완료
-  btnNot.className = "toggle-btn active";
-  btnDone.className = "toggle-btn default";
+      Array.from(groupSelect.options).forEach(opt => {
+        if (!opt.value) return;
+        const clean = opt.value.trim();
+        opt.textContent = existingGroups.includes(clean) ? `${clean}(완료)` : clean;
+        opt.value = clean;
+      });
+    } catch (err) {
+      console.error("옵션 완료 업데이트 오류:", err);
+    }
+  }
 
-  checkDuplicate();
-});
+  // ====== 중복 확인 ======
+  async function checkDuplicate(date, group, internal=false) {
+    if (!date || !group) return false;
+    loadingMsg.style.display = "block"; submitBtn.disabled = true;
+    try {
+      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date,group})));
+      const data = await res.json();
+      loadingMsg.style.display = "none"; submitBtn.disabled = false;
+      loadedData[group] = { fetched:true, data: data.data || null };
 
-// 상태 버튼 토글
-btnDone.onclick = () => {
-  btnDone.className = "toggle-btn active";
-  btnNot.className = "toggle-btn default";
-};
-btnNot.onclick = () => {
-  btnNot.className = "toggle-btn active";
-  btnDone.className = "toggle-btn default";
-};
-
-function getStatus() {
-  return btnDone.classList.contains("active") ? "완료" : "미완료";
-}
-
-// 중복 조회
-function checkDuplicate() {
-  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.status){
-        if(d.data==="완료") btnDone.click();
-        else btnNot.click();
+      if (!internal && data.exists) {
+        duplicateText.textContent = `⚠️ 이미 같은 날짜(${date})와 옵션(${group}) 데이터가 존재합니다.`;
+        duplicateMsg.style.display = "block";
+        const d = data.data;
+        if (d) {
+          hourSelect.value = d.hour || "";
+          minuteSelect.value = d.minute || "";
+          tempInput.value = d.temp || "";
+          humidityInput.value = d.humi || "";
+          productSelect.value = d.product || "";
+          countInput.value = d.count || "";
+        }
       }
-    });
-}
 
-// 저장
-saveBtn.onclick = () => {
-  if(!dateInput.value){ alert("날짜 선택 필요"); return; }
-  if(!periodSelect.value){ alert("주기 선택 필요"); return; }
-  if(!itemSelect.value){ alert("항목 선택 필요"); return; }
+      updateInputFields(); updateSuggestion();
+      return true;
+    } catch(err) {
+      loadingMsg.style.display = "none"; submitBtn.disabled = false;
+      if (!internal) { duplicateText.textContent="중복 확인 오류!"; duplicateMsg.style.display="block"; }
+      return false;
+    }
+  }
 
-  const payload = {
-    mode:"write",
-    date:dateInput.value,
-    period:periodSelect.value,
-    item:itemSelect.value,
-    status:getStatus()
-  };
+  // ====== 추천시간 계산 ======
+  function updateSuggestion() {
+    const sel = groupSelect.value;
+    let suggestedText = "";
+    const sysOnData = loadedData["시스템ON"]?.data;
+    const firstData = loadedData["1차점검"]?.data;
+    const secondData = loadedData["2차점검"]?.data;
 
-  fetch(BASE_URL, {
-    method:"POST",
-    body:JSON.stringify(payload)
-  }).then(r=>r.json())
-    .then(d=>alert(d.message));
-};
+    if (sel==="1차점검") {
+      suggestedText = (!sysOnData?.hour || !sysOnData?.minute) ? "시스템ON 미입력" : "추천: "+addTime(sysOnData.hour, sysOnData.minute,1);
+    } else if (sel==="2차점검") {
+      suggestedText = (!firstData?.hour || !firstData?.minute) ? "1차점검 미입력" : "추천: "+addTime(firstData.hour, firstData.minute,16);
+    } else if (sel==="시스템OFF") {
+      suggestedText = (!secondData?.hour || !secondData?.minute) ? "2차점검 미입력" : (!sysOnData?.hour || !sysOnData?.minute) ? "시스템ON 미입력" : "추천: "+addTime(sysOnData.hour, sysOnData.minute,17);
+    } else suggestedText = "";
+    suggestionSpan.textContent = suggestedText;
+  }
+
+  function addTime(hour, minute, addHours) {
+    let h = parseInt(hour,10); let m = parseInt(minute,10);
+    h = (h+addHours)%24;
+    return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
+  }
+
+  // ====== 입력 필드 표시 ======
+  function updateInputFields() {
+    const g = groupSelect.value;
+    timeRow.style.display="none"; thRow.style.display="none"; productRow.style.display="none"; suggestionSpan.style.display="none";
+    if (g==="시스템ON" || g==="시스템OFF") { timeRow.style.display="flex"; suggestionSpan.style.display="block"; }
+    else if (g==="1차점검" || g==="2차점검") { timeRow.style.display="flex"; thRow.style.display="flex"; suggestionSpan.style.display="block"; }
+    else if (g==="생산제품") { productRow.style.display="flex"; }
+  }
+
+  duplicateConfirmBtn.addEventListener("click", ()=>{ duplicateMsg.style.display="none"; });
+
+  // ====== groupSelect 이벤트 ======
+  groupSelect.addEventListener("focus", async () => { await updateOptionCompletion(dateInput.value); });
+
+  groupSelect.addEventListener("change", async () => {
+    timeRow.style.display = thRow.style.display = productRow.style.display = suggestionSpan.style.display = "none";
+    duplicateMsg.style.display = false; duplicateText.textContent="";
+    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
+    productSelect.value=""; countInput.value="";
+    const selected = groupSelect.value;
+    const idx = orderMap.indexOf(selected);
+
+    // 직전 옵션 데이터 없으면 internal=true 로 불러오기
+    if (selected==="시스템OFF") {
+      if (!loadedData["2차점검"]) await checkDuplicate(dateInput.value,"2차점검",true);
+      if (!loadedData["시스템ON"]) await checkDuplicate(dateInput.value,"시스템ON",true);
+    } else if (idx>0 && !loadedData[orderMap[idx-1]]) {
+      await checkDuplicate(dateInput.value,orderMap[idx-1],true);
+    }
+
+    if (dateInput.value && selected) await checkDuplicate(dateInput.value, selected,false);
+  });
+
+  dateInput.addEventListener("change", async ()=>{
+    groupSelect.value=""; duplicateMsg.style.display="none"; duplicateText.textContent="";
+    hourSelect.value=""; minuteSelect.value=""; tempInput.value=""; humidityInput.value="";
+    productSelect.value=""; countInput.value=""; loadedData={};
+    updateInputFields(); await updateOptionCompletion(dateInput.value);
+  });
+
+  hourSelect.addEventListener("change", updateSuggestion);
+
+  // ====== 제출 ======
+  submitBtn.addEventListener("click", async ()=>{
+    if (!groupSelect.value) { alert("점검 옵션 선택"); return; }
+    if (!dateInput.value) { alert("날짜 선택"); return; }
+    if (timeRow.style.display!=="none" && (!hourSelect.value || !minuteSelect.value)) { alert("시간 선택"); return; }
+    if (thRow.style.display!=="none" && (!tempInput.value || !humidityInput.value)) { alert("온도/습도 입력"); return; }
+    if (productRow.style.display!=="none" && (!productSelect.value || !countInput.value)) { alert("제품/수량 입력"); return; }
+
+    const entries = productRow.style.display!=="none" ?
+      [{ product: productSelect.value, count: countInput.value }] :
+      [{ hour:hourSelect.value, minute:minuteSelect.value, temp:tempInput.value, humi:humidityInput.value, product:productSelect.value||"", count:countInput.value||"" }];
+    
+    const payload = { date: dateInput.value, group: groupSelect.value, entries: entries };
+
+    try {
+      const res = await fetch(scriptUrl,{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"noodle="+encodeURIComponent(JSON.stringify(payload))
+      });
+      const text = await res.text();
+      alert("서버 응답: "+text);
+      location.reload();
+    } catch(err){ alert("서버 전송 오류: "+err.message); }
+  });
+
+  // 초기 표시
+  updateInputFields();
+  await updateOptionCompletion(dateInput.value);
+});
 </script>
+
 
 </body>
 </html>
