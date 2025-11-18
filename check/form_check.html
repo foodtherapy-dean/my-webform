@@ -13,7 +13,7 @@
 
   /* 하단 저장 버튼바(고정) */
   .footer { position: fixed; bottom:0; left:0; right:0; background:white; padding:10px; border-top:1px solid #ccc; text-align:center; z-index:100; }
-  #saveBtn { width:90%; padding:14px; font-size:18px; border:none; background:#4caf50; color:white; border-radius:10px; }
+  #saveBtn { width:100%; padding:14px; font-size:18px; border:none; background:#4caf50; color:white; border-radius:10px; }
 
   /* 본문 콘텐츠 영역 */
   .content { padding:80px 16px 90px; }
@@ -24,9 +24,9 @@
 
   /* 상태 버튼 */
   .toggle-container { display:flex; gap:10px; }
-  .toggle-btn { flex:1; padding:16px 0; border:1px solid #333; border-radius:12px; font-size:17px; cursor:pointer; text-align:center; }
+  .toggle-btn { flex:1; padding:16px 0; border:1px solid #333; border-radius:12px; font-size:17px; cursor:pointer; text-align:center; background:none; color:#333; }
   .toggle-btn.active { background:#4caf50; color:white; }
-  .toggle-btn.inactive { background:#f44336; color:white; }
+  .toggle-btn.inactive { background:none; color:#333; }
 </style>
 </head>
 <body>
@@ -58,7 +58,7 @@
     <label>점검상태</label><br><br>
     <div class="toggle-container">
       <button id="btnDone" class="toggle-btn inactive">완료</button>
-      <button id="btnNot" class="toggle-btn active">미완료</button>
+      <button id="btnNot" class="toggle-btn inactive">미완료</button>
     </div>
   </div>
 </div>
@@ -76,7 +76,7 @@ const itemSelect=document.getElementById("itemSelect");
 const statusBox=document.getElementById("statusBox");
 const btnDone=document.getElementById("btnDone");
 const btnNot=document.getElementById("btnNot");
-let currentStatus="미완료";
+let currentStatus="";
 window.onload=()=>{dateInput.value=new Date().toISOString().split("T")[0];};
 periodSelect.addEventListener("change",()=>{
   itemBox.classList.add("hidden"); statusBox.classList.add("hidden");
@@ -86,8 +86,12 @@ periodSelect.addEventListener("change",()=>{
   itemBox.classList.remove("hidden");
 });
 itemSelect.addEventListener("change",()=>{
-  if(itemSelect.value===""){statusBox.classList.add("hidden");return;}
-  statusBox.classList.remove("hidden"); setStatus("미완료"); checkDuplicate();
+  if(itemSelect.value===""){statusBox.classList.add("hidden"); currentStatus=""; return;}
+  statusBox.classList.remove("hidden");
+  btnDone.classList.remove("active"); btnDone.classList.add("inactive");
+  btnNot.classList.remove("active"); btnNot.classList.add("inactive");
+  currentStatus="";
+  checkDuplicate();
 });
 btnDone.onclick=()=>setStatus("완료"); btnNot.onclick=()=>setStatus("미완료");
 function setStatus(state){ currentStatus=state;
