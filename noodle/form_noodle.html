@@ -44,20 +44,22 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; margin-to
       </select>
     </div>
 
-    <div class="input-box hidden" id="itemBox">
-      <label>항목 선택</label>
-      <select id="itemSelect">
-        <option value="">-- 선택하세요 --</option>
-      </select>
-    </div>
+    <!-- 항목 선택 박스 -->
+<div class="input-box hidden" id="itemBox">
+  <label>항목 선택</label>
+  <select id="itemSelect">
+    <option value="">-- 선택하세요 --</option>
+  </select>
+</div>
 
-    <div class="input-box hidden" id="statusBox">
-      <label>점검상태</label>
-      <div class="toggle-row">
-        <div id="btnDone" class="toggle-btn default">완료</div>
-        <div id="btnNot" class="toggle-btn active">미완료</div>
-      </div>
-    </div>
+<!-- 점검상태 박스 -->
+<div class="input-box hidden" id="statusBox">
+  <label>점검상태</label>
+  <div class="toggle-row">
+    <div id="btnDone" class="toggle-btn default">완료</div>
+    <div id="btnNot" class="toggle-btn active">미완료</div>
+  </div>
+</div>
   </div>
 
   <div class="app-footer">
@@ -88,23 +90,31 @@ const saveBtn = document.getElementById("saveBtn");
 // 초기 날짜
 window.onload = () => { dateInput.value = new Date().toISOString().split("T")[0]; };
 
-// 주기 선택
+// 주기 선택 이벤트
 periodSelect.addEventListener("change", () => {
   itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
+  statusBox.classList.add("hidden");  // 상태 박스 숨김
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   const period = periodSelect.value;
   if (!period) return;
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  itemsMap[period].forEach(i => { let op=document.createElement("option"); op.value=i; op.textContent=i; itemSelect.appendChild(op); });
-  itemBox.classList.remove("hidden");
+  itemsMap[period].forEach(item=>{
+    const op = document.createElement("option");
+    op.value = item;
+    op.textContent = item;
+    itemSelect.appendChild(op);
+  });
+  itemBox.classList.remove("hidden"); // 항목만 보여줌
 });
 
-// 항목 선택
+// 항목 선택 이벤트
 itemSelect.addEventListener("change", () => {
-  if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
-  statusBox.classList.remove("hidden");
-  btnNot.className = "toggle-btn active"; // 기본: 미완료
-  btnDone.className = "toggle-btn default";
+  if (!itemSelect.value) {
+    statusBox.classList.add("hidden"); // 항목 선택 안하면 상태 숨김
+    return;
+  }
+  statusBox.classList.remove("hidden"); // 항목 선택하면 상태 보여줌
+  btnNot.className = "toggle-btn active"; // 기본 미완료
+  btnDone.className = "toggle-btn default"; 
   checkDuplicate();
 });
 
