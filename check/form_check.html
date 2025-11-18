@@ -1,54 +1,32 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼</title>
 <style>
-  body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
-  
-  /* 상단바(고정) */
-  .header {
-    position: fixed; top:0; left:0; right:0;
-    background:#4caf50; color:#fff;
-    padding:16px; font-size:20px; font-weight:bold;
-    text-align:center; z-index:100;
-  }
+body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
+.header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff;
+  padding:16px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
+.footer { position: fixed; bottom:0; left:0; right:0; background:#fff; padding:10px;
+  border-top:1px solid #ccc; z-index:100; text-align:center; }
+#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px;
+  background:#4caf50; color:#fff; cursor:pointer; }
 
-  /* 하단 저장 버튼(고정) */
-  .footer {
-    position: fixed; bottom:0; left:0; right:0;
-    background:#fff; padding:10px; border-top:1px solid #ccc; z-index:100;
-    text-align:center;
-  }
-  #saveBtn {
-    width:100%; padding:16px; font-size:18px;
-    border:none; border-radius:8px;
-    background:#4caf50; color:#fff; cursor:pointer;
-  }
+.content { padding:100px 16px 90px; }
+.input-box { background:white; padding:14px; margin-top:10px; border-radius:12px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+label { font-size:18px; display:block; margin-bottom:6px; }
+select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 
-  /* 본문 영역 */
-  .content { padding:100px 16px 90px; }
+.toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #333;
+  cursor:pointer; text-align:center; margin-right:8px; }
+.toggle-btn:last-child { margin-right:0; }
+.toggle-row { display:flex; gap:8px; margin-top:10px; }
+.toggle-btn.active { background:#4caf50; color:white; }
+.toggle-btn.default { background:none; color:#333; }
 
-  .input-box { 
-    background:white; padding:14px; margin-top:10px; 
-    border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1);
-  }
-
-  label { font-size:18px; display:block; margin-bottom:6px; }
-  select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
-
-  .toggle-btn {
-    flex:1; padding:14px 0; font-size:17px;
-    border-radius:12px; border:1px solid #333;
-    cursor:pointer; text-align:center; margin-right:8px;
-  }
-  .toggle-btn:last-child { margin-right:0; }
-  .toggle-row { display:flex; gap:8px; margin-top:10px; }
-  .toggle-btn.active { background:#4caf50; color:white; }
-  .toggle-btn.inactive, .toggle-btn.default { background:none; color:#333; }
-
-  .hidden { display:none; }
+.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -120,14 +98,14 @@ window.onload = () => {
   itemBox.classList.add("hidden");
 };
 
-// 주기 선택
+// 주기 선택 시 항목 설정
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
   const period = periodSelect.value;
   if (!period) { itemBox.classList.add("hidden"); return; }
 
-  itemsMap[period].forEach(item=>{
+  itemsMap[period].forEach(item => {
     const op = document.createElement("option");
     op.value = item; op.textContent = item;
     itemSelect.appendChild(op);
@@ -135,7 +113,7 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
-// 항목 선택
+// 항목 선택 시 상태 표시 + 중복 체크
 itemSelect.addEventListener("change", () => {
   if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
@@ -162,9 +140,10 @@ function getStatus() {
 
 // 중복 조회
 function checkDuplicate() {
+  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
   fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
-    .then(r=>r.json())
-    .then(d=>{
+    .then(r => r.json())
+    .then(d => {
       if(d.status){
         if(d.data==="완료") btnDone.click();
         else btnNot.click();
@@ -189,8 +168,8 @@ saveBtn.onclick = () => {
   fetch(BASE_URL, {
     method:"POST",
     body:JSON.stringify(payload)
-  }).then(r=>r.json())
-    .then(d=>alert(d.message));
+  }).then(r => r.json())
+    .then(d => alert(d.message));
 };
 </script>
 
