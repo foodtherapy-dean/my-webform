@@ -6,97 +6,27 @@
 <title>정기검증 입력폼</title>
 
 <style>
-  body {
-    margin:0;
-    font-family: Arial;
-    background:#f5f5f5;
-  }
-
-  .header {
-    position: fixed; top:0; left:0; right:0;
-    background:#1976d2;
-    color:white;
-    padding:14px;
-    font-size:20px;
-    font-weight:bold;
-    text-align:center;
-    z-index:100;
-  }
-
-  .footer {
-    position: fixed; bottom:0; left:0; right:0;
-    background:white;
-    padding:10px;
-    border-top:1px solid #ccc;
-    text-align:center;
-    z-index:100;
-  }
-
-  #saveBtn {
-    width:90%;
-    padding:14px;
-    font-size:18px;
-    border:none;
-    background:#4caf50;
-    color:white;
-    border-radius:10px;
-  }
-
-  .content {
-    padding:80px 16px 90px;
-  }
-
+  body { margin:0; font-family: Arial; background:#f5f5f5; }
+  .header { position: fixed; top:0; left:0; right:0; background:#1976d2; color:white; padding:14px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
+  .footer { position: fixed; bottom:0; left:0; right:0; background:white; padding:10px; border-top:1px solid #ccc; text-align:center; z-index:100; }
+  #saveBtn { width:90%; padding:14px; font-size:18px; border:none; background:#4caf50; color:white; border-radius:10px; }
+  .content { padding:80px 16px 90px; }
   .hidden { display:none !important; }
-
   label { font-size:18px; }
-
-  .input-box {
-    background:white;
-    padding:14px;
-    margin-top:10px;
-    border-radius:12px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
-  }
-
-  select, input[type="date"] {
-    width:100%;
-    padding:10px;
-    margin-top:8px;
-    font-size:16px;
-  }
-
-  .toggle-btn {
-    padding:12px 22px;
-    border:1px solid #333;
-    border-radius:12px;
-    margin-right:10px;
-    font-size:17px;
-    cursor:pointer;
-  }
-
-  .toggle-btn.active {
-    background:#4caf50;
-    color:white;
-  }
-
-  .toggle-btn.inactive {
-    background:#f44336;
-    color:white;
-  }
+  .input-box { background:white; padding:14px; margin-top:10px; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+  select, input[type="date"] { width:100%; padding:10px; margin-top:8px; font-size:16px; }
+  .toggle-btn { padding:12px 22px; border:1px solid #333; border-radius:12px; margin-right:10px; font-size:17px; cursor:pointer; }
+  .toggle-btn.active { background:#4caf50; color:white; }
+  .toggle-btn.inactive { background:#f44336; color:white; }
 </style>
 </head>
-
 <body>
-
 <div class="header">정기검증 입력폼</div>
-
 <div class="content">
-
   <div class="input-box">
     <label>날짜</label>
     <input type="date" id="dateInput" />
   </div>
-
   <div class="input-box">
     <label>주기 선택</label>
     <select id="periodSelect">
@@ -108,117 +38,62 @@
       <option value="연간">연간</option>
     </select>
   </div>
-
   <div class="input-box hidden" id="itemBox">
     <label>항목 선택</label>
     <select id="itemSelect">
       <option value="">-- 선택하세요 --</option>
     </select>
   </div>
-
   <div class="input-box hidden" id="statusBox">
     <label>점검상태</label><br><br>
     <button id="btnDone" class="toggle-btn inactive">완료</button>
     <button id="btnNot" class="toggle-btn active">미완료</button>
   </div>
-
 </div>
-
 <div class="footer">
   <button id="saveBtn">저장</button>
 </div>
-
 <script>
 const BASE_URL = "YOUR_WEBAPP_URL";
-const itemsMap = {
-  "주간": ["방재점검","위생복세탁","비공정청소"],
-  "월간": ["CCP검증표","위생교육"],
-  "분기": ["자가품질검사"],
-  "반기": ["용수탱크청소","에어필터점검"],
-  "연간": ["지하수검사","검교정","유효성평가"]
-};
-
-const dateInput  = document.getElementById("dateInput");
+const itemsMap = {"주간":["방재점검","위생복세탁","비공정청소"],"월간":["CCP검증표","위생교육"],"분기":["자가품질검사"],"반기":["용수탱크청소","에어필터점검"],"연간":["지하수검사","검교정","유효성평가"]};
+const dateInput = document.getElementById("dateInput");
 const periodSelect = document.getElementById("periodSelect");
 const itemBox = document.getElementById("itemBox");
 const itemSelect = document.getElementById("itemSelect");
 const statusBox = document.getElementById("statusBox");
 const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
-
 let currentStatus = "미완료";
-
-window.onload = () => {
-  dateInput.value = new Date().toISOString().split("T")[0];
-};
-
+window.onload = () => { dateInput.value = new Date().toISOString().split("T")[0]; };
 periodSelect.addEventListener("change", () => {
-  itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
+  itemBox.classList.add("hidden"); statusBox.classList.add("hidden");
   itemSelect.innerHTML = `<option value=''>-- 선택하세요 --</option>`;
-
-  const period = periodSelect.value;
-  if (!period) return;
-  itemsMap[period].forEach(item => {
-    const op = document.createElement("option");
-    op.value = item;
-    op.textContent = item;
-    itemSelect.appendChild(op);
-  });
+  const period = periodSelect.value; if (!period) return;
+  itemsMap[period].forEach(item => { const op = document.createElement("option"); op.value=item; op.textContent=item; itemSelect.appendChild(op); });
   itemBox.classList.remove("hidden");
 });
-
 itemSelect.addEventListener("change", () => {
-  if (itemSelect.value === "") {
-    statusBox.classList.add("hidden");
-    return;
-  }
-  statusBox.classList.remove("hidden");
-  btnNot.click();
-  checkDuplicate();
+  if(itemSelect.value==="") {statusBox.classList.add("hidden"); return;}
+  statusBox.classList.remove("hidden"); btnNot.click(); checkDuplicate();
 });
-
-btnDone.onclick = () => setStatus("완료");
-btnNot.onclick = () => setStatus("미완료");
-function setStatus(state) {
-  currentStatus = state;
-  btnDone.classList.toggle("active", state === "완료");
-  btnDone.classList.toggle("inactive", state !== "완료");
-  btnNot.classList.toggle("active", state === "미완료");
-  btnNot.classList.toggle("inactive", state !== "미완료");
+btnDone.onclick=()=>setStatus("완료"); btnNot.onclick=()=>setStatus("미완료");
+function setStatus(state){ currentStatus=state; btnDone.classList.toggle("active",state==="완료"); btnDone.classList.toggle("inactive",state!=="완료"); btnNot.classList.toggle("active",state==="미완료"); btnNot.classList.toggle("inactive",state!=="미완료");}
+function getStatus(){return currentStatus;}
+async function checkDuplicate(){
+  const date=dateInput.value; const period=periodSelect.value; const item=itemSelect.value;
+  if(!date||!period||!item) return;
+  const res=await fetch(`${BASE_URL}?mode=read&date=${date}&period=${period}&item=${item}`);
+  const data=await res.json();
+  if(data.status) setStatus(data.data);
 }
-
-function getStatus() { return currentStatus; }
-
-async function checkDuplicate() {
-  const date = dateInput.value;
-  const period = periodSelect.value;
-  const item = itemSelect.value;
-  if (!date || !period || !item) return;
-  const res = await fetch(`${BASE_URL}?mode=read&date=${date}&period=${period}&item=${item}`);
-  const data = await res.json();
-  if (data.status) setStatus(data.data);
-}
-
-saveBtn.onclick = () => {
-  if (!dateInput.value) return alert("날짜를 선택해주세요.");
-  if (!periodSelect.value) return alert("주기를 선택해주세요.");
-  if (!itemSelect.value) return alert("항목을 선택해주세요.");
-  if (!currentStatus) return alert("점검상태를 선택해주세요.");
-
-  const payload = {
-    mode: "write",
-    date: dateInput.value,
-    period: periodSelect.value,
-    item: itemSelect.value,
-    status: currentStatus
-  };
-
-  fetch(BASE_URL, { method: "POST", body: JSON.stringify(payload) })
-    .then(r => r.json())
-    .then(d => alert(d.message));
+saveBtn.onclick=()=>{
+  if(!dateInput.value){alert("날짜를 선택해주세요."); return;}
+  if(!periodSelect.value){alert("주기를 선택해주세요."); return;}
+  if(!itemSelect.value){alert("항목을 선택해주세요."); return;}
+  if(!currentStatus){alert("점검상태를 선택해주세요."); return;}
+  const payload={mode:"write",date:dateInput.value,period:periodSelect.value,item:itemSelect.value,status:currentStatus};
+  fetch(BASE_URL,{method:"POST",body:JSON.stringify(payload)}).then(r=>r.json()).then(d=>alert(d.message));
 };
 </script>
-
 </body>
 </html>
