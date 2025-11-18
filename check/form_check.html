@@ -4,140 +4,50 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>정기검증 입력폼</title>
-
 <style>
-  body {
-    margin:0;
-    font-family: Arial;
-    background:#f5f5f5;
-  }
-
-  /* 상단바(고정) */
-  .header {
-    position: fixed;
-    top:0; left:0; right:0;
-    background:#1976d2;
-    color:white;
-    padding:14px;
-    font-size:20px;
-    font-weight:bold;
-    text-align:center;
-    z-index:100;
-  }
-
-  /* 하단 저장 버튼바(고정) */
-  .footer {
-    position: fixed;
-    bottom:0; left:0; right:0;
-    background:white;
-    padding:10px;
-    border-top:1px solid #ccc;
-    text-align:center;
-    z-index:100;
-  }
-
-  #saveBtn {
-    width:90%;
-    padding:14px;
-    font-size:18px;
-    border:none;
-    background:#4caf50;
-    color:white;
-    border-radius:10px;
-  }
-
-  /* 본문 콘텐츠 영역 */
-  .content {
-    padding:80px 16px 90px;
-  }
-
-  .hidden { display:none; }
-
-  label { font-size:18px; }
-
-  .input-box {
-    background:white;
-    padding:14px;
-    margin-top:10px;
-    border-radius:12px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
-  }
-
-  select, input[type="date"] {
-    width:100%;
-    padding:10px;
-    margin-top:8px;
-    font-size:16px;
-  }
-
-  .toggle-btn {
-    padding:12px 22px;
-    border:1px solid #333;
-    border-radius:12px;
-    margin-right:10px;
-    font-size:17px;
-    cursor:pointer;
-  }
-
-  .toggle-btn.active {
-    background:#4caf50;
-    color:white;
-  }
-
-  .toggle-btn.inactive {
-    background:#f44336;
-    color:white;
-  }
+  body { font-family: Arial; padding: 16px; }
+  .hidden { display:none !important; }
+  .toggle-btn { padding:10px 20px; border:1px solid #333; border-radius:8px; margin-right:8px; cursor:pointer; }
+  .toggle-btn.active { background:#4caf50; color:white; }
+  .toggle-btn.inactive { background:#f44336; color:white; }
 </style>
 </head>
-
 <body>
+<h2>정기검증 입력폼</h2>
 
-<div class="header">정기검증 입력폼</div>
+<label>날짜:</label>
+<input type="date" id="dateInput" />
+<br><br>
 
-<div class="content">
+<label>주기 선택:</label>
+<select id="periodSelect">
+  <option value="">-- 선택 --</option>
+  <option value="주간">주간</option>
+  <option value="월간">월간</option>
+  <option value="분기">분기</option>
+  <option value="반기">반기</option>
+  <option value="연간">연간</option>
+</select>
+<br><br>
 
-  <div class="input-box">
-    <label>날짜</label>
-    <input type="date" id="dateInput" />
-  </div>
-
-  <div class="input-box">
-    <label>주기 선택</label>
-    <select id="periodSelect">
-      <option value="">-- 선택하세요 --</option>
-      <option value="주간">주간</option>
-      <option value="월간">월간</option>
-      <option value="분기">분기</option>
-      <option value="반기">반기</option>
-      <option value="연간">연간</option>
-    </select>
-  </div>
-
-  <div class="input-box hidden" id="itemBox">
-    <label>항목 선택</label>
-    <select id="itemSelect">
-      <option value="">-- 선택하세요 --</option>
-    </select>
-  </div>
-
-  <div class="input-box hidden" id="statusBox">
-    <label>점검상태</label><br><br>
-    <button id="btnDone" class="toggle-btn inactive">완료</button>
-    <button id="btnNot" class="toggle-btn active">미완료</button>
-  </div>
-
+<div id="itemBox" class="hidden">
+  <label>항목 선택:</label>
+  <select id="itemSelect"></select>
 </div>
+<br>
 
-<div class="footer">
-  <button id="saveBtn">저장</button>
+<div id="statusBox" class="hidden">
+  <label>점검상태:</label><br>
+  <button id="btnDone" class="toggle-btn inactive">완료</button>
+  <button id="btnNot" class="toggle-btn active">미완료</button>
 </div>
+<br>
 
+<button id="saveBtn">저장</button>
 
 <script>
 const BASE_URL = "YOUR_WEBAPP_URL"; // Apps Script WebApp URL
 
-// 주기별 항목 리스트
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
   "월간": ["CCP검증표","위생교육"],
@@ -146,116 +56,98 @@ const itemsMap = {
   "연간": ["지하수검사","검교정","유효성평가"]
 };
 
-const dateInput  = document.getElementById("dateInput");
-const periodSelect = document.getElementById("periodSelect");
-const itemBox = document.getElementById("itemBox");
-const itemSelect = document.getElementById("itemSelect");
-const statusBox = document.getElementById("statusBox");
-const btnDone = document.getElementById("btnDone");
-const btnNot = document.getElementById("btnNot");
+const dateInput = document.getElementById('dateInput');
+const periodSelect = document.getElementById('periodSelect');
+const itemBox = document.getElementById('itemBox');
+const itemSelect = document.getElementById('itemSelect');
+const statusBox = document.getElementById('statusBox');
+const btnDone = document.getElementById('btnDone');
+const btnNot = document.getElementById('btnNot');
 
-// 오늘 날짜 자동 설정
+// 초기 날짜
 window.onload = () => {
-  dateInput.value = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.value = today;
 };
 
-
-// 🔹 주기 선택 시
-periodSelect.addEventListener("change", () => {
-  itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
+periodSelect.addEventListener('change', () => {
+  itemBox.classList.add('hidden');
+  statusBox.classList.add('hidden');
 
   const period = periodSelect.value;
   if (!period) return;
 
-  // 항목 초기화 + "선택하세요" 추가
-  itemSelect.innerHTML = `<option value="">-- 선택하세요 --</option>`;
-
-  itemsMap[period].forEach(item => {
-    const op = document.createElement("option");
-    op.value = item;
-    op.textContent = item;
+  itemSelect.innerHTML = "";
+  itemsMap[period].forEach(v => {
+    const op = document.createElement('option');
+    op.value = v;
+    op.textContent = v;
     itemSelect.appendChild(op);
   });
 
-  itemBox.classList.remove("hidden");
+  itemBox.classList.remove('hidden');
 });
 
+itemSelect.addEventListener('change', () => {
+  statusBox.classList.remove('hidden');
+  btnDone.classList.remove('active');
+  btnDone.classList.add('inactive');
+  btnNot.classList.add('active');
+  btnNot.classList.remove('inactive');
 
-// 🔹 항목 선택 시 → 상태 버튼 표시 + 중복 조회
-itemSelect.addEventListener("change", () => {
-
-  if (itemSelect.value === "") {
-    statusBox.classList.add("hidden");
-    return;
-  }
-
-  statusBox.classList.remove("hidden");
-
-  // 기본값: 미완료 선택
-  btnNot.click();
-
-  // 중복 조회
   checkDuplicate();
 });
 
-
-// 상태 버튼 토글
 btnDone.onclick = () => {
-  btnDone.classList.add("active");
-  btnDone.classList.remove("inactive");
-  btnNot.classList.remove("active");
-  btnNot.classList.add("inactive");
+  btnDone.classList.add('active');
+  btnDone.classList.remove('inactive');
+  btnNot.classList.remove('active');
+  btnNot.classList.add('inactive');
 };
 
 btnNot.onclick = () => {
-  btnNot.classList.add("active");
-  btnNot.classList.remove("inactive");
-  btnDone.classList.remove("active");
-  btnDone.classList.add("inactive");
+  btnNot.classList.add('active');
+  btnNot.classList.remove('inactive');
+  btnDone.classList.remove('active');
+  btnDone.classList.add('inactive');
 };
 
-
-// 현재 상태 가져오기
 function getStatus() {
-  return btnDone.classList.contains("active") ? "완료" : "미완료";
+  return btnDone.classList.contains('active') ? "완료" : "미완료";
 }
 
-
-// 🔹 중복 조회 함수
+// 중복 조회
 function checkDuplicate() {
   fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
-    .then(r => r.json())
+    .then(r=>r.json())
     .then(d => {
       if (d.status) {
-        if (d.data === "완료") btnDone.click();
-        else btnNot.click();
+        if (d.data === "완료") {
+          btnDone.click();
+        } else {
+          btnNot.click();
+        }
       }
     });
 }
 
-
-// 🔹 저장 버튼
+// 저장
 saveBtn.onclick = () => {
-  if (!periodSelect.value) return alert("주기를 선택하세요.");
-  if (!itemSelect.value) return alert("항목을 선택하세요.");
-
   const payload = {
-    mode:"write",
-    date:dateInput.value,
-    period:periodSelect.value,
-    item:itemSelect.value,
-    status:getStatus()
+    mode: "write",
+    date: dateInput.value,
+    period: periodSelect.value,
+    item: itemSelect.value,
+    status: getStatus(),
   };
 
   fetch(BASE_URL, {
-    method:"POST",
-    body:JSON.stringify(payload)
-  })
-  .then(r=>r.json())
-  .then(d=>alert(d.message));
+    method: "POST",
+    body: JSON.stringify(payload)
+  }).then(r=>r.json()).then(d=>{
+    alert(d.message);
+  });
 };
 </script>
-
 </body>
 </html>
