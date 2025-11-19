@@ -18,8 +18,7 @@ body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
 label { font-size:18px; display:block; margin-bottom:6px; }
 select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 .toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #333;
-  cursor:pointer; text-align:center; margin-right:8px; }
-.toggle-btn:last-child { margin-right:0; }
+  cursor:pointer; text-align:center; }
 .toggle-row { display:flex; gap:8px; margin-top:10px; }
 .toggle-btn.active { background:#4caf50; color:white; }
 .toggle-btn.default { background:none; color:#333; }
@@ -69,7 +68,8 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxiatfSNu7YS2y6OMs2PRtiQ64rQAW2BRDqcUm4MGKRpUlxcDAw2ltxfrIuDEuuhKuY/exec";
+const BASE_URL =
+"https://script.google.com/macros/s/AKfycbxiatfSNu7YS2y6OMs2PRtiQ64rQAW2BRDqcUm4MGKRpUlxcDAw2ltxfrIuDEuuhKuY/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
@@ -101,35 +101,54 @@ periodSelect.addEventListener("change", () => {
   if(!period){ itemBox.classList.add("hidden"); return; }
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
-    op.value = item; op.textContent = item;
+    op.value = item;
+    op.textContent = item;
     itemSelect.appendChild(op);
   });
   itemBox.classList.remove("hidden");
 });
 
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
+  if(!itemSelect.value){
+    statusBox.classList.add("hidden");
+    return;
+  }
   statusBox.classList.remove("hidden");
-  btnNot.className = "toggle-btn active";
-  btnDone.className = "toggle-btn default";
+  btnNot.classList.add("active");
+  btnDone.classList.remove("active");
   checkDuplicate();
 });
 
-btnDone.onclick = () => { btnDone.className="toggle-btn active"; btnNot.className="toggle-btn default"; };
-btnNot.onclick = () => { btnNot.className="toggle-btn active"; btnDone.className="toggle-btn default"; };
+btnDone.onclick = () => {
+  btnDone.classList.add("active");
+  btnNot.classList.remove("active");
+};
 
-function getStatus(){ return btnDone.classList.contains("active")?"완료":"미완료"; }
+btnNot.onclick = () => {
+  btnNot.classList.add("active");
+  btnDone.classList.remove("active");
+};
+
+function getStatus(){
+  return btnDone.classList.contains("active") ? "완료" : "미완료";
+}
 
 function checkDuplicate(){
-  if(!dateInput.value||!periodSelect.value||!itemSelect.value) return;
-  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
+  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
+  const url =
+    `${BASE_URL}?mode=read&` +
+    `date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
+
+  fetch(url)
     .then(r=>r.json())
     .then(d=>{
       if(d.status){
         if(d.data==="완료") btnDone.click();
         else btnNot.click();
       }
-    }).catch(err=>console.error("중복 체크 오류:",err));
+    })
+    .catch(err=>console.error("중복 체크 오류:",err));
 }
 
 saveBtn.onclick = () => {
@@ -137,11 +156,23 @@ saveBtn.onclick = () => {
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
-  const payload = {mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus()};
+  const payload = {
+    mode: "write",
+    date: dateInput.value,
+    period: periodSelect.value,
+    item: itemSelect.value,
+    status: getStatus()
+  };
 
-  fetch(BASE_URL, {method:"POST", body:JSON.stringify(payload)})
+  fetch(BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
     .then(r=>r.json())
-    .then(d=>{ alert(d.message); checkDuplicate(); })
+    .then(d=>{
+      alert(d.message);
+      checkDuplicate();
+    })
     .catch(err=>console.error("저장 오류:",err));
 };
 </script>
