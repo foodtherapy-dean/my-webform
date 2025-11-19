@@ -1,7 +1,7 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼2</title>
 <style>
@@ -72,7 +72,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxs6q68JjHfbsUJWZHoot02G_w_gdrTBwCugCU1HcF8ElxPT2lfnlvdF3-3VdhlnvImFQ/exec"; // Apps Script WebApp URL
+const BASE_URL = "https://script.google.com/macros/s/AKfycbxs6q68JjHfbsUJWZHoot02G_w_gdrTBwCugCU1HcF8ElxPT2lfnlvdF3-3VdhlnvImFQ/exec"; // ⚡ WebApp URL 교체
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
@@ -117,7 +117,6 @@ periodSelect.addEventListener("change", () => {
 itemSelect.addEventListener("change", () => {
   if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
-  // 기본 미완료
   btnNot.className = "toggle-btn active";
   btnDone.className = "toggle-btn default";
 
@@ -125,14 +124,8 @@ itemSelect.addEventListener("change", () => {
 });
 
 // 상태 버튼 토글
-btnDone.onclick = () => {
-  btnDone.className = "toggle-btn active";
-  btnNot.className = "toggle-btn default";
-};
-btnNot.onclick = () => {
-  btnNot.className = "toggle-btn active";
-  btnDone.className = "toggle-btn default";
-};
+btnDone.onclick = () => { btnDone.className = "toggle-btn active"; btnNot.className = "toggle-btn default"; };
+btnNot.onclick = () => { btnNot.className = "toggle-btn active"; btnDone.className = "toggle-btn default"; };
 
 function getStatus() {
   return btnDone.classList.contains("active") ? "완료" : "미완료";
@@ -141,19 +134,14 @@ function getStatus() {
 // 중복 조회
 function checkDuplicate() {
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
-  // 날짜 포맷 맞춤 (yyyy-MM-dd)
-  const formattedDate = dateInput.value;
-
-  fetch(`${BASE_URL}?mode=read&date=${formattedDate}&period=${periodSelect.value}&item=${itemSelect.value}`)
+  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
     .then(r => r.json())
     .then(d => {
       if(d.status){
         if(d.data==="완료") btnDone.click();
         else btnNot.click();
       }
-    })
-    .catch(err => console.error("중복 체크 오류:", err));
+    }).catch(err => console.error("중복 체크 오류:", err));
 }
 
 // 저장
@@ -162,31 +150,13 @@ saveBtn.onclick = () => {
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
-  const payload = {
-    mode:"write",
-    date:dateInput.value,
-    period:periodSelect.value,
-    item:itemSelect.value,
-    status:getStatus()
-  };
+  const payload = { mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus() };
 
-  fetch(BASE_URL, {
-    method:"POST",
-    body:JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(d => {
-    alert(d.message);
-    // 저장 후 다시 중복 체크로 상태 초기화
-    checkDuplicate();
-  })
-  .catch(err => console.error("저장 오류:", err));
+  fetch(BASE_URL, { method:"POST", body:JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(d => { alert(d.message); checkDuplicate(); })
+    .catch(err => console.error("저장 오류:", err));
 };
 </script>
-
 </body>
 </html>
-
-
-
-
