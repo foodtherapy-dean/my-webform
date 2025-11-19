@@ -72,7 +72,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzf2ipkhAJ-Nxo4yt9UKSYc_pdwvGISLKt6dX4VOrXwfPTF6izYiXsiLWly_XKlDd1CXQ/exec"; // ⚡ 교체 필요
+const BASE_URL = "https://script.google.com/macros/s/AKfycby0o6aBs8KU2vAGw-x6R_e46-G29QUqaB4vFB3RkQSG3NZEDtHwz7WFCorvt_lsj4Fz6g/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
@@ -91,12 +91,11 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-// 오늘 날짜 자동 설정 + 중복 체크
+// 오늘 날짜 자동 설정
 window.addEventListener("DOMContentLoaded", () => {
   dateInput.value = new Date().toISOString().split("T")[0];
   statusBox.classList.add("hidden");
   itemBox.classList.add("hidden");
-  checkDuplicate();
 });
 
 // 주기 선택 시 항목 세팅
@@ -128,9 +127,7 @@ itemSelect.addEventListener("change", () => {
 btnDone.onclick = () => { btnDone.className = "toggle-btn active"; btnNot.className = "toggle-btn default"; };
 btnNot.onclick = () => { btnNot.className = "toggle-btn active"; btnDone.className = "toggle-btn default"; };
 
-function getStatus() {
-  return btnDone.classList.contains("active") ? "완료" : "미완료";
-}
+function getStatus() { return btnDone.classList.contains("active") ? "완료" : "미완료"; }
 
 // 중복 조회
 function checkDuplicate() {
@@ -154,13 +151,13 @@ saveBtn.addEventListener("click", () => {
   const payload = { mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus() };
 
   fetch(BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(payload)
   })
   .then(r => r.json())
   .then(d => { alert(d.message); checkDuplicate(); })
-  .catch(err => { console.error("저장 오류:", err); alert("저장 중 오류 발생: " + err); });
+  .catch(err => { console.error("저장 오류:", err); alert("저장 중 오류 발생: "+err); });
 });
 </script>
 
