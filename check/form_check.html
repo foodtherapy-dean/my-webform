@@ -153,17 +153,21 @@ saveBtn.onclick = () => {
   const payload = { mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus() };
 
   fetch(BASE_URL, {
-    method:"POST",
-    headers: { "Content-Type": "application/json" },  // ⚡ 필수
-    body:JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(d => {
-    alert(d.message);
-    checkDuplicate();
-  })
-  .catch(err => console.error("저장 오류:", err));
-};
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(payload)
+})
+.then(r => r.json())
+.then(d => {
+  alert(d.message);  // ✅ 메시지 출력
+  checkDuplicate();  // 상태 업데이트
+})
+.catch(err => {
+  console.error("저장 오류:", err);
+  alert("저장 중 오류 발생: " + err);
+});
 </script>
 
 </body>
