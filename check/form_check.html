@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼</title>
 <style>
@@ -12,17 +12,20 @@ body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
   border-top:1px solid #ccc; z-index:100; text-align:center; }
 #saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px;
   background:#4caf50; color:#fff; cursor:pointer; }
+
 .content { padding:100px 16px 90px; }
 .input-box { background:white; padding:14px; margin-top:10px; border-radius:12px;
   box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 label { font-size:18px; display:block; margin-bottom:6px; }
 select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
+
 .toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #333;
   cursor:pointer; text-align:center; margin-right:8px; }
 .toggle-btn:last-child { margin-right:0; }
 .toggle-row { display:flex; gap:8px; margin-top:10px; }
 .toggle-btn.active { background:#4caf50; color:white; }
 .toggle-btn.default { background:none; color:#333; }
+
 .hidden { display:none; }
 </style>
 </head>
@@ -69,7 +72,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwMItq49SeHPfM-QHjjPFucDHLuz6gIG_1tsKaUdwBBA1F2sUHOr_ZwDo5hOgF9jmO2CA/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwhstsky-lDo_9JaTlfpCfhtNNrQmMNX-czCmp46kzKbdtJYcb6J0cLVYPfjt66RY1WQQ/exec"; // ⚡ 교체 필요
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
@@ -135,7 +138,7 @@ function checkDuplicate() {
     .then(r => r.json())
     .then(d => {
       if(d.status){
-        if(d.data.toString().trim()==="완료") btnDone.click();
+        if(d.data==="완료") btnDone.click();
         else btnNot.click();
       }
     }).catch(err => console.error("중복 체크 오류:", err));
@@ -149,11 +152,19 @@ saveBtn.onclick = () => {
 
   const payload = { mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus() };
 
-  fetch(BASE_URL, { method:"POST", body:JSON.stringify(payload) })
-    .then(r => r.json())
-    .then(d => { alert(d.message); checkDuplicate(); })
-    .catch(err => console.error("저장 오류:", err));
+  fetch(BASE_URL, {
+    method:"POST",
+    headers: { "Content-Type": "application/json" },  // ⚡ 필수
+    body:JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(d.message);
+    checkDuplicate();
+  })
+  .catch(err => console.error("저장 오류:", err));
 };
 </script>
+
 </body>
 </html>
