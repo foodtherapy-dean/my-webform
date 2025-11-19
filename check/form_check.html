@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정기검증 입력폼1</title>
+<style>
+body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
+.header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff;
+  padding:16px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
+.footer { position: fixed; bottom:0; left:0; right:0; background:#fff; padding:10px;
+  border-top:1px solid #ccc; z-index:100; text-align:center; }
+#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px;
+  background:#4caf50; color:#fff; cursor:pointer; }
+
+.content { padding:100px 16px 90px; }
+.input-box { background:white; padding:14px; margin-top:10px; border-radius:12px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+label { font-size:18px; display:block; margin-bottom:6px; }
+select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
+
+.toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #333;
+  cursor:pointer; text-align:center; margin-right:8px; }
+.toggle-btn:last-child { margin-right:0; }
+.toggle-row { display:flex; gap:8px; margin-top:10px; }
+.toggle-btn.active { background:#4caf50; color:white; }
+.toggle-btn.default { background:none; color:#333; }
+
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<div class="header">정기검증 입력폼</div>
+
+<div class="content">
+  <div class="input-box">
+    <label>날짜</label>
+    <input type="date" id="dateInput">
+  </div>
+
+  <div class="input-box">
+    <label>주기 선택</label>
+    <select id="periodSelect">
+      <option value="">-- 선택하세요 --</option>
+      <option value="주간">주간</option>
+      <option value="월간">월간</option>
+      <option value="분기">분기</option>
+      <option value="반기">반기</option>
+      <option value="연간">연간</option>
+    </select>
+  </div>
+
+  <div class="input-box hidden" id="itemBox">
+    <label>항목 선택</label>
+    <select id="itemSelect">
+      <option value="">-- 선택하세요 --</option>
+    </select>
+  </div>
+
+  <div class="input-box hidden" id="statusBox">
+    <label>점검상태</label>
+    <div class="toggle-row">
+      <div id="btnDone" class="toggle-btn default">완료</div>
+      <div id="btnNot" class="toggle-btn active">미완료</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <button id="saveBtn">저장</button>
+</div>
+
+<script>
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzGH3OtLwXvF6Q-sJBDqEPpsvIsqUMmX48yls10R1q1PkiTNncPQKq7t4VZVwWSkv7Lrw/exec"; // Apps Script WebApp URL
+
+const itemsMap = {
+  "주간": ["방재점검","위생복세탁","비공정청소"],
+  "월간": ["CCP검증표","위생교육"],
+  "분기": ["자가품질검사"],
+  "반기": ["용수탱크청소","에어필터점검"],
+  "연간": ["지하수검사","검교정","유효성평가"]
+};
+
+const dateInput = document.getElementById("dateInput");
+const periodSelect = document.getElementById("periodSelect");
+const itemBox = document.getElementById("itemBox");
+const itemSelect = document.getElementById("itemSelect");
+const statusBox = document.getElementById("statusBox");
+const btnDone = document.getElementById("btnDone");
+const btnNot = document.getElementById("btnNot");
+const saveBtn = document.getElementById("saveBtn");
+
+// 오늘 날짜 자동 설정
+window.onload = () => {
+  dateInput.value = new Date().toISOString().split("T")[0];
+  statusBox.classList.add("hidden");
+  itemBox.classList.add("hidden");
+};
+
+// 주기 선택 시 항목 설정
+periodSelect.addEventListener("change", () => {
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+  statusBox.classList.add("hidden");
+  const period = periodSelect.value;
+  if (!period) { itemBox.classList.add("hidden"); return; }
+
+  itemsMap[period].forEach(item => {
+    const op = document.createElement("option");
+    op.value = item; op.textContent = item;
+    itemSelect.appendChild(op);
+  });
+  itemBox.classList.remove("hidden");
+});
+
+// 항목 선택 시 상태 표시 + 중복 체크
+itemSelect.addEventListener("change", () => {
+  if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
+  statusBox.classList.remove("hidden");
+  // 기본 미완료
+  btnNot.className = "toggle-btn active";
+  btnDone.className = "toggle-btn default";
+
+  checkDuplicate();
+});
+
+// 상태 버튼 토글
+btnDone.onclick = () => {
+  btnDone.className = "toggle-btn active";
+  btnNot.className = "toggle-btn default";
+};
+btnNot.onclick = () => {
+  btnNot.className = "toggle-btn active";
+  btnDone.className = "toggle-btn default";
+};
+
+function getStatus() {
+  return btnDone.classList.contains("active") ? "완료" : "미완료";
+}
+
+// 중복 조회
+function checkDuplicate() {
+  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
+    .then(r => r.json())
+    .then(d => {
+      if(d.status){
+        if(d.data==="완료") btnDone.click();
+        else btnNot.click();
+      }
+    });
+}
+
+// 저장
+saveBtn.onclick = () => {
+  if(!dateInput.value){ alert("날짜 선택 필요"); return; }
+  if(!periodSelect.value){ alert("주기 선택 필요"); return; }
+  if(!itemSelect.value){ alert("항목 선택 필요"); return; }
+
+  const payload = {
+    mode:"write",
+    date:dateInput.value,
+    period:periodSelect.value,
+    item:itemSelect.value,
+    status:getStatus()
+  };
+
+  fetch(BASE_URL, {
+    method:"POST",
+    body:JSON.stringify(payload)
+  }).then(r => r.json())
+    .then(d => alert(d.message));
+};
+</script>
+
+</body>
+</html>
+
+
+
+
