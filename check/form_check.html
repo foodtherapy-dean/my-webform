@@ -69,7 +69,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzNKLUzdRStKon9lnJZGUnvID5G3yjyoUCBnpGbgiqy1AQ7S_d4LshNbq8NxNQV_pBC-Q/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwMItq49SeHPfM-QHjjPFucDHLuz6gIG_1tsKaUdwBBA1F2sUHOr_ZwDo5hOgF9jmO2CA/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","비공정청소"],
@@ -88,17 +88,20 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
+// 오늘 날짜 자동 설정
 window.onload = () => {
   dateInput.value = new Date().toISOString().split("T")[0];
   statusBox.classList.add("hidden");
   itemBox.classList.add("hidden");
 };
 
+// 주기 선택 시 항목 설정
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
   const period = periodSelect.value;
-  if(!period){ itemBox.classList.add("hidden"); return; }
+  if (!period) { itemBox.classList.add("hidden"); return; }
+
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
     op.value = item; op.textContent = item;
@@ -107,42 +110,49 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
+// 항목 선택 시 상태 표시 + 중복 체크
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
+  if (!itemSelect.value) { statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
   btnNot.className = "toggle-btn active";
   btnDone.className = "toggle-btn default";
+
   checkDuplicate();
 });
 
-btnDone.onclick = () => { btnDone.className="toggle-btn active"; btnNot.className="toggle-btn default"; };
-btnNot.onclick = () => { btnNot.className="toggle-btn active"; btnDone.className="toggle-btn default"; };
+// 상태 버튼 토글
+btnDone.onclick = () => { btnDone.className = "toggle-btn active"; btnNot.className = "toggle-btn default"; };
+btnNot.onclick = () => { btnNot.className = "toggle-btn active"; btnDone.className = "toggle-btn default"; };
 
-function getStatus(){ return btnDone.classList.contains("active")?"완료":"미완료"; }
-
-function checkDuplicate(){
-  if(!dateInput.value||!periodSelect.value||!itemSelect.value) return;
-  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.status){
-        if(d.data==="완료") btnDone.click();
-        else btnNot.click();
-      }
-    }).catch(err=>console.error("중복 체크 오류:",err));
+function getStatus() {
+  return btnDone.classList.contains("active") ? "완료" : "미완료";
 }
 
+// 중복 조회
+function checkDuplicate() {
+  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
+    .then(r => r.json())
+    .then(d => {
+      if(d.status){
+        if(d.data.toString().trim()==="완료") btnDone.click();
+        else btnNot.click();
+      }
+    }).catch(err => console.error("중복 체크 오류:", err));
+}
+
+// 저장
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
-  const payload = {mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus()};
+  const payload = { mode:"write", date:dateInput.value, period:periodSelect.value, item:itemSelect.value, status:getStatus() };
 
-  fetch(BASE_URL, {method:"POST", body:JSON.stringify(payload)})
-    .then(r=>r.json())
-    .then(d=>{ alert(d.message); checkDuplicate(); })
-    .catch(err=>console.error("저장 오류:",err));
+  fetch(BASE_URL, { method:"POST", body:JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(d => { alert(d.message); checkDuplicate(); })
+    .catch(err => console.error("저장 오류:", err));
 };
 </script>
 </body>
