@@ -66,13 +66,8 @@ const CELL_MAP = [
 
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
 const tbody = document.querySelector("#statusTable tbody");
-const monthInput = document.getElementById("monthInput");
-const prevBtn = document.getElementById("prevMonth");
-const nextBtn = document.getElementById("nextMonth");
 
-let currentYear, currentMonth;
-
-// ---------- 날짜 범위 ----------
+// ---------- 월별 날짜 생성 ----------
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
@@ -85,15 +80,17 @@ function getMonthDates(year, month){
 
 // ---------- 데이터 불러오기 ----------
 async function loadData(year, month){
-  tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
-  try{
+  tbody.innerHTML = `<tr><td colspan="${CELL_MAP.length+2}">불러오는 중...</td></tr>`;
+  try {
     const url = `${BASE_URL}?mode=data&year=${year}&month=${month}`;
     const resp = await fetch(url);
     const json = await resp.json();
+
     if(!json.success) throw new Error(json.error || "데이터 로드 실패");
+
     renderTable(json.data, year, month);
-  }catch(err){
-    tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
+  } catch(err){
+    tbody.innerHTML = `<tr><td colspan="${CELL_MAP.length+2}">오류: ${err.message}</td></tr>`;
     console.error(err);
   }
 }
@@ -112,8 +109,10 @@ function renderTable(data, year, month){
     if(wday==="일") tr.classList.add("sunday");
     if(wday==="토") tr.classList.add("saturday");
 
+    // 날짜/요일
     tr.innerHTML = `<td>${day}</td><td>${wday}</td>`;
 
+    // 각 셀 상태 표시
     CELL_MAP.forEach(cell => {
       const td = document.createElement("td");
       td.classList.add("clickable");
@@ -121,6 +120,8 @@ function renderTable(data, year, month){
       const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
 
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
+
+      // 클릭 시 form_check.html 열기
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
@@ -133,15 +134,12 @@ function renderTable(data, year, month){
   });
 }
 
-// ---------- 월 변경 ----------
+// ---------- 월 이동 버튼 ----------
+let currentYear, currentMonth;
 function changeMonth(delta){
-  let newMonth = currentMonth + delta;
-  let newYear = currentYear;
-  if(newMonth < 1){ newMonth = 12; newYear -= 1; }
-  if(newMonth > 12){ newMonth = 1; newYear += 1; }
-  currentYear = newYear;
-  currentMonth = newMonth;
-  monthInput.value = `${newYear}-${String(newMonth).padStart(2,"0")}`;
+  currentMonth += delta;
+  if(currentMonth>12){ currentMonth=1; currentYear++; }
+  if(currentMonth<1){ currentMonth=12; currentYear--; }
   loadData(currentYear, currentMonth);
 }
 
@@ -150,22 +148,36 @@ function init(){
   const today = new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth()+1;
-  monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
+
+  // 월 이동 버튼 추가
+  const header = document.createElement("div");
+  header.style.textAlign = "center";
+  header.style.marginBottom = "8px";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.textContent = "<";
+  prevBtn.onclick = ()=>changeMonth(-1);
+
+  const nextBtn = document.createElement("button");
+  nextBtn.textContent = ">";
+  nextBtn.onclick = ()=>changeMonth(1);
+
+  const monthLabel = document.createElement("span");
+  monthLabel.id = "monthLabel";
+  monthLabel.style.margin = "0 8px";
+  monthLabel.textContent = `${currentYear}년 ${currentMonth}월`;
+
+  header.appendChild(prevBtn);
+  header.appendChild(monthLabel);
+  header.appendChild(nextBtn);
+
+  document.body.insertBefore(header, document.querySelector("#statusTable"));
 
   loadData(currentYear, currentMonth);
-
-  monthInput.addEventListener("change", ()=>{
-    const [y,m] = monthInput.value.split("-").map(Number);
-    currentYear = y;
-    currentMonth = m;
-    loadData(currentYear, currentMonth);
-  });
-
-  prevBtn.addEventListener("click", ()=>changeMonth(-1));
-  nextBtn.addEventListener("click", ()=>changeMonth(1));
 }
 
 window.onload = init;
 </script>
+
 </body>
 </html>
