@@ -76,7 +76,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbyv0CoOqtpmZfuakoQWFF-TRNq9YYhlXqTMQP9pnAJyO5sL4jQINlkRzRehKXhwQich2g/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycby-RTZA_z42LRDZghk-DnI8_4WKe8xR19iiYhjV90guu8AWGX5BbJ4WYDwjY-pTqDyl9A/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","기타청소"],
@@ -95,7 +95,6 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-// ---------- 초기화 함수 ----------
 function resetForm(){
   periodSelect.value = "";
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
@@ -105,71 +104,51 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-// ---------- 상태 버튼 ----------
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
 function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
 
-// ---------- 날짜 변경 시 초기화 ----------
 dateInput.addEventListener("change", () => { resetForm(); });
 
-// ---------- 주기 선택 ----------
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
-
   const period = periodSelect.value;
   if(!period){ itemBox.classList.add("hidden"); return; }
-
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
-    op.value = item;
-    op.textContent = item;
+    op.value = item; op.textContent = item;
     itemSelect.appendChild(op);
   });
-
   itemBox.classList.remove("hidden");
 });
 
-// ---------- 항목 선택 ----------
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-
   statusBox.classList.remove("hidden");
-
-  // 기본 상태는 미완료
-  btnNot.classList.add("active");
-  btnDone.classList.remove("active");
-
+  btnNot.classList.add("active"); btnDone.classList.remove("active");
   checkDuplicate();
 });
 
-// ---------- 중복 체크 ----------
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-
   fetch(url)
     .then(r => r.json())
     .then(d => {
       if(d.status){
         if(d.data === "완료"){
-          btnDone.classList.add("active");
-          btnNot.classList.remove("active");
+          btnDone.classList.add("active"); btnNot.classList.remove("active");
         } else {
-          btnNot.classList.add("active");
-          btnDone.classList.remove("active");
+          btnNot.classList.add("active"); btnDone.classList.remove("active");
         }
       } else {
-        btnNot.classList.add("active");
-        btnDone.classList.remove("active");
+        btnNot.classList.add("active"); btnDone.classList.remove("active");
       }
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
 
-// ---------- 저장 ----------
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
@@ -190,17 +169,38 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
-      // 저장 직후 전체 초기화
       dateInput.value = new Date().toISOString().split("T")[0];
       resetForm();
     })
     .catch(err => console.error("저장 오류:", err));
 };
 
-// ---------- 페이지 로드 시 초기화 ----------
+// ---------- 자동 파라미터 세팅 ----------
 window.onload = () => {
-  dateInput.value = new Date().toISOString().split("T")[0];
-  resetForm();
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get("date");
+  const period = params.get("period");
+  const item = params.get("item");
+
+  dateInput.value = date || new Date().toISOString().split("T")[0];
+
+  if(period){
+    periodSelect.value = period;
+    itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+    itemsMap[period].forEach(i=>{
+      const op = document.createElement("option");
+      op.value = i; op.textContent = i;
+      itemSelect.appendChild(op);
+    });
+    itemBox.classList.remove("hidden");
+  }
+
+  if(item){
+    itemSelect.value = item;
+    statusBox.classList.remove("hidden");
+    btnNot.classList.add("active"); btnDone.classList.remove("active");
+    checkDuplicate();
+  }
 };
 </script>
 </body>
