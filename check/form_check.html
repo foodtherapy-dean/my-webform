@@ -123,7 +123,7 @@ function loadFormFromParams(){
     dateInput.value = paramDate;
   } else {
     const today = new Date();
-    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+    dateInput.value = today.toISOString().split("T")[0];
   }
 
   // 주기
@@ -189,12 +189,9 @@ function checkDuplicate(){
     .then(d => {
       statusBox.classList.remove("hidden");
 
-      // JSON 구조 확인
-      console.log("중복 체크 결과:", d);
-
       if(d.status && d.data){
-        const status = String(d.data).trim(); // 공백 제거
-        if(status.toLowerCase() === "완료"){ // 대소문자 무시
+        const status = String(d.data).trim();
+        if(status === "완료"){ 
           btnDone.classList.add("active"); 
           btnNot.classList.remove("active");
         } else {
@@ -212,7 +209,6 @@ function checkDuplicate(){
       btnDone.classList.remove("active");
     });
 }
-
 
 // 저장 후 메인 URL로 이동
 saveBtn.onclick = () => {
