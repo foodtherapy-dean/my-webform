@@ -69,13 +69,21 @@ const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
-// ---------- 날짜 범위 ----------
+// ---------- 로컬 날짜를 yyyy-mm-dd로 변환 ----------
+function formatDateLocal(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+// ---------- 월별 날짜 생성 ----------
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
   const lastDay = new Date(year, month, 0);
   for(let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1)){
-    dates.push(new Date(d.getTime())); // 복사본
+    dates.push(new Date(d.getTime())); // 복사본 저장
   }
   return dates;
 }
@@ -101,7 +109,7 @@ function renderTable(data, year, month){
   const monthDates = getMonthDates(year, month);
 
   monthDates.forEach(d => {
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = formatDateLocal(d); // 로컬 날짜 사용
     const day = d.getDate();
     const wday = WEEKDAYS[d.getDay()];
 
@@ -109,17 +117,15 @@ function renderTable(data, year, month){
     if(wday==="일") tr.classList.add("sunday");
     if(wday==="토") tr.classList.add("saturday");
 
-    // 날짜와 요일 td 먼저 append → 밀림 방지
-    const tdDate = document.createElement("td"); tdDate.textContent = day; tr.appendChild(tdDate);
-    const tdWday = document.createElement("td"); tdWday.textContent = wday; tr.appendChild(tdWday);
+    tr.innerHTML = `<td>${day}</td><td>${wday}</td>`;
 
     CELL_MAP.forEach(cell => {
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      const record = data.find(r => r.date === dateStr && r.period === cell.period && r.item === cell.item);
+      const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
 
-      td.textContent = record ? (record.status === "완료" ? "●" : "○") : "";
+      td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
       // 클릭 시 form_check.html 열기 + 자동 세팅
       td.onclick = () => {
@@ -150,20 +156,20 @@ function changeMonth(delta){
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
-  currentMonth = today.getMonth() + 1;
+  currentMonth = today.getMonth()+1;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
 
   loadData(currentYear, currentMonth);
 
-  monthInput.addEventListener("change", () => {
+  monthInput.addEventListener("change", ()=>{
     const [y,m] = monthInput.value.split("-").map(Number);
     currentYear = y;
     currentMonth = m;
     loadData(currentYear, currentMonth);
   });
 
-  prevBtn.addEventListener("click", () => changeMonth(-1));
-  nextBtn.addEventListener("click", () => changeMonth(1));
+  prevBtn.addEventListener("click", ()=>changeMonth(-1));
+  nextBtn.addEventListener("click", ()=>changeMonth(1));
 }
 
 window.onload = init;
