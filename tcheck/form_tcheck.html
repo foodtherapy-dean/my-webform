@@ -29,7 +29,6 @@ td.saturday { background:#e9f2ff; }
 
 <table id="statusTable">
   <thead>
-    <!-- 1단: 주기 -->
     <tr>
       <th rowspan="2">날짜</th>
       <th rowspan="2">요일</th>
@@ -38,7 +37,6 @@ td.saturday { background:#e9f2ff; }
       <th>분기</th>
       <th>반기</th>
     </tr>
-    <!-- 2단: 항목 -->
     <tr>
       <th>방재점검</th>
       <th>기타청소</th>
@@ -71,7 +69,6 @@ const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
-// ---------- 월별 날짜 생성 ----------
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
@@ -82,7 +79,6 @@ function getMonthDates(year, month){
   return dates;
 }
 
-// ---------- 데이터 불러오기 ----------
 async function loadData(year, month){
   tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
   try{
@@ -97,7 +93,6 @@ async function loadData(year, month){
   }
 }
 
-// ---------- 테이블 렌더링 ----------
 function renderTable(data, year, month){
   tbody.innerHTML = "";
   const monthDates = getMonthDates(year, month);
@@ -117,11 +112,10 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      // 데이터 연동: ○/● 표시
       const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
+
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
-      // 클릭 시 웹폼 열기
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
@@ -134,7 +128,6 @@ function renderTable(data, year, month){
   });
 }
 
-// ---------- 월 변경 ----------
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
@@ -142,11 +135,10 @@ function changeMonth(delta){
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
   currentYear = newYear;
   currentMonth = newMonth;
-  monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
+  monthInput.value = `${newYear}-${String(newMonth).padStart(2,"0")}`;
   loadData(currentYear, currentMonth);
 }
 
-// ---------- 초기화 ----------
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
