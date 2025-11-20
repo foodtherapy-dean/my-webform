@@ -182,14 +182,15 @@ itemSelect.addEventListener("change", () => {
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  
+
   fetch(url)
     .then(r => r.json())
     .then(d => {
       statusBox.classList.remove("hidden");
+
       if(d.status && d.data){
-        const status = String(d.data).trim().toLowerCase();
-        if(status === "완료" || status === "done"){  // 완료 문자열 확인
+        const status = String(d.data).trim(); // 공백 제거
+        if(status === "완료"){
           btnDone.classList.add("active"); 
           btnNot.classList.remove("active");
         } else {
@@ -207,6 +208,7 @@ function checkDuplicate(){
       btnDone.classList.remove("active");
     });
 }
+
 
 // 저장 후 메인 URL로 이동
 saveBtn.onclick = () => {
