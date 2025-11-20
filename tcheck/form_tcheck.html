@@ -51,7 +51,7 @@ td.saturday { background:#e9f2ff; }
 
 <script>
 const BASE_URL =
-  "https://script.google.com/macros/s/AKfycby7Gnoz4i84cgphM1_n73sqmDDXLC8fykRPI77A1Ur_5xo3ZJzzTgdh2UhTD3JWdSZ9GQ/exec";
+  "https://script.google.com/macros/s/AKfycbzuYooEWm1diXUWGZxls_dedq4_ybhoVHzBTTdb37mSSSArrYqIDbgh3o-jBfz27spusQ/exec";
 
 const CELL_MAP = [
   { period: "주간", item: "방재점검" },
@@ -141,13 +141,11 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      // 날짜+주기+항목 매칭
+      // 월별 data에서 statusArray 기준으로 ●/○ 표시
       const record = data.find(r =>
         r.date === dateStr &&
         r.statusArray &&
-        r.statusArray.some(s =>
-          s.period === cell.period && s.item === cell.item
-        )
+        r.statusArray.some(s => s.period === cell.period && s.item === cell.item)
       );
 
       if (record) {
@@ -170,6 +168,7 @@ function renderTable(data, year, month){
     tbody.appendChild(tr);
   });
 }
+
 
 // 월 이동
 function changeMonth(delta){
