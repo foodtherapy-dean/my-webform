@@ -69,16 +69,18 @@ const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
+// ---------- 날짜 범위 ----------
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
   const lastDay = new Date(year, month, 0);
-  for(let d=firstDay; d<=lastDay; d.setDate(d.getDate()+1)){
-    dates.push(new Date(d));
+  for(let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1)){
+    dates.push(new Date(d)); // **날짜 객체 복사**
   }
   return dates;
 }
 
+// ---------- 데이터 불러오기 ----------
 async function loadData(year, month){
   tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
   try{
@@ -93,6 +95,7 @@ async function loadData(year, month){
   }
 }
 
+// ---------- 테이블 렌더링 ----------
 function renderTable(data, year, month){
   tbody.innerHTML = "";
   const monthDates = getMonthDates(year, month);
@@ -116,6 +119,7 @@ function renderTable(data, year, month){
 
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
+      // 클릭 시 form_check.html 열기 + 자동 세팅
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
@@ -128,6 +132,7 @@ function renderTable(data, year, month){
   });
 }
 
+// ---------- 월 변경 ----------
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
@@ -135,10 +140,11 @@ function changeMonth(delta){
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
   currentYear = newYear;
   currentMonth = newMonth;
-  monthInput.value = `${newYear}-${String(newMonth).padStart(2,"0")}`;
+  monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
   loadData(currentYear, currentMonth);
 }
 
+// ---------- 초기화 ----------
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
