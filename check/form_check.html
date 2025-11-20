@@ -133,8 +133,16 @@ periodSelect.addEventListener("change", () => {
 });
 
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
+  if(!itemSelect.value){ 
+    statusBox.classList.add("hidden"); 
+    return; 
+  }
+
   statusBox.classList.remove("hidden");
+
+  // 버튼 클릭 가능하도록 기본 활성화
+  btnDone.disabled = false;
+  btnNot.disabled = false;
 
   // 기존 데이터가 있는지 fetch 후 상태 반영
   checkDuplicate();
@@ -142,28 +150,30 @@ itemSelect.addEventListener("change", () => {
 
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
   fetch(url)
     .then(r => r.json())
     .then(d => {
       if(d.status && d.data){
         if(d.data === "완료"){
-          btnDone.classList.add("active"); btnNot.classList.remove("active");
+          btnDone.classList.add("active"); 
+          btnNot.classList.remove("active");
         } else if(d.data === "미완료"){
-          btnNot.classList.add("active"); btnDone.classList.remove("active");
+          btnNot.classList.add("active"); 
+          btnDone.classList.remove("active");
         } else {
           btnDone.classList.remove("active");
           btnNot.classList.remove("active");
         }
       } else {
-        // 신규 데이터: 아무 버튼도 선택되지 않은 상태 유지
+        // 신규 데이터: 버튼 모두 비활성화하지 말고, 클릭 가능 상태 유지
         btnDone.classList.remove("active");
         btnNot.classList.remove("active");
       }
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
-
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
