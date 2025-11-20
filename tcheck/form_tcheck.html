@@ -75,7 +75,7 @@ function getMonthDates(year, month){
   const firstDay = new Date(year, month-1, 1);
   const lastDay = new Date(year, month, 0);
   for(let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1)){
-    dates.push(new Date(d.getTime())); // **복사본 저장**
+    dates.push(new Date(d.getTime())); // 복사본
   }
   return dates;
 }
@@ -109,15 +109,17 @@ function renderTable(data, year, month){
     if(wday==="일") tr.classList.add("sunday");
     if(wday==="토") tr.classList.add("saturday");
 
-    tr.innerHTML = `<td>${day}</td><td>${wday}</td>`;
+    // 날짜와 요일 td 먼저 append → 밀림 방지
+    const tdDate = document.createElement("td"); tdDate.textContent = day; tr.appendChild(tdDate);
+    const tdWday = document.createElement("td"); tdWday.textContent = wday; tr.appendChild(tdWday);
 
     CELL_MAP.forEach(cell => {
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
+      const record = data.find(r => r.date === dateStr && r.period === cell.period && r.item === cell.item);
 
-      td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
+      td.textContent = record ? (record.status === "완료" ? "●" : "○") : "";
 
       // 클릭 시 form_check.html 열기 + 자동 세팅
       td.onclick = () => {
@@ -148,20 +150,20 @@ function changeMonth(delta){
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
-  currentMonth = today.getMonth()+1;
+  currentMonth = today.getMonth() + 1;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
 
   loadData(currentYear, currentMonth);
 
-  monthInput.addEventListener("change", ()=>{
+  monthInput.addEventListener("change", () => {
     const [y,m] = monthInput.value.split("-").map(Number);
     currentYear = y;
     currentMonth = m;
     loadData(currentYear, currentMonth);
   });
 
-  prevBtn.addEventListener("click", ()=>changeMonth(-1));
-  nextBtn.addEventListener("click", ()=>changeMonth(1));
+  prevBtn.addEventListener("click", () => changeMonth(-1));
+  nextBtn.addEventListener("click", () => changeMonth(1));
 }
 
 window.onload = init;
