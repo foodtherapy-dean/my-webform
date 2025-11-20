@@ -95,14 +95,42 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-function resetForm(){
-  periodSelect.value = "";
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
-  btnDone.classList.remove("active");
-  btnNot.classList.add("active");
+function reloadForm(){
+  resetForm();
+
+  const params = new URLSearchParams(window.location.search);
+  const paramDate = params.get("date");
+  const paramPeriod = params.get("period");
+  const paramItem = params.get("item");
+
+  // 날짜 세팅
+  if(paramDate){
+    const dt = new Date(paramDate);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth()+1).padStart(2,"0");
+    const dd = String(dt.getDate()).padStart(2,"0");
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // 주기/항목 세팅
+  if(paramPeriod){
+    periodSelect.value = paramPeriod;
+    itemsMap[paramPeriod].forEach(i=>{
+      const op = document.createElement("option");
+      op.value = i; op.textContent = i;
+      itemSelect.appendChild(op);
+    });
+    itemBox.classList.remove("hidden");
+  }
+
+  if(paramItem){
+    itemSelect.value = paramItem;
+    statusBox.classList.remove("hidden");
+  }
+
+  checkDuplicate(); // 점검상태 버튼 활성화
 }
+
 
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
@@ -173,14 +201,15 @@ saveBtn.onclick = () => {
     method: "POST",
     body: JSON.stringify(payload)
   })
-    .then(r => r.json())
-    .then(d => {
-      alert(d.message);
-      // 클릭한 날짜 유지
-      checkDuplicate();
-    })
-    .catch(err => console.error("저장 오류:", err));
+  .then(r => r.json())
+  .then(d => {
+    alert(d.message);
+    // 저장 후 전체 폼 리셋 + URL 파라미터 적용
+    reloadForm();
+  })
+  .catch(err => console.error("저장 오류:", err));
 };
+
 
 // ---------- URL 파라미터로 자동 세팅 ----------
 window.onload = () => {
