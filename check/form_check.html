@@ -76,6 +76,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
   <button id="saveBtn">저장</button>
 </div>
 
+
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbxN25NevWEAKChCXPCo7iClNwpL5-PRWcYnIoPVbB9bI2oNTeFWLUFd2UPUCJmry0tn/exec";
 
@@ -102,19 +103,25 @@ function resetForm(){
   itemBox.classList.add("hidden");
   statusBox.classList.add("hidden");
   btnDone.classList.remove("active");
-  btnNot.classList.add("active");
+  btnNot.classList.remove("active");
 }
 
-// 버튼 클릭 토글
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
-function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
+function getStatus(){ 
+  if(btnDone.classList.contains("active")) return "완료";
+  if(btnNot.classList.contains("active")) return "미완료";
+  return ""; // 선택 안됨
+}
 
 dateInput.addEventListener("change", () => { resetForm(); });
 
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
+  btnDone.classList.remove("active");
+  btnNot.classList.remove("active");
+
   const period = periodSelect.value;
   if(!period){ itemBox.classList.add("hidden"); return; }
   itemsMap[period].forEach(item => {
@@ -126,58 +133,43 @@ periodSelect.addEventListener("change", () => {
 });
 
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){
-    statusBox.classList.add("hidden");
-    btnDone.classList.remove("active");
-    btnNot.classList.remove("active");
-    return;
-  }
-
+  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
 
-  // 기본 미완료 버튼 활성화 제거
-  btnDone.classList.remove("active");
-  btnNot.classList.remove("active");
-
-  // 중복 체크 후 버튼 상태 반영
+  // 기존 데이터가 있는지 fetch 후 상태 반영
   checkDuplicate();
 });
 
-
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  
   fetch(url)
     .then(r => r.json())
     .then(d => {
       if(d.status && d.data){
-        if(d.data.trim() === "완료"){
-          btnDone.classList.add("active");
-          btnNot.classList.remove("active");
+        if(d.data === "완료"){
+          btnDone.classList.add("active"); btnNot.classList.remove("active");
+        } else if(d.data === "미완료"){
+          btnNot.classList.add("active"); btnDone.classList.remove("active");
         } else {
-          btnNot.classList.add("active");
           btnDone.classList.remove("active");
+          btnNot.classList.remove("active");
         }
       } else {
-        // 데이터 없으면 미완료로 표시
-        btnNot.classList.add("active");
+        // 신규 데이터: 아무 버튼도 선택되지 않은 상태 유지
         btnDone.classList.remove("active");
+        btnNot.classList.remove("active");
       }
     })
-    .catch(err => {
-      console.error("중복 체크 오류:", err);
-      // 오류 시에도 미완료
-      btnNot.classList.add("active");
-      btnDone.classList.remove("active");
-    });
+    .catch(err => console.error("중복 체크 오류:", err));
 }
 
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
+
+  if(!getStatus()){ alert("점검상태 선택 필요"); return; }
 
   const payload = {
     mode: "write",
@@ -200,7 +192,7 @@ saveBtn.onclick = () => {
     .catch(err => console.error("저장 오류:", err));
 };
 
-// URL 파라미터 자동 반영
+// ---------- 자동 파라미터 세팅 ----------
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
   const date = params.get("date");
@@ -223,7 +215,8 @@ window.onload = () => {
   if(item){
     itemSelect.value = item;
     statusBox.classList.remove("hidden");
-    checkDuplicate(); // 중복 체크 후 버튼 상태 반영
+    // 기존 데이터 반영
+    checkDuplicate();
   }
 };
 </script>
