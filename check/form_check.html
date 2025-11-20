@@ -95,6 +95,73 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
+// 폼 초기화
+function resetForm(){
+  periodSelect.value = "";
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+  itemBox.classList.add("hidden");
+  statusBox.classList.add("hidden");
+  btnDone.classList.remove("active");
+  btnNot.classList.add("active");
+}
+
+// 점검상태 토글
+btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
+btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
+function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
+
+// 날짜 변경 시 폼 리셋 + 재세팅
+dateInput.addEventListener("change", () => { reloadForm(); });
+
+// 주기 선택
+periodSelect.addEventListener("change", () => {
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+  statusBox.classList.add("hidden");
+  const period = periodSelect.value;
+  if(!period){ itemBox.classList.add("hidden"); return; }
+  itemsMap[period].forEach(item => {
+    const op = document.createElement("option");
+    op.value = item; op.textContent = item;
+    itemSelect.appendChild(op);
+  });
+  itemBox.classList.remove("hidden");
+});
+
+// 항목 선택
+itemSelect.addEventListener("change", () => {
+  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
+  statusBox.classList.remove("hidden");
+  btnNot.classList.add("active"); btnDone.classList.remove("active");
+  checkDuplicate();
+});
+
+// 중복 데이터 체크
+function checkDuplicate(){
+  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
+  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
+  fetch(url)
+    .then(r => r.json())
+    .then(d => {
+      statusBox.classList.remove("hidden");
+      if(d.status && d.data){
+        const status = String(d.data).trim();
+        if(status === "완료"){
+          btnDone.classList.add("active"); 
+          btnNot.classList.remove("active");
+        } else {
+          btnNot.classList.add("active"); 
+          btnDone.classList.remove("active");
+        }
+      } else {
+        btnNot.classList.add("active"); 
+        btnDone.classList.remove("active");
+      }
+    })
+    .catch(err => console.error("중복 체크 오류:", err));
+}
+
+// 폼 전체 리셋 + URL 기반 재적용
 function reloadForm(){
   resetForm();
 
@@ -103,16 +170,19 @@ function reloadForm(){
   const paramPeriod = params.get("period");
   const paramItem = params.get("item");
 
-  // 날짜 세팅
+  // 날짜
   if(paramDate){
     const dt = new Date(paramDate);
     const yyyy = dt.getFullYear();
     const mm = String(dt.getMonth()+1).padStart(2,"0");
     const dd = String(dt.getDate()).padStart(2,"0");
     dateInput.value = `${yyyy}-${mm}-${dd}`;
+  } else {
+    const today = new Date();
+    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
   }
 
-  // 주기/항목 세팅
+  // 주기/항목
   if(paramPeriod){
     periodSelect.value = paramPeriod;
     itemsMap[paramPeriod].forEach(i=>{
@@ -128,62 +198,10 @@ function reloadForm(){
     statusBox.classList.remove("hidden");
   }
 
-  checkDuplicate(); // 점검상태 버튼 활성화
-}
-
-
-btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
-btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
-function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
-
-dateInput.addEventListener("change", () => { resetForm(); });
-
-periodSelect.addEventListener("change", () => {
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  statusBox.classList.add("hidden");
-  const period = periodSelect.value;
-  if(!period){ itemBox.classList.add("hidden"); return; }
-  itemsMap[period].forEach(item => {
-    const op = document.createElement("option");
-    op.value = item; op.textContent = item;
-    itemSelect.appendChild(op);
-  });
-  itemBox.classList.remove("hidden");
-});
-
-itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-  statusBox.classList.remove("hidden");
-  btnNot.classList.add("active"); btnDone.classList.remove("active");
   checkDuplicate();
-});
-
-function checkDuplicate(){
-  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  fetch(url)
-    .then(r => r.json())
-    .then(d => {
-      // 점검상태 박스 항상 표시
-      statusBox.classList.remove("hidden");
-
-      if(d.status){
-        if(d.data === "완료"){
-          btnDone.classList.add("active"); 
-          btnNot.classList.remove("active");
-        } else {
-          btnNot.classList.add("active"); 
-          btnDone.classList.remove("active");
-        }
-      } else {
-        btnNot.classList.add("active"); 
-        btnDone.classList.remove("active");
-      }
-    })
-    .catch(err => console.error("중복 체크 오류:", err));
 }
 
+// 저장
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
@@ -204,50 +222,14 @@ saveBtn.onclick = () => {
   .then(r => r.json())
   .then(d => {
     alert(d.message);
-    // 저장 후 전체 폼 리셋 + URL 파라미터 적용
-    reloadForm();
+    reloadForm(); // 저장 후 폼 전체 리프레시
   })
   .catch(err => console.error("저장 오류:", err));
 };
 
-
-// ---------- URL 파라미터로 자동 세팅 ----------
+// 페이지 로드 시 초기 세팅
 window.onload = () => {
-  const params = new URLSearchParams(window.location.search);
-  const paramDate = params.get("date");
-  const paramPeriod = params.get("period");
-  const paramItem = params.get("item");
-
-  // 날짜 세팅 (포맷 yyyy-MM-dd)
-  if(paramDate){
-    const dt = new Date(paramDate);
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth()+1).padStart(2,"0");
-    const dd = String(dt.getDate()).padStart(2,"0");
-    dateInput.value = `${yyyy}-${mm}-${dd}`;
-  } else {
-    const today = new Date();
-    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
-  }
-
-  // 주기/항목 세팅
-  if(paramPeriod){
-    periodSelect.value = paramPeriod;
-    itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-    itemsMap[paramPeriod].forEach(i=>{
-      const op = document.createElement("option");
-      op.value = i; op.textContent = i;
-      itemSelect.appendChild(op);
-    });
-    itemBox.classList.remove("hidden");
-  }
-
-  if(paramItem){
-    itemSelect.value = paramItem;
-    statusBox.classList.remove("hidden");
-    btnNot.classList.add("active"); btnDone.classList.remove("active");
-    checkDuplicate();
-  }
+  reloadForm();
 };
 </script>
 </body>
