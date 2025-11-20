@@ -123,16 +123,14 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      // 날짜 문자열 비교
-     const record = data.find(r => {
-  return formatDateLocal(new Date(r.date)) === dateStr
-    && r.period === cell.period
-    && r.item === cell.item;
-      });
+      const record = data.find(r => formatDateLocal(new Date(r.date)) === dateStr
+        && r.period === cell.period
+        && r.item === cell.item
+      );
 
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
-      // 클릭 시 form_check.html 열기 + 자동 세팅
+      // 클릭 시 form_check.html 열기 + 날짜/주기/항목 자동 세팅
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
@@ -166,7 +164,7 @@ function init(){
 
   loadData(currentYear, currentMonth);
 
-  monthInput.addEventListener("change", ()=>{
+  monthInput.addEventListener("change", ()=> {
     const [y,m] = monthInput.value.split("-").map(Number);
     currentYear = y;
     currentMonth = m;
