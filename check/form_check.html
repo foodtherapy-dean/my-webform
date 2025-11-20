@@ -141,14 +141,24 @@ function checkDuplicate(){
     `date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
 
   fetch(url)
-    .then(r=>r.json())
-    .then(d=>{
+    .then(r => r.json())
+    .then(d => {
       if(d.status){
-        if(d.data==="완료") btnDone.click();
-        else btnNot.click();
+        // ===== 조회된 상태에 따라 버튼 UI 갱신 =====
+        if(d.data === "완료"){
+          btnDone.classList.add("active");
+          btnNot.classList.remove("active");
+        } else {
+          btnNot.classList.add("active");
+          btnDone.classList.remove("active");
+        }
+      } else {
+        // ===== 기존 데이터 없으면 미완료 기본 =====
+        btnNot.classList.add("active");
+        btnDone.classList.remove("active");
       }
     })
-    .catch(err=>console.error("중복 체크 오류:",err));
+    .catch(err => console.error("중복 체크 오류:", err));
 }
 
 saveBtn.onclick = () => {
