@@ -95,7 +95,7 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-// 점검상태 토글
+// 상태 토글
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
 function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
@@ -110,85 +110,38 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-// URL 파라미터 또는 기본 날짜로 폼 초기화
-function loadFormFromParams(){
-  resetForm();
+// 날짜 세팅
+function setDefaultDate(){
   const params = new URLSearchParams(window.location.search);
   const paramDate = params.get("date");
-  const paramPeriod = params.get("period");
-  const paramItem = params.get("item");
-
-  // 날짜 세팅
   if(paramDate){
     dateInput.value = paramDate;
   } else {
     const today = new Date();
     dateInput.value = today.toISOString().split("T")[0];
   }
-
-  // 주기
-  if(paramPeriod){
-    periodSelect.value = paramPeriod;
-    itemsMap[paramPeriod].forEach(i=>{
-      const op = document.createElement("option");
-      op.value = i; op.textContent = i;
-      itemSelect.appendChild(op);
-    });
-    itemBox.classList.remove("hidden");
-  }
-
-  // 항목
-  if(paramItem){
-    itemSelect.value = paramItem;
-    statusBox.classList.remove("hidden");
-    checkDuplicate();
-  }
 }
 
-// 날짜 변경 시 선택한 날짜로 새로고침
-dateInput.addEventListener("change", () => {
-  const selectedDate = dateInput.value;
-  if(selectedDate){
-    const url = new URL(window.location.href);
-    url.searchParams.set("date", selectedDate);
-    url.searchParams.delete("period");
-    url.searchParams.delete("item");
-    window.location.href = url.toString();
-  }
-});
-
-// 주기 선택
-periodSelect.addEventListener("change", () => {
+// 항목 불러오기
+function populateItems(period){
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  statusBox.classList.add("hidden");
-  const period = periodSelect.value;
-  if(!period){ itemBox.classList.add("hidden"); return; }
-  itemsMap[period].forEach(item => {
+  itemsMap[period].forEach(item=>{
     const op = document.createElement("option");
-    op.value = item; op.textContent = item;
+    op.value = item;
+    op.textContent = item;
     itemSelect.appendChild(op);
   });
   itemBox.classList.remove("hidden");
-});
+}
 
-// 항목 선택
-itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-  statusBox.classList.remove("hidden");
-  checkDuplicate(); // fetch 결과에 따라 상태 버튼 활성화
-});
-
-// 중복 데이터 체크
+// 중복 체크 후 상태 버튼 활성화
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+  statusBox.classList.remove("hidden");
 
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-
-  fetch(url)
+  fetch(`${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`)
     .then(r => r.json())
     .then(d => {
-      statusBox.classList.remove("hidden");
-
       if(d.status && d.data){
         const status = String(d.data).trim();
         if(status === "완료"){ 
@@ -204,41 +157,76 @@ function checkDuplicate(){
       }
     })
     .catch(err => {
-      console.error("중복 체크 오류:", err);
+      console.error(err);
       btnNot.classList.add("active"); 
       btnDone.classList.remove("active");
     });
 }
 
-// 저장 후 메인 URL로 이동
+// 이벤트
+dateInput.addEventListener("change", () => {
+  const selectedDate = dateInput.value;
+  if(selectedDate){
+    const url = new URL(window.location.href);
+    url.searchParams.set("date", selectedDate);
+    url.searchParams.delete("period");
+    url.searchParams.delete("item");
+    window.location.href = url.toString();
+  }
+});
+
+periodSelect.addEventListener("change", () => {
+  const period = periodSelect.value;
+  if(!period){ itemBox.classList.add("hidden"); return; }
+  populateItems(period);
+
+  // URL 파라미터에 period 적용
+  const url = new URL(window.location.href);
+  url.searchParams.set("period", period);
+  url.searchParams.delete("item");
+  window.history.replaceState(null,null,url.toString());
+});
+
+itemSelect.addEventListener("change", () => {
+  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
+  checkDuplicate();
+});
+
+// 저장 후 메인페이지로 이동
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
-  const payload = {
-    mode: "write",
-    date: dateInput.value,
-    period: periodSelect.value,
-    item: itemSelect.value,
-    status: getStatus()
-  };
-
   fetch(BASE_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
+    method:"POST",
+    body: JSON.stringify({
+      mode:"write",
+      date:dateInput.value,
+      period:periodSelect.value,
+      item:itemSelect.value,
+      status:getStatus()
+    })
   })
-  .then(r => r.json())
-  .then(d => {
+  .then(r=>r.json())
+  .then(d=>{
     alert(d.message);
     window.location.href = "https://foodtherapy-dean.github.io/my-webform/check/form_check.html";
   })
-  .catch(err => console.error("저장 오류:", err));
+  .catch(err=>console.error(err));
 };
 
 // 초기 로드
 window.onload = () => {
-  loadFormFromParams();
+  resetForm();
+  setDefaultDate();
+
+  const params = new URLSearchParams(window.location.search);
+  const period = params.get("period");
+  const item = params.get("item");
+
+  if(period){ populateItems(period); periodSelect.value = period; }
+  if(item){ itemSelect.value = item; statusBox.classList.remove("hidden"); checkDuplicate(); }
 };
 </script>
 
