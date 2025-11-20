@@ -69,12 +69,12 @@ const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
-// ---------- 로컬 날짜를 yyyy-mm-dd로 변환 ----------
+// 날짜 포맷 함수 (yyyy-MM-dd)
 function formatDateLocal(d){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
+  const year = d.getFullYear();
+  const month = String(d.getMonth()+1).padStart(2,"0");
   const day = String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
+  return `${year}-${month}-${day}`;
 }
 
 // ---------- 월별 날짜 생성 ----------
@@ -109,7 +109,7 @@ function renderTable(data, year, month){
   const monthDates = getMonthDates(year, month);
 
   monthDates.forEach(d => {
-    const dateStr = formatDateLocal(d); // 로컬 날짜 사용
+    const dateStr = formatDateLocal(d);
     const day = d.getDate();
     const wday = WEEKDAYS[d.getDay()];
 
@@ -123,7 +123,12 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
+      // 날짜 문자열 비교
+      const record = data.find(r => {
+        return formatDateLocal(new Date(r.date)) === dateStr
+          && r.period === cell.period
+          && r.item === cell.item;
+      });
 
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
