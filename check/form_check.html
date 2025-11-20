@@ -95,7 +95,7 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-// 상태 버튼 토글
+// 상태 토글
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
 function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
@@ -110,7 +110,7 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-// URL 파라미터 또는 오늘 날짜로 폼 로딩
+// URL 파라미터 또는 기본 날짜로 초기화
 function loadFormFromParams(){
   resetForm();
   const params = new URLSearchParams(window.location.search);
@@ -118,7 +118,7 @@ function loadFormFromParams(){
   const paramPeriod = params.get("period");
   const paramItem = params.get("item");
 
-  // 날짜 기본값
+  // 날짜
   if(paramDate){
     dateInput.value = paramDate;
   } else {
@@ -140,11 +140,11 @@ function loadFormFromParams(){
   // 항목
   if(paramItem){
     itemSelect.value = paramItem;
-    checkDuplicate(); // 항목 선택 시 중복 데이터 체크
+    checkDuplicate();
   }
 }
 
-// 날짜 변경 시 URL 갱신
+// 날짜 변경 시 페이지 이동
 dateInput.addEventListener("change", () => {
   const selectedDate = dateInput.value;
   if(selectedDate){
@@ -172,24 +172,24 @@ periodSelect.addEventListener("change", () => {
 
 // 항목 선택
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-  checkDuplicate();
+  if(!itemSelect.value){ 
+    statusBox.classList.add("hidden"); 
+    return; 
+  }
+  checkDuplicate(); // fetch 결과 반영
 });
 
 // 중복 데이터 체크
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
-  statusBox.classList.add("hidden"); // fetch 전 숨김
+  const url = `${BASE_URL}?mode=read&date=${encodeURIComponent(dateInput.value.trim())}&period=${encodeURIComponent(periodSelect.value.trim())}&item=${encodeURIComponent(itemSelect.value.trim())}`;
 
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  
   fetch(url)
     .then(r => r.json())
     .then(d => {
       console.log("중복 체크 결과:", d);
-
-      statusBox.classList.remove("hidden"); // fetch 완료 후 표시
+      statusBox.classList.remove("hidden");
 
       if(d.status && d.data){
         const status = String(d.data).trim();
@@ -209,7 +209,6 @@ function checkDuplicate(){
       console.error("중복 체크 오류:", err);
       btnNot.classList.add("active"); 
       btnDone.classList.remove("active");
-      statusBox.classList.remove("hidden");
     });
 }
 
@@ -244,5 +243,6 @@ window.onload = () => {
   loadFormFromParams();
 };
 </script>
+
 </body>
 </html>
