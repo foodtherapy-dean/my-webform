@@ -95,12 +95,12 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
-// 상태 토글
+// 상태 버튼 토글
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
 function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
 
-// 초기화
+// 폼 초기화
 function resetForm(){
   periodSelect.value = "";
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
@@ -110,15 +110,7 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-// 날짜 기본값
-function setDefaultDate(){
-  if(!dateInput.value){
-    const today = new Date();
-    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
-  }
-}
-
-// URL 파라미터 초기화
+// URL 파라미터 또는 오늘 날짜로 폼 로딩
 function loadFormFromParams(){
   resetForm();
   const params = new URLSearchParams(window.location.search);
@@ -126,9 +118,15 @@ function loadFormFromParams(){
   const paramPeriod = params.get("period");
   const paramItem = params.get("item");
 
-  if(paramDate){ dateInput.value = paramDate; }
-  setDefaultDate();
+  // 날짜 기본값
+  if(paramDate){
+    dateInput.value = paramDate;
+  } else {
+    const today = new Date();
+    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  }
 
+  // 주기
   if(paramPeriod){
     periodSelect.value = paramPeriod;
     itemsMap[paramPeriod].forEach(i=>{
@@ -139,14 +137,14 @@ function loadFormFromParams(){
     itemBox.classList.remove("hidden");
   }
 
+  // 항목
   if(paramItem){
     itemSelect.value = paramItem;
-    statusBox.classList.remove("hidden");
-    checkDuplicate(); // fetch로 기존 데이터 상태 확인
+    checkDuplicate(); // 항목 선택 시 중복 데이터 체크
   }
 }
 
-// 날짜 변경 → 메인 URL로 새로고침
+// 날짜 변경 시 URL 갱신
 dateInput.addEventListener("change", () => {
   const selectedDate = dateInput.value;
   if(selectedDate){
@@ -158,7 +156,7 @@ dateInput.addEventListener("change", () => {
   }
 });
 
-// 주기 선택 → 항목 옵션 세팅
+// 주기 선택
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
@@ -172,28 +170,30 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
-// 항목 선택 → fetch 후 상태 버튼 표시
+// 항목 선택
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
   checkDuplicate();
 });
 
-// 중복 데이터 확인 및 상태 버튼 표시
+// 중복 데이터 체크
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
+  statusBox.classList.add("hidden"); // fetch 전 숨김
 
+  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
+  
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      statusBox.classList.remove("hidden");
-
       console.log("중복 체크 결과:", d);
+
+      statusBox.classList.remove("hidden"); // fetch 완료 후 표시
 
       if(d.status && d.data){
         const status = String(d.data).trim();
-        if(status === "완료"){ 
+        if(status === "완료"){
           btnDone.classList.add("active"); 
           btnNot.classList.remove("active");
         } else {
@@ -201,7 +201,6 @@ function checkDuplicate(){
           btnDone.classList.remove("active");
         }
       } else {
-        // 기존 데이터 없으면 기본 미완료
         btnNot.classList.add("active"); 
         btnDone.classList.remove("active");
       }
@@ -210,10 +209,11 @@ function checkDuplicate(){
       console.error("중복 체크 오류:", err);
       btnNot.classList.add("active"); 
       btnDone.classList.remove("active");
+      statusBox.classList.remove("hidden");
     });
 }
 
-// 저장 → 메인 URL로 이동
+// 저장 후 메인 URL로 이동
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
