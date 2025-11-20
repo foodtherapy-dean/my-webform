@@ -169,25 +169,36 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
-      dateInput.value = new Date().toISOString().split("T")[0];
-      resetForm();
+      // 클릭한 날짜 유지
+      checkDuplicate();
     })
     .catch(err => console.error("저장 오류:", err));
 };
 
-// ---------- 자동 파라미터 세팅 ----------
+// ---------- URL 파라미터로 자동 세팅 ----------
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
-  const date = params.get("date");
-  const period = params.get("period");
-  const item = params.get("item");
+  const paramDate = params.get("date");
+  const paramPeriod = params.get("period");
+  const paramItem = params.get("item");
 
-  dateInput.value = date || new Date().toISOString().split("T")[0];
+  // 날짜 세팅 (포맷 yyyy-MM-dd)
+  if(paramDate){
+    const dt = new Date(paramDate);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth()+1).padStart(2,"0");
+    const dd = String(dt.getDate()).padStart(2,"0");
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  } else {
+    const today = new Date();
+    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  }
 
-  if(period){
-    periodSelect.value = period;
+  // 주기/항목 세팅
+  if(paramPeriod){
+    periodSelect.value = paramPeriod;
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-    itemsMap[period].forEach(i=>{
+    itemsMap[paramPeriod].forEach(i=>{
       const op = document.createElement("option");
       op.value = i; op.textContent = i;
       itemSelect.appendChild(op);
@@ -195,8 +206,8 @@ window.onload = () => {
     itemBox.classList.remove("hidden");
   }
 
-  if(item){
-    itemSelect.value = item;
+  if(paramItem){
+    itemSelect.value = paramItem;
     statusBox.classList.remove("hidden");
     btnNot.classList.add("active"); btnDone.classList.remove("active");
     checkDuplicate();
