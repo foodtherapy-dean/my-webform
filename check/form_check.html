@@ -76,7 +76,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycby-RTZA_z42LRDZghk-DnI8_4WKe8xR19iiYhjV90guu8AWGX5BbJ4WYDwjY-pTqDyl9A/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzuYooEWm1diXUWGZxls_dedq4_ybhoVHzBTTdb37mSSSArrYqIDbgh3o-jBfz27spusQ/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","기타청소"],
@@ -132,18 +132,25 @@ itemSelect.addEventListener("change", () => {
 
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
   fetch(url)
     .then(r => r.json())
     .then(d => {
+      // 점검상태 박스 항상 표시
+      statusBox.classList.remove("hidden");
+
       if(d.status){
         if(d.data === "완료"){
-          btnDone.classList.add("active"); btnNot.classList.remove("active");
+          btnDone.classList.add("active"); 
+          btnNot.classList.remove("active");
         } else {
-          btnNot.classList.add("active"); btnDone.classList.remove("active");
+          btnNot.classList.add("active"); 
+          btnDone.classList.remove("active");
         }
       } else {
-        btnNot.classList.add("active"); btnDone.classList.remove("active");
+        btnNot.classList.add("active"); 
+        btnDone.classList.remove("active");
       }
     })
     .catch(err => console.error("중복 체크 오류:", err));
