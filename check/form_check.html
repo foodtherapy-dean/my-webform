@@ -181,6 +181,7 @@ itemSelect.addEventListener("change", () => {
 // 중복 데이터 체크
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
 
   fetch(url)
@@ -188,9 +189,12 @@ function checkDuplicate(){
     .then(d => {
       statusBox.classList.remove("hidden");
 
+      // JSON 구조 확인
+      console.log("중복 체크 결과:", d);
+
       if(d.status && d.data){
         const status = String(d.data).trim(); // 공백 제거
-        if(status === "완료"){
+        if(status.toLowerCase() === "완료"){ // 대소문자 무시
           btnDone.classList.add("active"); 
           btnNot.classList.remove("active");
         } else {
