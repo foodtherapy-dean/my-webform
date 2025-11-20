@@ -104,51 +104,78 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
-btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
-function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
+btnDone.onclick = () => { 
+  btnDone.classList.add("active"); 
+  btnNot.classList.remove("active");
+};
+btnNot.onclick = () => { 
+  btnNot.classList.add("active"); 
+  btnDone.classList.remove("active");
+};
 
-dateInput.addEventListener("change", () => { resetForm(); });
+function getStatus(){ 
+  return btnDone.classList.contains("active") ? "완료" : "미완료"; 
+}
+
+dateInput.addEventListener("change", () => { 
+  resetForm(); 
+  dateInput.value = new Date().toISOString().split("T")[0];
+});
 
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
+
   const period = periodSelect.value;
-  if(!period){ itemBox.classList.add("hidden"); return; }
+  if(!period){ 
+    itemBox.classList.add("hidden"); 
+    return; 
+  }
+
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
-    op.value = item; op.textContent = item;
+    op.value = item; 
+    op.textContent = item;
     itemSelect.appendChild(op);
   });
+
   itemBox.classList.remove("hidden");
 });
 
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-  statusBox.classList.remove("hidden");
-  btnNot.classList.add("active"); btnDone.classList.remove("active");
+  statusBox.classList.add("hidden");
+
+  if(!itemSelect.value){
+    return;
+  }
+
   checkDuplicate();
 });
 
+// ========= 중복 체크 & 상태 자동 적용 =========
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
+
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      if(d.status){
-        if(d.data === "완료"){
-          btnDone.classList.add("active"); btnNot.classList.remove("active");
-        } else {
-          btnNot.classList.add("active"); btnDone.classList.remove("active");
-        }
+      statusBox.classList.remove("hidden");
+
+      if(d.status && d.data === "완료"){
+        btnDone.classList.add("active"); 
+        btnNot.classList.remove("active");
       } else {
-        btnNot.classList.add("active"); btnDone.classList.remove("active");
+        btnNot.classList.add("active"); 
+        btnDone.classList.remove("active");
       }
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
 
+
+// ========= 저장 =========
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
@@ -169,13 +196,17 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
+
+      // 날짜 현재로 초기화
       dateInput.value = new Date().toISOString().split("T")[0];
+
       resetForm();
     })
     .catch(err => console.error("저장 오류:", err));
 };
 
-// ---------- 자동 파라미터 세팅 ----------
+
+// ========== URL 파라미터 자동 세팅 ==========
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
   const date = params.get("date");
@@ -187,18 +218,23 @@ window.onload = () => {
   if(period){
     periodSelect.value = period;
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+    
     itemsMap[period].forEach(i=>{
       const op = document.createElement("option");
-      op.value = i; op.textContent = i;
+      op.value = i; 
+      op.textContent = i;
       itemSelect.appendChild(op);
     });
+
     itemBox.classList.remove("hidden");
   }
 
   if(item){
     itemSelect.value = item;
-    statusBox.classList.remove("hidden");
-    btnNot.classList.add("active"); btnDone.classList.remove("active");
+
+    // 상태박스는 숨긴 후 중복체크가 자동으로 처리
+    statusBox.classList.add("hidden");
+
     checkDuplicate();
   }
 };
