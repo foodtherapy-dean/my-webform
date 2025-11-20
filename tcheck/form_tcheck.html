@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 취합</title>
-
 <style>
 body { font-family: Arial, sans-serif; margin:16px; }
 h2 { text-align:center; margin-bottom:8px; }
@@ -79,7 +78,7 @@ function convertStatus(status) {
   return "";
 }
 
-// 날짜 포맷 yyyy-MM-dd
+// yyyy-MM-dd
 function formatDateLocal(d){
   const year = d.getFullYear();
   const month = String(d.getMonth()+1).padStart(2,"0");
@@ -87,7 +86,7 @@ function formatDateLocal(d){
   return `${year}-${month}-${day}`;
 }
 
-// 월별 날짜 생성
+// 월별 날짜 배열 생성
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
@@ -122,9 +121,6 @@ async function loadData(year, month){
 
 // -----------------------------
 // 표 렌더링 (●/○ 표시)
-//
-// 주요 처리:
-//   - 날짜+주기+항목 매칭하여 ●/○ 표시
 // -----------------------------
 function renderTable(data, year, month){
   tbody.innerHTML = "";
@@ -145,17 +141,22 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      // 정기검증 시트 데이터 매칭
+      // 날짜+주기+항목 매칭
       const record = data.find(r =>
         r.date === dateStr &&
-        r.period === cell.period &&
-        r.item === cell.item
+        r.statusArray &&
+        r.statusArray.some(s =>
+          s.period === cell.period && s.item === cell.item
+        )
       );
 
-      // ●/○ 표시 적용
-      td.textContent = record ? convertStatus(record.status) : "";
+      if (record) {
+        const matched = record.statusArray.find(s => s.period === cell.period && s.item === cell.item);
+        td.textContent = convertStatus(matched.status);
+      } else {
+        td.textContent = "";
+      }
 
-      // 클릭 후 form_check 열기
       td.onclick = () => {
         const url =
           `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}` +
