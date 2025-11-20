@@ -76,7 +76,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycby7bfJ9DRoWWJ1W_32Xs7JvFpAyvhX4mXJe4jB9Brbq67MkLCOOQCNm1Hv848LHhxdfUg/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbywrsYRMPzJKkgB_km74efUNyuAPh-Pp2NnmsNbKVNmFptl8zV4fEDWVRZWDlHyTmvW8A/exec";
 
 const itemsMap = {
   "주간": ["방재점검","위생복세탁","기타청소"],
@@ -95,33 +95,48 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
+// 현재 선택된 상태
+let selectedStatus = "";
+
+// ====== 버튼 상태 UI 갱신 ======
+function updateStatusUI() {
+  btnDone.classList.toggle("active", selectedStatus === "완료");
+  btnNot.classList.toggle("active", selectedStatus === "미완료");
+}
+
+// ====== 폼 리셋 ======
 function resetForm(){
   periodSelect.value = "";
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   itemBox.classList.add("hidden");
   statusBox.classList.add("hidden");
-  btnDone.classList.remove("active");
-  btnNot.classList.add("active");
+
+  selectedStatus = "";
+  updateStatusUI();
 }
 
-btnDone.onclick = () => { 
-  btnDone.classList.add("active"); 
-  btnNot.classList.remove("active");
-};
-btnNot.onclick = () => { 
-  btnNot.classList.add("active"); 
-  btnDone.classList.remove("active");
+// ====== 토글 방식 상태 선택 ======
+btnDone.onclick = () => {
+  selectedStatus = (selectedStatus === "완료") ? "" : "완료";
+  updateStatusUI();
 };
 
-function getStatus(){ 
-  return btnDone.classList.contains("active") ? "완료" : "미완료"; 
+btnNot.onclick = () => {
+  selectedStatus = (selectedStatus === "미완료") ? "" : "미완료";
+  updateStatusUI();
+};
+
+function getStatus() {
+  return selectedStatus; // '' 이면 Apps Script는 삭제 처리
 }
 
+// ====== 날짜 변경 시 ======
 dateInput.addEventListener("change", () => { 
   resetForm(); 
   dateInput.value = new Date().toISOString().split("T")[0];
 });
 
+// ====== 주기 선택 시 ======
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
@@ -142,13 +157,10 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
+// ====== 항목 선택 시 → 중복체크 ======
 itemSelect.addEventListener("change", () => {
   statusBox.classList.add("hidden");
-
-  if(!itemSelect.value){
-    return;
-  }
-
+  if(!itemSelect.value){ return; }
   checkDuplicate();
 });
 
@@ -163,13 +175,15 @@ function checkDuplicate(){
     .then(d => {
       statusBox.classList.remove("hidden");
 
-      if(d.status && d.data === "완료"){
-        btnDone.classList.add("active"); 
-        btnNot.classList.remove("active");
+      if(d.status){
+        // 기존 데이터 있음
+        selectedStatus = d.data === "완료" ? "완료" : "미완료";
       } else {
-        btnNot.classList.add("active"); 
-        btnDone.classList.remove("active");
+        // 기존 데이터 없음 → 기본 해제
+        selectedStatus = "";
       }
+
+      updateStatusUI();
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
@@ -186,7 +200,7 @@ saveBtn.onclick = () => {
     date: dateInput.value,
     period: periodSelect.value,
     item: itemSelect.value,
-    status: getStatus()
+    status: getStatus()   // '' 가능 → Apps Script에서 삭제
   };
 
   fetch(BASE_URL, {
@@ -197,9 +211,7 @@ saveBtn.onclick = () => {
     .then(d => {
       alert(d.message);
 
-      // 날짜 현재로 초기화
       dateInput.value = new Date().toISOString().split("T")[0];
-
       resetForm();
     })
     .catch(err => console.error("저장 오류:", err));
@@ -231,13 +243,11 @@ window.onload = () => {
 
   if(item){
     itemSelect.value = item;
-
-    // 상태박스는 숨긴 후 중복체크가 자동으로 처리
     statusBox.classList.add("hidden");
-
     checkDuplicate();
   }
 };
 </script>
+
 </body>
 </html>
