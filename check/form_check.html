@@ -102,34 +102,21 @@ function resetForm(){
   itemBox.classList.add("hidden");
   statusBox.classList.add("hidden");
   btnDone.classList.remove("active");
-  btnNot.classList.remove("active");
-  btnDone.style.pointerEvents = "none";
-  btnNot.style.pointerEvents = "none";
+  btnNot.classList.add("active");
 }
 
-function enableButtons(){
-  btnDone.style.pointerEvents = "auto";
-  btnNot.style.pointerEvents = "auto";
-}
-
-function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
-
+// 버튼 클릭 토글
 btnDone.onclick = () => { btnDone.classList.add("active"); btnNot.classList.remove("active"); };
 btnNot.onclick = () => { btnNot.classList.add("active"); btnDone.classList.remove("active"); };
+function getStatus(){ return btnDone.classList.contains("active") ? "완료" : "미완료"; }
 
 dateInput.addEventListener("change", () => { resetForm(); });
 
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
-  btnDone.classList.remove("active");
-  btnNot.classList.remove("active");
-  btnDone.style.pointerEvents = "none";
-  btnNot.style.pointerEvents = "none";
-
   const period = periodSelect.value;
   if(!period){ itemBox.classList.add("hidden"); return; }
-
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
     op.value = item; op.textContent = item;
@@ -139,41 +126,41 @@ periodSelect.addEventListener("change", () => {
 });
 
 itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){
-    statusBox.classList.add("hidden"); 
-    return; 
-  }
-  
+  if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
-  
-  // 버튼 비활성화 / 상태 표시 숨김
-  btnDone.disabled = true;
-  btnNot.disabled = true;
-  
-  // 중복 체크 후 활성화
+
+  // fetch 시작 전 버튼 초기화 제거
   checkDuplicate();
 });
 
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-  
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
   
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      if(d.status && d.data === "완료"){
-        btnDone.classList.add("active"); 
-        btnNot.classList.remove("active");
+      if(d.status && d.data){
+        if(d.data.trim() === "완료"){
+          btnDone.classList.add("active");
+          btnNot.classList.remove("active");
+        } else {
+          btnNot.classList.add("active");
+          btnDone.classList.remove("active");
+        }
       } else {
-        btnNot.classList.add("active"); 
+        // 데이터 없으면 미완료로 표시
+        btnNot.classList.add("active");
         btnDone.classList.remove("active");
       }
-      // fetch 완료 후 버튼 활성화
-      btnDone.disabled = false;
-      btnNot.disabled = false;
     })
-    .catch(err => console.error("중복 체크 오류:", err));
+    .catch(err => {
+      console.error("중복 체크 오류:", err);
+      // 오류 시에도 미완료
+      btnNot.classList.add("active");
+      btnDone.classList.remove("active");
+    });
 }
 
 saveBtn.onclick = () => {
@@ -202,7 +189,7 @@ saveBtn.onclick = () => {
     .catch(err => console.error("저장 오류:", err));
 };
 
-// ---------- 자동 파라미터 세팅 ----------
+// URL 파라미터 자동 반영
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
   const date = params.get("date");
@@ -225,13 +212,10 @@ window.onload = () => {
   if(item){
     itemSelect.value = item;
     statusBox.classList.remove("hidden");
-    btnDone.classList.remove("active");
-    btnNot.classList.remove("active");
-    btnDone.style.pointerEvents = "none";
-    btnNot.style.pointerEvents = "none";
-    checkDuplicate();
+    checkDuplicate(); // 중복 체크 후 버튼 상태 반영
   }
 };
 </script>
+
 </body>
 </html>
