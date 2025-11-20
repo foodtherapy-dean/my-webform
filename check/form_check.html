@@ -66,7 +66,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
     <label>점검상태</label>
     <div class="toggle-row">
       <div id="btnDone" class="toggle-btn">완료</div>
-      <div id="btnNot" class="toggle-btn active">미완료</div>
+      <div id="btnNot" class="toggle-btn">미완료</div>
     </div>
   </div>
 </div>
@@ -110,7 +110,7 @@ function resetForm(){
   btnNot.classList.add("active");
 }
 
-// URL 파라미터로 폼 초기화
+// URL 파라미터 또는 기본 날짜로 폼 초기화
 function loadFormFromParams(){
   resetForm();
   const params = new URLSearchParams(window.location.search);
@@ -118,8 +118,15 @@ function loadFormFromParams(){
   const paramPeriod = params.get("period");
   const paramItem = params.get("item");
 
-  if(paramDate) dateInput.value = paramDate;
+  // 날짜 세팅
+  if(paramDate){
+    dateInput.value = paramDate;
+  } else {
+    const today = new Date();
+    dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  }
 
+  // 주기
   if(paramPeriod){
     periodSelect.value = paramPeriod;
     itemsMap[paramPeriod].forEach(i=>{
@@ -130,17 +137,15 @@ function loadFormFromParams(){
     itemBox.classList.remove("hidden");
   }
 
+  // 항목
   if(paramItem){
     itemSelect.value = paramItem;
     statusBox.classList.remove("hidden");
-  }
-
-  if(paramDate && paramPeriod && paramItem){
     checkDuplicate();
   }
 }
 
-// 날짜 변경 시 폼 리셋
+// 날짜 변경 시 선택한 날짜로 새로고침
 dateInput.addEventListener("change", () => {
   const selectedDate = dateInput.value;
   if(selectedDate){
@@ -148,7 +153,7 @@ dateInput.addEventListener("change", () => {
     url.searchParams.set("date", selectedDate);
     url.searchParams.delete("period");
     url.searchParams.delete("item");
-    window.location.href = url.toString(); // 선택 날짜로 새로고침
+    window.location.href = url.toString();
   }
 });
 
@@ -170,8 +175,7 @@ periodSelect.addEventListener("change", () => {
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
   statusBox.classList.remove("hidden");
-  btnNot.classList.add("active"); btnDone.classList.remove("active");
-  checkDuplicate();
+  checkDuplicate(); // fetch 결과에 따라 상태 버튼 활성화
 });
 
 // 중복 데이터 체크
@@ -225,7 +229,7 @@ saveBtn.onclick = () => {
   .then(r => r.json())
   .then(d => {
     alert(d.message);
-    window.location.href = "https://foodtherapy-dean.github.io/my-webform/check/form_check.html"; 
+    window.location.href = "https://foodtherapy-dean.github.io/my-webform/check/form_check.html";
   })
   .catch(err => console.error("저장 오류:", err));
 };
