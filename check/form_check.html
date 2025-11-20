@@ -145,7 +145,7 @@ function loadFormFromParams(){
   }
 }
 
-// 날짜 변경 시 메인 페이지로 이동
+// 날짜 변경 시 URL 갱신
 dateInput.addEventListener("change", () => {
   const selectedDate = dateInput.value;
   if(selectedDate){
@@ -171,47 +171,33 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
-// 항목 선택 시 fetch로 중복 체크 후 상태 버튼 적용
+// 항목 선택 → fetch 후 상태 버튼 활성화
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){ statusBox.classList.add("hidden"); return; }
-  statusBox.classList.add("hidden"); // fetch 완료 전 숨김
-  checkDuplicate();
-});
+  statusBox.classList.remove("hidden");
 
-// 중복 데이터 체크
-function checkDuplicate(){
-  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  
+  // fetch 후 상태 버튼 결정
+  const url = `${BASE_URL}?mode=read&date=${encodeURIComponent(dateInput.value)}&period=${encodeURIComponent(periodSelect.value)}&item=${encodeURIComponent(itemSelect.value)}`;
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      // fetch 완료 후 상태 표시
-      statusBox.classList.remove("hidden");
-
-      console.log("중복 체크 결과:", d); // 확인용 로그
-
-      if(d.status){
+      console.log("중복 체크 결과:", d);
+      if(d.status && d.data){
         const status = String(d.data).trim();
         if(status === "완료"){
-          btnDone.classList.add("active");
-          btnNot.classList.remove("active");
+          btnDone.classList.add("active"); btnNot.classList.remove("active");
         } else {
-          btnDone.classList.remove("active");
-          btnNot.classList.add("active");
+          btnNot.classList.add("active"); btnDone.classList.remove("active");
         }
       } else {
-        btnDone.classList.remove("active");
-        btnNot.classList.add("active");
+        btnNot.classList.add("active"); btnDone.classList.remove("active");
       }
     })
     .catch(err => {
       console.error("중복 체크 오류:", err);
-      btnDone.classList.remove("active");
-      btnNot.classList.add("active");
+      btnNot.classList.add("active"); btnDone.classList.remove("active");
     });
-}
+});
 
 // 저장 후 메인 페이지로 이동
 saveBtn.onclick = () => {
