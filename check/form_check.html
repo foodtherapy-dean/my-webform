@@ -193,7 +193,8 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
-      checkDuplicate();
+      // 저장 직후 checkDuplicate 호출 제거
+      // checkDuplicate();
     })
     .catch(err => console.error("저장 오류:", err));
 };
