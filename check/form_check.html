@@ -166,6 +166,7 @@ itemSelect.addEventListener("change", () => {
 });
 
 // ========= 중복 체크 & 상태 자동 적용 =========
+// ========= 중복 체크 & 상태 자동 적용 =========
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
@@ -177,17 +178,18 @@ function checkDuplicate(){
       statusBox.classList.remove("hidden");
 
       if(d.status){
-        // 기존 데이터 있음
+        // 기존 데이터 있음 → 기존 상태 표시
         selectedStatus = d.data === "완료" ? "완료" : "미완료";
       } else {
-        // 기존 데이터 없음 → 기본 해제
-        selectedStatus = "";
+        // 기존 데이터 없음 → 기본값: "미완료" 자동 선택
+        selectedStatus = "미완료";
       }
 
       updateStatusUI();
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
+
 
 
 // ========= 저장 =========
