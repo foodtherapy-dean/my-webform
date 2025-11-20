@@ -7,10 +7,9 @@
 <style>
 body { font-family: Arial, sans-serif; margin:16px; }
 h2 { text-align:center; margin-bottom:8px; }
-#monthControl { text-align:center; margin-bottom:12px; }
-#monthControl button { padding:4px 8px; margin:0 4px; }
-#monthControl span { font-weight:bold; font-size:1.1em; }
-table { width:100%; border-collapse: collapse; margin-top:4px; }
+.controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; }
+button { padding:4px 8px; }
+table { width:100%; border-collapse: collapse; margin-top:12px; }
 th, td { border:1px solid #ccc; padding:8px; text-align:center; }
 th { background:#f5f5f5; }
 td.clickable { cursor:pointer; text-decoration: underline; }
@@ -22,34 +21,35 @@ td.saturday { background:#e9f2ff; }
 
 <h2>정기검증 취합</h2>
 
-<div id="monthControl">
+<div class="controls">
   <button id="prevMonth">&lt;</button>
-  <span id="currentMonth"></span>
+  <input type="month" id="monthInput" />
   <button id="nextMonth">&gt;</button>
 </div>
 
 <table id="statusTable">
   <thead>
+    <!-- 1단: 주기 -->
     <tr>
-      <th>날짜</th>
-      <th>요일</th>
-      <th>주간</th>
-      <th>월간</th>
+      <th rowspan="2">날짜</th>
+      <th rowspan="2">요일</th>
+      <th colspan="2">주간</th>
+      <th colspan="2">월간</th>
       <th>분기</th>
       <th>반기</th>
     </tr>
+    <!-- 2단: 항목 -->
     <tr>
-      <th></th>
-      <th></th>
-      <th>방재점검 / 기타청소</th>
-      <th>CCP검증 / 위생교육</th>
+      <th>방재점검</th>
+      <th>기타청소</th>
+      <th>CCP검증</th>
+      <th>위생교육</th>
       <th>품질검사</th>
       <th>탱크청소</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
-
 
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycby-RTZA_z42LRDZghk-DnI8_4WKe8xR19iiYhjV90guu8AWGX5BbJ4WYDwjY-pTqDyl9A/exec";
@@ -65,6 +65,9 @@ const CELL_MAP = [
 
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
 const tbody = document.querySelector("#statusTable tbody");
+const monthInput = document.getElementById("monthInput");
+const prevBtn = document.getElementById("prevMonth");
+const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
@@ -81,19 +84,15 @@ function getMonthDates(year, month){
 
 // ---------- 데이터 불러오기 ----------
 async function loadData(year, month){
-  tbody.innerHTML = `<tr><td colspan="${CELL_MAP.length+2}">불러오는 중...</td></tr>`;
-  try {
+  tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
+  try{
     const url = `${BASE_URL}?mode=data&year=${year}&month=${month}`;
     const resp = await fetch(url);
     const json = await resp.json();
-
     if(!json.success) throw new Error(json.error || "데이터 로드 실패");
-
     renderTable(json.data, year, month);
-    document.getElementById("monthLabel").textContent = `${year}년 ${month}월`;
-
-  } catch(err){
-    tbody.innerHTML = `<tr><td colspan="${CELL_MAP.length+2}">오류: ${err.message}</td></tr>`;
+  }catch(err){
+    tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
     console.error(err);
   }
 }
@@ -118,9 +117,11 @@ function renderTable(data, year, month){
       const td = document.createElement("td");
       td.classList.add("clickable");
 
+      // 데이터 연동: ○/● 표시
       const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
       td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
 
+      // 클릭 시 웹폼 열기
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
@@ -133,11 +134,15 @@ function renderTable(data, year, month){
   });
 }
 
-// ---------- 월 이동 버튼 ----------
+// ---------- 월 변경 ----------
 function changeMonth(delta){
-  currentMonth += delta;
-  if(currentMonth>12){ currentMonth=1; currentYear++; }
-  if(currentMonth<1){ currentMonth=12; currentYear--; }
+  let newMonth = currentMonth + delta;
+  let newYear = currentYear;
+  if(newMonth < 1){ newMonth = 12; newYear -= 1; }
+  if(newMonth > 12){ newMonth = 1; newYear += 1; }
+  currentYear = newYear;
+  currentMonth = newMonth;
+  monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
   loadData(currentYear, currentMonth);
 }
 
@@ -146,35 +151,22 @@ function init(){
   const today = new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth()+1;
-
-  const header = document.createElement("div");
-  header.style.textAlign = "center";
-  header.style.marginBottom = "8px";
-
-  const prevBtn = document.createElement("button");
-  prevBtn.textContent = "<";
-  prevBtn.onclick = ()=>changeMonth(-1);
-
-  const nextBtn = document.createElement("button");
-  nextBtn.textContent = ">";
-  nextBtn.onclick = ()=>changeMonth(1);
-
-  const monthLabel = document.createElement("span");
-  monthLabel.id = "monthLabel";
-  monthLabel.style.margin = "0 8px";
-  monthLabel.textContent = `${currentYear}년 ${currentMonth}월`;
-
-  header.appendChild(prevBtn);
-  header.appendChild(monthLabel);
-  header.appendChild(nextBtn);
-
-  document.body.insertBefore(header, document.querySelector("#statusTable"));
+  monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,"0")}`;
 
   loadData(currentYear, currentMonth);
+
+  monthInput.addEventListener("change", ()=>{
+    const [y,m] = monthInput.value.split("-").map(Number);
+    currentYear = y;
+    currentMonth = m;
+    loadData(currentYear, currentMonth);
+  });
+
+  prevBtn.addEventListener("click", ()=>changeMonth(-1));
+  nextBtn.addEventListener("click", ()=>changeMonth(1));
 }
 
 window.onload = init;
 </script>
-
 </body>
 </html>
