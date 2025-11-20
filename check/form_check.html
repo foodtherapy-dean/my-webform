@@ -188,8 +188,8 @@ function checkDuplicate(){
     .then(d => {
       statusBox.classList.remove("hidden");
       if(d.status && d.data){
-        const status = String(d.data).trim();
-        if(status === "완료"){
+        const status = String(d.data).trim().toLowerCase();
+        if(status === "완료" || status === "done"){  // 완료 문자열 확인
           btnDone.classList.add("active"); 
           btnNot.classList.remove("active");
         } else {
@@ -239,5 +239,6 @@ window.onload = () => {
   loadFormFromParams();
 };
 </script>
+
 </body>
 </html>
