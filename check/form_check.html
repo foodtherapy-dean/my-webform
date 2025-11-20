@@ -140,9 +140,13 @@ itemSelect.addEventListener("change", () => {
 
   statusBox.classList.remove("hidden");
 
-  // 버튼 클릭 가능하도록 기본 활성화
-  btnDone.disabled = false;
-  btnNot.disabled = false;
+  // 버튼은 항상 클릭 가능 상태로 유지 (disabled 제거)
+  // btnDone.disabled = false;
+  // btnNot.disabled = false;
+
+  // active 클래스 초기화 (선택 안 된 상태)
+  btnDone.classList.remove("active");
+  btnNot.classList.remove("active");
 
   // 기존 데이터가 있는지 fetch 후 상태 반영
   checkDuplicate();
@@ -163,17 +167,19 @@ function checkDuplicate(){
           btnNot.classList.add("active"); 
           btnDone.classList.remove("active");
         } else {
+          // 상태값이 이상하면 선택 안 됨
           btnDone.classList.remove("active");
           btnNot.classList.remove("active");
         }
       } else {
-        // 신규 데이터: 버튼 모두 비활성화하지 말고, 클릭 가능 상태 유지
+        // 신규 데이터: 버튼 모두 선택 안 됨
         btnDone.classList.remove("active");
         btnNot.classList.remove("active");
       }
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
+
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
