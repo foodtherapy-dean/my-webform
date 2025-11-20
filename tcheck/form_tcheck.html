@@ -29,15 +29,23 @@ td.saturday { background:#e9f2ff; }
 
 <table id="statusTable">
   <thead>
+    <!-- 1단: 주기 -->
     <tr>
-      <th>날짜</th>
-      <th>요일</th>
-      <th>주간:방재점검</th>
-      <th>주간:기타청소</th>
-      <th>월간:CCP검증</th>
-      <th>월간:위생교육</th>
-      <th>분기:품질검사</th>
-      <th>반기:탱크청소</th>
+      <th rowspan="2">날짜</th>
+      <th rowspan="2">요일</th>
+      <th colspan="2">주간</th>
+      <th colspan="2">월간</th>
+      <th>분기</th>
+      <th>반기</th>
+    </tr>
+    <!-- 2단: 항목 -->
+    <tr>
+      <th>방재점검</th>
+      <th>기타청소</th>
+      <th>CCP검증</th>
+      <th>위생교육</th>
+      <th>품질검사</th>
+      <th>탱크청소</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -46,7 +54,7 @@ td.saturday { background:#e9f2ff; }
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbyv0CoOqtpmZfuakoQWFF-TRNq9YYhlXqTMQP9pnAJyO5sL4jQINlkRzRehKXhwQich2g/exec";
 
-// 각 셀 항목 매핑
+// 셀 항목 매핑
 const CELL_MAP = [
   {period:"주간", item:"방재점검"},
   {period:"주간", item:"기타청소"},
@@ -56,10 +64,7 @@ const CELL_MAP = [
   {period:"반기", item:"탱크청소"}
 ];
 
-// 요일
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
-
-// 테이블 tbody
 const tbody = document.querySelector("#statusTable tbody");
 const monthInput = document.getElementById("monthInput");
 const prevBtn = document.getElementById("prevMonth");
@@ -67,7 +72,7 @@ const nextBtn = document.getElementById("nextMonth");
 
 let currentYear, currentMonth;
 
-// ---------- 날짜 범위 설정 ----------
+// ---------- 날짜 범위 ----------
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
@@ -107,24 +112,15 @@ function renderTable(data, year, month){
     if(wday==="일") tr.classList.add("sunday");
     if(wday==="토") tr.classList.add("saturday");
 
-    // 날짜/요일
     tr.innerHTML = `<td>${day}</td><td>${wday}</td>`;
 
-    // 각 셀 상태 표시
     CELL_MAP.forEach(cell => {
       const td = document.createElement("td");
       td.classList.add("clickable");
 
-      // 같은 날짜/주기/항목 데이터 검색
       const record = data.find(r => r.date===dateStr && r.period===cell.period && r.item===cell.item);
 
-      if(record){
-        td.textContent = record.status==="완료" ? "●" : "○";
-      }else{
-        td.textContent = "";
-      }
-
-      // 클릭 시 form_check.html 열기
+      td.textContent = record ? (record.status==="완료" ? "●" : "○") : "";
       td.onclick = () => {
         const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.period}&item=${encodeURIComponent(cell.item)}`;
         window.open(url, "_blank");
