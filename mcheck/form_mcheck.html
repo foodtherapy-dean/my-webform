@@ -122,7 +122,14 @@ function renderTable(data) {
         status?.status === "미완료" ? "○" :
         "";
 
-      td.onclick = () => openForm(m.month, cell.period, cell.item);
+      // 클릭 시 값 전달 (날짜·상태 포함)
+      td.onclick = () => openForm(
+        m.month,
+        cell.period,
+        cell.item,
+        status?.date || null,
+        status?.status || null
+      );
 
       tr.appendChild(td);
     });
@@ -133,16 +140,36 @@ function renderTable(data) {
 
 
 // ============================
-// 입력 폼 열기
+// 입력 폼 열기 (날짜·상태 포함)
 // ============================
-function openForm(month, period, item) {
-  const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?month=${month}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
+function openForm(month, period, item, date, status) {
+
+  // 빈셀의 경우 해당월 1일 자동 지정
+  if (!date) {
+    const year = parseInt(yearInput.value, 10);
+    const mm = String(month).padStart(2, "0");
+    date = `${year}-${mm}-01`;
+  }
+
+  // 상태도 없으면 미완료 자동 지정
+  if (!status) {
+    status = "미완료";
+  }
+
+  const url =
+    `https://foodtherapy-dean.github.io/my-webform/check/form_check.html` +
+    `?month=${month}` +
+    `&period=${encodeURIComponent(period)}` +
+    `&item=${encodeURIComponent(item)}` +
+    `&date=${encodeURIComponent(date)}` +
+    `&status=${encodeURIComponent(status)}`;
+
   window.open(url, "_blank");
 }
 
 
 // ============================
-// 초기화 (웹폼 로드시 자동 조회)
+// 초기화 (자동조회)
 // ============================
 function init() {
   const params = new URLSearchParams(location.search);
@@ -150,7 +177,6 @@ function init() {
 
   yearInput.value = year;
 
-  // 🔥 웹폼 로드시 자동 조회
   loadData(parseInt(year, 10));
 
   loadBtn.addEventListener("click", () =>
