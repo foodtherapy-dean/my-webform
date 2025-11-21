@@ -36,6 +36,7 @@
 <div id="note">● = 완료, ○ = 미완료. 클릭 시 입력폼 새창 열림</div>
 
 
+
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbxXHby92qoccnlrQ1t8mNyq2jEUTM3hn8TnywpbeU2KXHs6NWZy7wHkkRm1uoxrPm3H7g/exec";
 
@@ -56,9 +57,10 @@ const btnDone = document.getElementById("btnDone");
 const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 
+// 현재 선택된 상태
 let selectedStatus = "";
 
-// ====== UI 갱신 ======
+// ====== 버튼 상태 UI 갱신 ======
 function updateStatusUI() {
   btnDone.classList.toggle("active", selectedStatus === "완료");
   btnNot.classList.toggle("active", selectedStatus === "미완료");
@@ -70,34 +72,42 @@ function resetForm(){
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   itemBox.classList.add("hidden");
   statusBox.classList.add("hidden");
+
   selectedStatus = "";
   updateStatusUI();
 }
 
-// ====== 상태 버튼 ======
+// ====== 토글 방식 상태 선택 ======
 btnDone.onclick = () => {
   selectedStatus = (selectedStatus === "완료") ? "" : "완료";
   updateStatusUI();
 };
+
 btnNot.onclick = () => {
   selectedStatus = (selectedStatus === "미완료") ? "" : "미완료";
   updateStatusUI();
 };
 
 function getStatus() {
-  return selectedStatus;
+  return selectedStatus; // '' 이면 Apps Script는 삭제 처리
 }
 
-// 날짜 변경 시 입력 초기화
-dateInput.addEventListener("change", resetForm);
+// ====== 날짜 변경 시 ======
+dateInput.addEventListener("change", () => {
+  // 날짜 변경 시 다른 입력(주기/항목/상태) 초기화
+  resetForm();
+});
 
-// ====== 주기 선택 ======
+// ====== 주기 선택 시 ======
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
 
   const period = periodSelect.value;
-  if(!period){ itemBox.classList.add("hidden"); return; }
+  if(!period){ 
+    itemBox.classList.add("hidden"); 
+    return; 
+  }
 
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
@@ -109,14 +119,14 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
-// ===== 항목 선택 → 자동 중복체크 =====
+// ====== 항목 선택 시 → 중복체크 ======
 itemSelect.addEventListener("change", () => {
-  if(itemSelect.value){
-    checkDuplicate();
-  }
+  statusBox.classList.add("hidden");
+  if(!itemSelect.value){ return; }
+  checkDuplicate();
 });
 
-// ====== 중복 체크 ======
+// ========= 중복 체크 & 상태 자동 적용 =========
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
@@ -128,26 +138,30 @@ function checkDuplicate(){
       statusBox.classList.remove("hidden");
 
       if(d.status){
+        // 기존 데이터 있음 → 기존 상태 표시
         selectedStatus = d.data === "완료" ? "완료" : "미완료";
       } else {
+        // 기존 데이터 없음 → 기본값: "미완료" 자동 선택
         selectedStatus = "미완료";
       }
+
       updateStatusUI();
-    });
+    })
+    .catch(err => console.error("중복 체크 오류:", err));
 }
 
-// ======= 저장 =======
+// ========= 저장 =========
 saveBtn.onclick = () => {
-  if(!dateInput.value) return alert("날짜 선택 필요");
-  if(!periodSelect.value) return alert("주기 선택 필요");
-  if(!itemSelect.value) return alert("항목 선택 필요");
+  if(!dateInput.value){ alert("날짜 선택 필요"); return; }
+  if(!periodSelect.value){ alert("주기 선택 필요"); return; }
+  if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
   const payload = {
     mode: "write",
     date: dateInput.value,
     period: periodSelect.value,
     item: itemSelect.value,
-    status: getStatus()
+    status: getStatus()   // '' 가능 → Apps Script에서 삭제
   };
 
   fetch(BASE_URL, {
@@ -158,28 +172,30 @@ saveBtn.onclick = () => {
     .then(d => {
       alert(d.message);
       resetForm();
-    });
+    })
+    .catch(err => console.error("저장 오류:", err));
 };
 
-
-// ========== URL 파라미터 세팅 (핵심 수정) ==========
+// ========== URL 파라미터 자동 세팅 ==========
+// 실제 데이터가 있는 경우 → 해당 날짜 반영
+// 빈셀 클릭 시 → month의 1일로 설정
 window.onload = () => {
-
   const params = new URLSearchParams(window.location.search);
-
-  const date = params.get("date");
+  let date = params.get("date");  // YYYY-MM-DD
   const period = params.get("period");
   const item = params.get("item");
 
-  // 날짜 즉시 반영
-  if(date) dateInput.value = date;
-  else dateInput.value = new Date().toISOString().split("T")[0];
+  // 빈 값이면 오늘 날짜 → 웹폼 열때 기본
+  if(!date){
+    date = new Date().toISOString().split("T")[0];
+  }
 
-  // 주기 자동 선택
+  dateInput.value = date;
+
   if(period){
     periodSelect.value = period;
-
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+    
     itemsMap[period].forEach(i=>{
       const op = document.createElement("option");
       op.value = i; 
@@ -190,11 +206,10 @@ window.onload = () => {
     itemBox.classList.remove("hidden");
   }
 
-  // 항목 자동 선택 → 중복 체크 자동 실행 (중요!!)
   if(item){
     itemSelect.value = item;
     statusBox.classList.add("hidden");
-    checkDuplicate();   // ← 여기 추가됨
+    checkDuplicate();
   }
 };
 </script>
