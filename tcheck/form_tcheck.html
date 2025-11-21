@@ -195,29 +195,30 @@ function buildMonthHead(){
 }
 
 // ★ 월별 모드 클릭 시 실제 날짜 불러오기 ★
-function renderMonthTable(data, year, month){
+function renderMonthTable(data, year){
   buildMonthHead();
-  tbody.innerHTML = ''; // 테이블 초기화
+  tbody.innerHTML = '';
 
   for(let m=1; m<=12; m++){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${m}월</td>`;
-    const ym = `${year}-${String(m).padStart(2,'0')}`;
 
     CELL_MAP_MONTH.forEach(cell=>{
       const td = document.createElement('td');
       td.classList.add('clickable');
 
-      // ★ 반드시 현재 월 데이터만 필터링
+      // 해당 달 데이터 필터
       const monthData = data.filter(r=>{
         if(!r.date) return false;
         const [ry, rm] = r.date.split('-').map(Number);
         return ry === year && rm === m;
       });
 
+      // period+item이 있는 데이터 찾기
       const matchedData = monthData.filter(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
 
       if(matchedData.length > 0){
+        // 완료가 하나라도 있으면 ●, 아니면 ○
         const hasComplete = matchedData.some(r=>{
           const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
           return s?.status === '완료';
@@ -227,15 +228,15 @@ function renderMonthTable(data, year, month){
         td.textContent = '';
       }
 
+      // 클릭 시 해당 월에 실제 데이터 날짜 불러오기
       td.onclick = ()=>{
         if(matchedData.length > 0){
-          const completeData = matchedData.filter(r=>{
-            const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-            return s?.status === '완료';
-          });
-          const firstDate = completeData.length > 0 ? completeData[0].date : matchedData[0].date;
-          openForm(firstDate, cell.period, cell.item);
+          // 실제 입력된 날짜 중 가장 최근 날짜
+          const latestDate = matchedData[matchedData.length-1].date;
+          openForm(latestDate, cell.period, cell.item);
         } else {
+          // 데이터 없으면 1일로 신규 작성
+          const ym = `${year}-${String(m).padStart(2,'0')}`;
           openForm(`${ym}-01`, cell.period, cell.item);
         }
       };
