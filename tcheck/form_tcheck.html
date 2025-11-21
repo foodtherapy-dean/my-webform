@@ -59,7 +59,7 @@ const CELL_MAP_DAY = [
   { period: "월간", item: "위생교육" }
 ];
 
-// Month-mode items: 분기(1), 반기(2), 연간(3)
+// Month-mode items (분기1, 반기2, 연간3)
 const CELL_MAP_MONTH = [
   { period: "분기", item: "품질검사" },
   { period: "반기", item: "탱크청소" },
@@ -78,10 +78,12 @@ const nextBtn = document.getElementById("nextMonth");
 const dayModeBtn = document.getElementById("dayModeBtn");
 const monthModeBtn = document.getElementById("monthModeBtn");
 
-let currentYear, currentMonth; // month is 1-12
-let mode = 'day'; // 'day' or 'month'
-let lastLoadedData = null; // store last mode=data response for month
+let currentYear, currentMonth;
+let mode = 'day';
 
+let lastLoadedData = null;
+
+// 상태 아이콘 변환
 function convertStatus(status) {
   if (!status) return "";
   if (status === "완료") return "●";
@@ -89,6 +91,7 @@ function convertStatus(status) {
   return "";
 }
 
+// 날짜 yyyy-mm-dd
 function formatDateLocal(d){
   const year = d.getFullYear();
   const month = String(d.getMonth()+1).padStart(2,"0");
@@ -96,6 +99,7 @@ function formatDateLocal(d){
   return `${year}-${month}-${day}`;
 }
 
+// 월 전체 날짜 배열
 function getMonthDates(year, month){
   const dates = [];
   const firstDay = new Date(year, month-1, 1);
@@ -106,7 +110,7 @@ function getMonthDates(year, month){
   return dates;
 }
 
-// load month-data via mode=data (same as original)
+// 데이터 불러오기
 async function loadData(year, month){
   tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
   try{
@@ -114,22 +118,28 @@ async function loadData(year, month){
     const resp = await fetch(url);
     const json = await resp.json();
     if (!json.success) throw new Error(json.error || '데이터 로드 실패');
-    lastLoadedData = json.data; // array of {date, statusArray}
+    lastLoadedData = json.data;
+
     if(mode === 'day') renderDayTable(json.data, year, month);
     else renderMonthTable(json.data, year, month);
+
   }catch(err){
     tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
     console.error(err);
   }
 }
 
-// ---------- RENDER DAY MODE ----------
+//
+// ------------------- DAY MODE -------------------
+//
 function buildDayHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
   tr1.innerHTML = `<th rowspan="2">날짜</th><th rowspan="2">요일</th><th colspan="2">주간</th><th colspan="2">월간</th>`;
+  
   const tr2 = document.createElement('tr');
   tr2.innerHTML = `<th>방재점검</th><th>기타청소</th><th>CCP검증</th><th>위생교육</th>`;
+  
   tableHead.appendChild(tr1);
   tableHead.appendChild(tr2);
 }
@@ -137,7 +147,9 @@ function buildDayHead(){
 function renderDayTable(data, year, month){
   buildDayHead();
   tbody.innerHTML = '';
+
   const monthDates = getMonthDates(year, month);
+
   monthDates.forEach(d => {
     const dateStr = formatDateLocal(d);
     const day = d.getDate();
@@ -145,96 +157,119 @@ function renderDayTable(data, year, month){
     const tr = document.createElement('tr');
     if (wday === '일') tr.classList.add('sunday');
     if (wday === '토') tr.classList.add('saturday');
+
     tr.innerHTML = `<td>${day}</td><td>${wday}</td>`;
+
     CELL_MAP_DAY.forEach(cell => {
       const td = document.createElement('td');
       td.classList.add('clickable');
-      const record = data.find(r => r.date === dateStr && r.statusArray && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item));
+
+      const record = data.find(r => r.date === dateStr &&
+        r.statusArray &&
+        r.statusArray.some(s => s.period === cell.period && s.item === cell.item)
+      );
+
       if(record){
-        const matched = record.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
+        const matched = record.statusArray.find(s => s.period === cell.period && s.item === cell.item);
         td.textContent = convertStatus(matched.status);
-      } else td.textContent = '';
+      }
+
       td.onclick = ()=> openForm(dateStr, cell.period, cell.item);
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   });
 }
 
-// ---------- RENDER MONTH MODE ----------
+//
+// ------------------- MONTH MODE -------------------
+//
 function buildMonthHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
-  // 월, 분기(1), 반기(2), 연간(3)
   tr1.innerHTML = `<th rowspan="2">월</th><th colspan="1">분기</th><th colspan="2">반기</th><th colspan="3">연간</th>`;
+  
   const tr2 = document.createElement('tr');
   tr2.innerHTML = `<th>품질검사</th><th>탱크청소</th><th>에어필터</th><th>지하수검사</th><th>검교정</th><th>유효성평가</th>`;
+  
   tableHead.appendChild(tr1);
   tableHead.appendChild(tr2);
 }
 
+// ★ 월별 모드 핵심 수정 완료 ★
+// "해당 월 안에 데이터가 1번이라도 있으면 ● 표시"
 function renderMonthTable(data, year, month){
   buildMonthHead();
   tbody.innerHTML = '';
-  // store data for quick lookup by date
-  const dataByDate = data.reduce((acc, rec)=>{ acc[rec.date]=rec; return acc; }, {});
 
-  for(let m=1;m<=12;m++){
+  for(let m=1; m<=12; m++){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${m}월</td>`;
-    // For each month-mode cell (6 items)
+
+    const ym = `${year}-${String(m).padStart(2,'0')}`;
+
     CELL_MAP_MONTH.forEach(cell=>{
       const td = document.createElement('td');
       td.classList.add('clickable');
-      // find any record in data whose month equals m and has this period+item
+
+      // ★ 수정된 매칭 방식: 해당 월 전체 탐색 (startsWith)
       const found = data.find(r=>{
-        const rDate = r.date; // yyyy-mm-dd
-        if(!rDate) return false;
-        const [ry, rm, rd] = rDate.split('-').map(Number);
-        if(ry !== year || rm !== m) return false;
-        return r.statusArray && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item);
+        if(!r.date) return false;
+        if(!r.date.startsWith(ym)) return false;
+
+        return r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item);
       });
+
       if(found){
-        // get matched status (first match)
         const matched = found.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
         td.textContent = convertStatus(matched.status);
-      } else td.textContent = '';
+      }
 
-      // click handler: if found -> open with that found.date; else -> open with yyyy-mm-01
+      // 클릭 시: 찾은 데이터가 있으면 그 날짜로, 없으면 yyyy-mm-01
       td.onclick = ()=>{
-        if(found){
-          openForm(found.date, cell.period, cell.item);
-        } else {
-          const dateStr = `${year}-${String(m).padStart(2,'0')}-01`;
-          openForm(dateStr, cell.period, cell.item);
-        }
+        if(found) openForm(found.date, cell.period, cell.item);
+        else openForm(`${ym}-01`, cell.period, cell.item);
       };
 
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   }
 }
 
+//
+// ------------------- FORM OPEN -------------------
+//
 function openForm(dateStr, period, item){
   const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
   window.open(url, '_blank');
 }
 
-// month navigation
+//
+// ------------------- MONTH MOVE -------------------
+//
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
+
   if(newMonth < 1){ newMonth = 12; newYear -= 1; }
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
-  currentYear = newYear; currentMonth = newMonth;
+
+  currentYear = newYear;
+  currentMonth = newMonth;
+
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   loadData(currentYear, currentMonth);
 }
 
-// mode toggle
+//
+// ------------------- MODE SWITCH -------------------
+//
 function setMode(newMode){
   mode = newMode;
+
   if(mode === 'day'){
     dayModeBtn.classList.add('active');
     monthModeBtn.classList.remove('active');
@@ -242,30 +277,38 @@ function setMode(newMode){
     monthModeBtn.classList.add('active');
     dayModeBtn.classList.remove('active');
   }
-  // reload data/render
+
   loadData(currentYear, currentMonth);
 }
 
-// init
+//
+// ------------------- INIT -------------------
+//
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth()+1;
+
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
   prevBtn.addEventListener('click', ()=> changeMonth(-1));
   nextBtn.addEventListener('click', ()=> changeMonth(1));
+
   monthInput.addEventListener('change', ()=>{
     const [y,m] = monthInput.value.split('-').map(Number);
-    currentYear = y; currentMonth = m;
+    currentYear = y;
+    currentMonth = m;
     loadData(currentYear, currentMonth);
   });
+
   dayModeBtn.addEventListener('click', ()=> setMode('day'));
   monthModeBtn.addEventListener('click', ()=> setMode('month'));
-  // initial load
+
   loadData(currentYear, currentMonth);
 }
 
 window.onload = init;
 </script>
+
 </body>
 </html>
