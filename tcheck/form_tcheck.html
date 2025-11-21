@@ -267,9 +267,14 @@ function changeMonth(delta){
   currentMonth = newMonth;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
 
-  // 월 변경 시 자동으로 일별 모드 활성화
-  setMode('day');
+  // 월 변경 시 자동으로 일별 모드로 전환
+  mode = 'day';  // 모드 상태를 먼저 변경
+  dayModeBtn.classList.add('active');
+  monthModeBtn.classList.remove('active');
+
+  loadData(currentYear, currentMonth);
 }
+
 
 //
 // ------------------- MODE SWITCH -------------------
