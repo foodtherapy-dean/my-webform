@@ -80,7 +80,6 @@ const monthModeBtn = document.getElementById("monthModeBtn");
 
 let currentYear, currentMonth;
 let mode = 'day';
-
 let lastLoadedData = null;
 
 // 상태 아이콘 변환
@@ -131,7 +130,6 @@ async function loadData(year, month){
 
 //
 // ------------------- DAY MODE -------------------
-//
 function buildDayHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
@@ -184,7 +182,6 @@ function renderDayTable(data, year, month){
 
 //
 // ------------------- MONTH MODE -------------------
-//
 function buildMonthHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
@@ -197,8 +194,7 @@ function buildMonthHead(){
   tableHead.appendChild(tr2);
 }
 
-// ★ 월별 모드 핵심 수정 완료 ★
-// "해당 월 안에 데이터가 1번이라도 있으면 ● 표시"
+// ★ 월별 모드 클릭 시 실제 날짜 불러오기 ★
 function renderMonthTable(data, year, month){
   buildMonthHead();
   tbody.innerHTML = '';
@@ -206,7 +202,6 @@ function renderMonthTable(data, year, month){
   for(let m=1; m<=12; m++){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${m}월</td>`;
-
     const ym = `${year}-${String(m).padStart(2,'0')}`;
 
     CELL_MAP_MONTH.forEach(cell=>{
@@ -224,7 +219,7 @@ function renderMonthTable(data, year, month){
       const matchedData = monthData.filter(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
 
       if(matchedData.length > 0){
-        // 상태 집계: 완료가 하나라도 있으면 ●, 모두 미완료면 ○
+        // 완료가 하나라도 있으면 ●, 모두 미완료면 ○
         const hasComplete = matchedData.some(r=>{
           const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
           return s?.status === '완료';
@@ -234,10 +229,15 @@ function renderMonthTable(data, year, month){
         td.textContent = '';
       }
 
-      // 클릭 시: 데이터가 있으면 실제 날짜, 없으면 1일
+      // 클릭 시: 완료 데이터 우선, 없으면 미완료, 없으면 월 1일
       td.onclick = ()=>{
         if(matchedData.length > 0){
-          const firstDate = matchedData[0].date;
+          // 완료 있는 데이터 우선
+          const completeData = matchedData.filter(r=>{
+            const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
+            return s?.status === '완료';
+          });
+          const firstDate = completeData.length > 0 ? completeData[0].date : matchedData[0].date;
           openForm(firstDate, cell.period, cell.item);
         } else {
           openForm(`${ym}-01`, cell.period, cell.item);
@@ -251,10 +251,8 @@ function renderMonthTable(data, year, month){
   }
 }
 
-
 //
 // ------------------- FORM OPEN -------------------
-//
 function openForm(dateStr, period, item){
   const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
   window.open(url, '_blank');
@@ -262,27 +260,22 @@ function openForm(dateStr, period, item){
 
 //
 // ------------------- MONTH MOVE -------------------
-//
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
-
   if(newMonth < 1){ newMonth = 12; newYear -= 1; }
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
 
   currentYear = newYear;
   currentMonth = newMonth;
-
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   loadData(currentYear, currentMonth);
 }
 
 //
 // ------------------- MODE SWITCH -------------------
-//
 function setMode(newMode){
   mode = newMode;
-
   if(mode === 'day'){
     dayModeBtn.classList.add('active');
     monthModeBtn.classList.remove('active');
@@ -290,13 +283,11 @@ function setMode(newMode){
     monthModeBtn.classList.add('active');
     dayModeBtn.classList.remove('active');
   }
-
   loadData(currentYear, currentMonth);
 }
 
 //
 // ------------------- INIT -------------------
-//
 function init(){
   const today = new Date();
   currentYear = today.getFullYear();
@@ -322,6 +313,7 @@ function init(){
 
 window.onload = init;
 </script>
+
 
 </body>
 </html>
