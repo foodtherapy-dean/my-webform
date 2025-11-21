@@ -87,25 +87,28 @@ const itemsMap = {
   "연간": ["지하수검사","검교정","유효성평가"]
 };
 
-const dateInput = document.getElementById("dateInput");
+const dateInput    = document.getElementById("dateInput");
 const periodSelect = document.getElementById("periodSelect");
-const itemBox = document.getElementById("itemBox");
-const itemSelect = document.getElementById("itemSelect");
-const statusBox = document.getElementById("statusBox");
-const btnDone = document.getElementById("btnDone");
-const btnNot = document.getElementById("btnNot");
-const saveBtn = document.getElementById("saveBtn");
+const itemBox      = document.getElementById("itemBox");
+const itemSelect   = document.getElementById("itemSelect");
+const statusBox    = document.getElementById("statusBox");
+const btnDone      = document.getElementById("btnDone");
+const btnNot       = document.getElementById("btnNot");
+const saveBtn      = document.getElementById("saveBtn");
 
-// 현재 선택된 상태
-let selectedStatus = "";
+let selectedStatus = "";  // 현재 선택 상태
 
-// ====== 버튼 상태 UI 갱신 ======
+// ==============================
+// 상태 버튼 UI 갱신
+// ==============================
 function updateStatusUI() {
   btnDone.classList.toggle("active", selectedStatus === "완료");
   btnNot.classList.toggle("active", selectedStatus === "미완료");
 }
 
-// ====== 폼 리셋 ======
+// ==============================
+// 폼 리셋
+// ==============================
 function resetForm(){
   periodSelect.value = "";
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
@@ -116,41 +119,41 @@ function resetForm(){
   updateStatusUI();
 }
 
-// ====== 토글 방식 상태 선택 ======
+// ==============================
+// 상태 버튼 클릭
+// ==============================
 btnDone.onclick = () => {
-  selectedStatus = (selectedStatus === "완료") ? "" : "완료";
+  selectedStatus = "완료";
   updateStatusUI();
 };
-
 btnNot.onclick = () => {
-  selectedStatus = (selectedStatus === "미완료") ? "" : "미완료";
+  selectedStatus = "미완료";
   updateStatusUI();
 };
 
-function getStatus() {
-  return selectedStatus; // '' 이면 Apps Script는 삭제 처리
-}
-
-// ====== 날짜 변경 시 ======
+// ==============================
+// 날짜 변경 시 → 폼 리셋
+// ==============================
 dateInput.addEventListener("change", () => {
-  // 날짜 변경 시 다른 입력(주기/항목/상태) 초기화
   resetForm();
 });
 
-// ====== 주기 선택 시 ======
+// ==============================
+// 주기 선택 시
+// ==============================
 periodSelect.addEventListener("change", () => {
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
 
   const period = periodSelect.value;
-  if(!period){ 
-    itemBox.classList.add("hidden"); 
-    return; 
+  if(!period){
+    itemBox.classList.add("hidden");
+    return;
   }
 
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
-    op.value = item; 
+    op.value = item;
     op.textContent = item;
     itemSelect.appendChild(op);
   });
@@ -158,14 +161,19 @@ periodSelect.addEventListener("change", () => {
   itemBox.classList.remove("hidden");
 });
 
-// ====== 항목 선택 시 → 중복체크 ======
+// ==============================
+// 항목 선택 시 → 중복 체크
+// ==============================
 itemSelect.addEventListener("change", () => {
   statusBox.classList.add("hidden");
-  if(!itemSelect.value){ return; }
+  if(!itemSelect.value) return;
+
   checkDuplicate();
 });
 
-// ========= 중복 체크 & 상태 자동 적용 =========
+// ==============================
+// 서버 중복 체크
+// ==============================
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
@@ -177,10 +185,8 @@ function checkDuplicate(){
       statusBox.classList.remove("hidden");
 
       if(d.status){
-        // 기존 데이터 있음 → 기존 상태 표시
         selectedStatus = d.data === "완료" ? "완료" : "미완료";
       } else {
-        // 기존 데이터 없음 → 기본값: "미완료" 자동 선택
         selectedStatus = "미완료";
       }
 
@@ -189,7 +195,9 @@ function checkDuplicate(){
     .catch(err => console.error("중복 체크 오류:", err));
 }
 
-// ========= 저장 =========
+// ==============================
+// 저장
+// ==============================
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
@@ -200,7 +208,7 @@ saveBtn.onclick = () => {
     date: dateInput.value,
     period: periodSelect.value,
     item: itemSelect.value,
-    status: getStatus()   // '' 가능 → Apps Script에서 삭제
+    status: selectedStatus
   };
 
   fetch(BASE_URL, {
@@ -215,43 +223,53 @@ saveBtn.onclick = () => {
     .catch(err => console.error("저장 오류:", err));
 };
 
-// ========== URL 파라미터 자동 세팅 ==========
-// 실제 데이터가 있는 경우 → 해당 날짜 반영
-// 빈셀 클릭 시 → month의 1일로 설정
+// ==============================
+// URL 파라미터 자동 세팅
+// ==============================
 window.onload = () => {
-  const params = new URLSearchParams(window.location.search);
-  let date = params.get("date");  // YYYY-MM-DD
-  const period = params.get("period");
-  const item = params.get("item");
+  const params = new URLSearchParams(location.search);
 
-  // 빈 값이면 오늘 날짜 → 웹폼 열때 기본
-  if(!date){
-    date = new Date().toISOString().split("T")[0];
-  }
+  let date   = params.get("date");
+  let period = params.get("period");
+  let item   = params.get("item");
+  let status = params.get("status");   // ★ 추가됨
 
-  dateInput.value = date;
+  // 날짜값 비어있으면 오늘이 아니라 '그대로 비워둠'
+  if(date) dateInput.value = date;
 
+  // 주기 반영
   if(period){
     periodSelect.value = period;
+
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-    
     itemsMap[period].forEach(i=>{
-      const op = document.createElement("option");
-      op.value = i; 
-      op.textContent = i;
+      const op=document.createElement("option");
+      op.value=i;
+      op.textContent=i;
       itemSelect.appendChild(op);
     });
-
     itemBox.classList.remove("hidden");
   }
 
+  // 항목 반영
   if(item){
     itemSelect.value = item;
-    statusBox.classList.add("hidden");
+  }
+
+  // ======== ★ URL 파라미터 status 반영 (가장 중요) ========
+  if(status === "완료" || status === "미완료"){
+    selectedStatus = status;
+    statusBox.classList.remove("hidden");
+    updateStatusUI();
+  }
+
+  // ======== 항목이 있을 경우 → 실제 데이터 중복 체크 ========
+  if(item){
     checkDuplicate();
   }
 };
 </script>
+
 
 </body>
 </html>
