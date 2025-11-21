@@ -1,32 +1,50 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>정기검증 월별 관리</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>정기검증 취합 (월별)</title>
 <style>
 body { font-family: Arial, sans-serif; margin:16px; }
 h2 { text-align:center; margin-bottom:8px; }
+.controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; }
+button { padding:6px 10px; border-radius:6px; border:1px solid #888; background:#fff; cursor:pointer; }
 table { width:100%; border-collapse: collapse; margin-top:12px; }
 th, td { border:1px solid #ccc; padding:8px; text-align:center; }
 th { background:#f5f5f5; }
-td.clickable { cursor:pointer; text-decoration:underline; font-size:18px; font-weight:bold; }
+td.clickable { cursor: pointer; text-decoration: underline; font-size: 16px; font-weight: bold; }
 .small { font-size:12px; color:#666; }
-.header-row { background:#fafafa; }
 </style>
 </head>
 <body>
 
-<h2>정기검증 월별 관리</h2>
+<h2>정기검증 취합 (월별)</h2>
 
-<table id="statusTable">
-  <thead id="tableHead"></thead>
+<div class="controls">
+  <label for="yearSelect">년도:</label>
+  <select id="yearSelect"></select>
+  <button id="loadBtn">조회</button>
+</div>
+
+<table id="monthStatusTable">
+  <thead>
+    <tr>
+      <th>월</th>
+      <th>품질검사</th>
+      <th>탱크청소</th>
+      <th>에어필터</th>
+      <th>지하수검사</th>
+      <th>검교정</th>
+      <th>유효성평가</th>
+    </tr>
+  </thead>
   <tbody></tbody>
 </table>
-<div class="small" id="note">●=완료, ○=미완료. 클릭 시 상세 입력폼 열림.</div>
+
+<div class="small" id="note">● = 완료, ○ = 미완료. 셀 클릭 시 입력폼이 새창으로 열립니다.</div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxmwZCw15c2ZZbF5oX-oXZTL4rRKP2b7t_Qn2_M7Ro0LQVJFTkmikzi82EuY8vypOKWsA/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzer90uY5RJoU-AYu4wlxxRZeuEg1PSdlOXOWPwRYoQBZikNUkd8cynDiqJAasI8dKc7g/exec";
 
 const CELL_MAP_MONTH = [
   { period: "분기", item: "품질검사" },
@@ -37,63 +55,68 @@ const CELL_MAP_MONTH = [
   { period: "연간", item: "유효성평가" }
 ];
 
-const tbody = document.querySelector("#statusTable tbody");
-const tableHead = document.querySelector("#tableHead");
+const tbody = document.querySelector("#monthStatusTable tbody");
+const yearSelect = document.getElementById("yearSelect");
 
-function convertStatus(status){ return status==='완료'?'●':status==='미완료'?'○':''; }
+// URL 파라미터에서 year 받기
+const params = new URLSearchParams(location.search);
+let currentYear = parseInt(params.get("year")) || new Date().getFullYear();
 
-function buildMonthHead(){
-  tableHead.innerHTML='';
-  const tr1 = document.createElement('tr');
-  tr1.innerHTML=`<th>월</th><th colspan="1">분기</th><th colspan="2">반기</th><th colspan="3">연간</th>`;
-  const tr2 = document.createElement('tr');
-  tr2.innerHTML=`<th></th><th>품질검사</th><th>탱크청소</th><th>에어필터</th><th>지하수검사</th><th>검교정</th><th>유효성평가</th>`;
-  tableHead.appendChild(tr1);
-  tableHead.appendChild(tr2);
+// 년도 드롭다운 생성 (현재 ±5)
+for(let y=currentYear-5;y<=currentYear+5;y++){
+  const opt = document.createElement("option");
+  opt.value=y; opt.textContent=y;
+  if(y===currentYear) opt.selected=true;
+  yearSelect.appendChild(opt);
 }
 
+// 데이터 불러오기
 async function loadMonthData(year){
   tbody.innerHTML=`<tr><td colspan="7">불러오는 중...</td></tr>`;
   try{
     const resp = await fetch(`${BASE_URL}?mode=data_month&year=${year}`);
     const json = await resp.json();
-    if(!json.success) throw new Error(json.error||'로드 실패');
-    renderMonthTable(json.data, year);
-  }catch(e){
-    tbody.innerHTML=`<tr><td colspan="7">오류: ${e.message}</td></tr>`;
-    console.error(e);
+    if(!json.success) throw new Error(json.error || '데이터 로드 실패');
+    renderMonthTable(json.data);
+  }catch(err){
+    tbody.innerHTML=`<tr><td colspan="7">오류: ${err.message}</td></tr>`;
   }
 }
 
-function renderMonthTable(data, year){
-  buildMonthHead();
+// 테이블 렌더링
+function renderMonthTable(data){
   tbody.innerHTML='';
-  data.forEach(d=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${d.month}월</td>`;
+  for(let m=1;m<=12;m++){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${m}월</td>`;
+    const monthData=data.filter(r=>{
+      const [ry,rm]=r.date.split('-').map(Number);
+      return ry===currentYear && rm===m;
+    });
     CELL_MAP_MONTH.forEach(cell=>{
-      const td = document.createElement('td');
+      const td=document.createElement('td');
       td.classList.add('clickable');
-      const matched = d.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-      td.textContent = convertStatus(matched?.status);
-      td.onclick = ()=> openForm(`${year}-${String(d.month).padStart(2,'0')}-01`, cell.period, cell.item);
+      const matched=monthData.find(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
+      if(matched){
+        const s=matched.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
+        td.textContent=s.status==='완료'?'●':s.status==='미완료'?'○':'';
+      }
+      td.onclick=()=>{
+        const firstDate = `${currentYear}-${String(m).padStart(2,'0')}-01`;
+        const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${firstDate}&period=${encodeURIComponent(cell.period)}&item=${encodeURIComponent(cell.item)}`;
+        window.open(url,'_blank');
+      };
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
-  });
+  }
 }
 
-function openForm(dateStr, period, item){
-  const url=`https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
-  window.open(url,'_blank');
-}
+document.getElementById("loadBtn").addEventListener('click',()=>loadMonthData(parseInt(yearSelect.value)));
+yearSelect.addEventListener('change',()=>currentYear=parseInt(yearSelect.value));
 
-function init(){
-  const year = new Date().getFullYear();
-  loadMonthData(year);
-}
-
-window.onload = init;
+// 초기 로딩
+loadMonthData(currentYear);
 </script>
 
 </body>
