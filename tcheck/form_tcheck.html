@@ -109,8 +109,8 @@ function getMonthDates(year, month){
   return dates;
 }
 
-// 데이터 불러오기
-async function loadData(year, month){
+// 데이터 불러오기 (연도 전체)
+async function loadData(year){
   tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
   try{
     const url = `${BASE_URL}?mode=data&year=${year}`; // month 제거
@@ -119,8 +119,9 @@ async function loadData(year, month){
     if (!json.success) throw new Error(json.error || '데이터 로드 실패');
     lastLoadedData = json.data;
 
-    if(mode === 'day') renderDayTable(json.data, year, month);
-    else renderMonthTable(json.data, year); // month 제거
+    if(mode === 'day') renderDayTable(json.data, year, currentMonth);
+    else renderMonthTable(json.data, year);
+
   }catch(err){
     tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
     console.error(err);
@@ -193,7 +194,6 @@ function buildMonthHead(){
   tableHead.appendChild(tr2);
 }
 
-// ★ 월별 모드 클릭 시 실제 날짜 불러오기 ★
 function renderMonthTable(data, year){
   buildMonthHead();
   tbody.innerHTML = '';
@@ -224,7 +224,7 @@ function renderMonthTable(data, year){
         });
         td.textContent = hasComplete ? '●' : '○';
       } else {
-        td.textContent = ''; // 데이터 없는 경우 공백
+        td.textContent = '';
       }
 
       td.onclick = ()=>{
@@ -246,13 +246,7 @@ function renderMonthTable(data, year){
     tbody.appendChild(tr);
   }
 }
-// monthInput 변경 이벤트에서 loadData 호출 시 month 제거
-monthInput.addEventListener('change', ()=>{
-  const [y, m] = monthInput.value.split('-').map(Number);
-  currentYear = y;
-  currentMonth = m;
-  loadData(currentYear); // month 제거
-});
+
 //
 // ------------------- FORM OPEN -------------------
 function openForm(dateStr, period, item){
@@ -271,7 +265,7 @@ function changeMonth(delta){
   currentYear = newYear;
   currentMonth = newMonth;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-  loadData(currentYear, currentMonth);
+  loadData(currentYear);
 }
 
 //
@@ -285,7 +279,7 @@ function setMode(newMode){
     monthModeBtn.classList.add('active');
     dayModeBtn.classList.remove('active');
   }
-  loadData(currentYear, currentMonth);
+  loadData(currentYear);
 }
 
 //
@@ -304,13 +298,13 @@ function init(){
     const [y,m] = monthInput.value.split('-').map(Number);
     currentYear = y;
     currentMonth = m;
-    loadData(currentYear, currentMonth);
+    loadData(currentYear);
   });
 
   dayModeBtn.addEventListener('click', ()=> setMode('day'));
   monthModeBtn.addEventListener('click', ()=> setMode('month'));
 
-  loadData(currentYear, currentMonth);
+  loadData(currentYear);
 }
 
 window.onload = init;
