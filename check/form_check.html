@@ -132,8 +132,7 @@ function getStatus() {
 
 // ====== 날짜 변경 시 ======
 dateInput.addEventListener("change", () => {
-  // 날짜는 사용자가 입력/수정한 값을 유지하도록 한다.
-  // 단, 날짜를 변경하면 다른 입력(주기/항목/상태)은 초기화한다.
+  // 날짜 변경 시 다른 입력(주기/항목/상태) 초기화
   resetForm();
 });
 
@@ -166,7 +165,6 @@ itemSelect.addEventListener("change", () => {
 });
 
 // ========= 중복 체크 & 상태 자동 적용 =========
-// ========= 중복 체크 & 상태 자동 적용 =========
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
 
@@ -190,8 +188,6 @@ function checkDuplicate(){
     .catch(err => console.error("중복 체크 오류:", err));
 }
 
-
-
 // ========= 저장 =========
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
@@ -213,22 +209,26 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
-
-      dateInput.value = new Date().toISOString().split("T")[0];
       resetForm();
     })
     .catch(err => console.error("저장 오류:", err));
 };
 
-
 // ========== URL 파라미터 자동 세팅 ==========
+// 실제 데이터가 있는 경우 → 해당 날짜 반영
+// 빈셀 클릭 시 → month의 1일로 설정
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
-  const date = params.get("date");
+  let date = params.get("date");  // YYYY-MM-DD
   const period = params.get("period");
   const item = params.get("item");
 
-  dateInput.value = date || new Date().toISOString().split("T")[0];
+  // 빈 값이면 오늘 날짜 → 웹폼 열때 기본
+  if(!date){
+    date = new Date().toISOString().split("T")[0];
+  }
+
+  dateInput.value = date;
 
   if(period){
     periodSelect.value = period;
@@ -251,6 +251,7 @@ window.onload = () => {
   }
 };
 </script>
+
 
 </body>
 </html>
