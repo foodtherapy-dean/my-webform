@@ -37,7 +37,7 @@
 
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxXHby92qoccnlrQ1t8mNyq2jEUTM3hn8TnywpbeU2KXHs6NWZy7wHkkRm1uoxrPm3H7g/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbXHby92qoccnlrQ1t8mNyq2jEUTM3hn8TnywpbeU2KXHs6NWZy7wHkkRm1uoxrPm3H7g/exec";
 
 const CELL_MAP_MONTH = [
   { period: "분기", item: "품질검사" },
@@ -52,7 +52,6 @@ const tbody = document.querySelector("#statusTable tbody");
 const tableHead = document.getElementById("tableHead");
 const yearInput = document.getElementById("yearInput");
 const loadBtn = document.getElementById("loadBtn");
-
 
 // ============================
 // 헤더 빌드
@@ -76,7 +75,6 @@ function buildHead() {
   `;
 }
 
-
 // ============================
 // 데이터 로드
 // ============================
@@ -96,7 +94,6 @@ async function loadData(year) {
     tbody.innerHTML = `<tr><td colspan="7">오류: ${err.message}</td></tr>`;
   }
 }
-
 
 // ============================
 // 테이블 렌더링
@@ -122,14 +119,17 @@ function renderTable(data) {
         status?.status === "미완료" ? "○" :
         "";
 
-      // 클릭 시 값 전달 (날짜·상태 포함)
-      td.onclick = () => openForm(
-        m.month,
-        cell.period,
-        cell.item,
-        status?.date || null,
-        status?.status || null
-      );
+      // 클릭 시 값 전달 (실제 날짜 포함)
+      td.onclick = () => {
+        let date = status?.date;
+        if (!date) {
+          // 날짜 없으면 해당 월의 마지막 날짜를 기준으로 YYYY-MM-DD 생성
+          const year = parseInt(yearInput.value, 10);
+          const mm = String(m.month).padStart(2, "0");
+          date = `${year}-${mm}-01`; // 월 첫 날 기본
+        }
+        openForm(m.month, cell.period, cell.item, date, status?.status || null);
+      };
 
       tr.appendChild(td);
     });
@@ -138,37 +138,20 @@ function renderTable(data) {
   });
 }
 
-
 // ============================
 // 입력 폼 열기 (날짜·상태 포함)
 // ============================
 function openForm(month, period, item, date, status) {
-
-  const year = parseInt(yearInput.value, 10);
-  const mm = String(month).padStart(2, "0");
-
-  // 데이터가 없는 경우 → 1일로 세팅
-  if (!date) {
-    date = `${year}-${mm}-01`;
-  } else {
-    // 데이터가 있는 경우 → 시트 날짜 그대로 사용
-    // date는 'YYYY-MM-DD' 형식이어야 합니다.
-  }
-
-  // 상태도 없으면 미완료 자동 지정
-  if (!status) status = "미완료";
-
   const url =
     `https://foodtherapy-dean.github.io/my-webform/check/form_check.html` +
     `?month=${month}` +
     `&period=${encodeURIComponent(period)}` +
     `&item=${encodeURIComponent(item)}` +
     `&date=${encodeURIComponent(date)}` +
-    `&status=${encodeURIComponent(status)}`;
+    `&status=${encodeURIComponent(status || "미완료")}`;
 
   window.open(url, "_blank");
 }
-
 
 // ============================
 // 초기화 (자동조회)
