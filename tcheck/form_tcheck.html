@@ -120,7 +120,7 @@ async function loadData(year, month){
     lastLoadedData = json.data;
 
     if(mode === 'day') renderDayTable(json.data, year, month);
-    else renderMonthTable(json.data, year, month);
+    else renderMonthTable(json.data, year);
 
   }catch(err){
     tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
@@ -134,10 +134,8 @@ function buildDayHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
   tr1.innerHTML = `<th rowspan="2">날짜</th><th rowspan="2">요일</th><th colspan="2">주간</th><th colspan="2">월간</th>`;
-  
   const tr2 = document.createElement('tr');
   tr2.innerHTML = `<th>방재점검</th><th>기타청소</th><th>CCP검증</th><th>위생교육</th>`;
-  
   tableHead.appendChild(tr1);
   tableHead.appendChild(tr2);
 }
@@ -186,15 +184,13 @@ function buildMonthHead(){
   tableHead.innerHTML = '';
   const tr1 = document.createElement('tr');
   tr1.innerHTML = `<th rowspan="2">월</th><th colspan="1">분기</th><th colspan="2">반기</th><th colspan="3">연간</th>`;
-  
   const tr2 = document.createElement('tr');
   tr2.innerHTML = `<th>품질검사</th><th>탱크청소</th><th>에어필터</th><th>지하수검사</th><th>검교정</th><th>유효성평가</th>`;
-  
   tableHead.appendChild(tr1);
   tableHead.appendChild(tr2);
 }
 
-// ★ 월별 모드 클릭 시 실제 날짜 불러오기 ★
+// 월별 모드: 연도 전체 표시, 각 월 데이터 확인
 function renderMonthTable(data, year){
   buildMonthHead();
   tbody.innerHTML = '';
@@ -207,14 +203,13 @@ function renderMonthTable(data, year){
       const td = document.createElement('td');
       td.classList.add('clickable');
 
-      // 해당 연도 & 해당 월(m) 데이터 필터
+      // 현재 월(m)에 해당하는 데이터 찾기
       const monthData = data.filter(r=>{
         if(!r.date) return false;
         const [ry, rm] = r.date.split('-').map(Number);
         return ry === year && rm === m;
       });
 
-      // period+item 매칭
       const matchedData = monthData.filter(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
 
       if(matchedData.length > 0){
@@ -227,10 +222,8 @@ function renderMonthTable(data, year){
         td.textContent = '';
       }
 
-      // 클릭 시: 해당 월에 존재하는 실제 날짜 사용, 없으면 1일
       td.onclick = ()=>{
         if(matchedData.length > 0){
-          // 실제 데이터 중 첫 번째 날짜 사용
           openForm(matchedData[0].date, cell.period, cell.item);
         } else {
           openForm(`${year}-${String(m).padStart(2,'0')}-01`, cell.period, cell.item);
@@ -243,7 +236,6 @@ function renderMonthTable(data, year){
     tbody.appendChild(tr);
   }
 }
-
 
 //
 // ------------------- FORM OPEN -------------------
@@ -265,14 +257,9 @@ function changeMonth(delta){
   currentMonth = newMonth;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
 
-  // 월 변경 시 자동으로 일별 모드로 전환
-  mode = 'day';  // 모드 상태를 먼저 변경
-  dayModeBtn.classList.add('active');
-  monthModeBtn.classList.remove('active');
-
-  loadData(currentYear, currentMonth);
+  // 월 변경 시 일별 모드로 전환
+  setMode('day');
 }
-
 
 //
 // ------------------- MODE SWITCH -------------------
