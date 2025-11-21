@@ -259,13 +259,16 @@ function openForm(dateStr, period, item){
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
+
   if(newMonth < 1){ newMonth = 12; newYear -= 1; }
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
 
   currentYear = newYear;
   currentMonth = newMonth;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-  loadData(currentYear, currentMonth);
+
+  // 월 변경 시 자동으로 일별 모드 활성화
+  setMode('day');
 }
 
 //
