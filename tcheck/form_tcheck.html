@@ -49,9 +49,9 @@ td.saturday { background:#e9f2ff; }
 <div id="note" class="small">테이블의 ● = 완료, ○ = 미완료. 셀 클릭 시 입력폼이 새창으로 열립니다.</div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwJIe_i7GGt7l7bAznjEcVOuZAuzubDpGb42B0Yzw8aD9Aif9ZnvcJdvXX_cxVuxNDMsw/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyclk8LGy3zOovDbmQBmvloAjcs7zwadGbsTIH3eVyTqJCOoy3uYgPxgu5Kwi80K0zhFQ/exec";
 
-// Day-mode CELL_MAP
+// Day-mode CELL_MAP (주간/월간)
 const CELL_MAP_DAY = [
   { period: "주간", item: "방재점검" },
   { period: "주간", item: "기타청소" },
@@ -59,7 +59,7 @@ const CELL_MAP_DAY = [
   { period: "월간", item: "위생교육" }
 ];
 
-// Month-mode items
+// Month-mode items (분기1, 반기2, 연간3)
 const CELL_MAP_MONTH = [
   { period: "분기", item: "품질검사" },
   { period: "반기", item: "탱크청소" },
@@ -109,18 +109,18 @@ function getMonthDates(year, month){
   return dates;
 }
 
-// 데이터 불러오기 (연도 단위)
-async function loadData(year){
+// 데이터 불러오기
+async function loadData(year, month){
   tbody.innerHTML = `<tr><td colspan="8">불러오는 중...</td></tr>`;
   try{
-    const url = `${BASE_URL}?mode=data&year=${year}`; // month 제거
+    const url = `${BASE_URL}?mode=data&year=${year}&month=${month}`;
     const resp = await fetch(url);
     const json = await resp.json();
     if (!json.success) throw new Error(json.error || '데이터 로드 실패');
     lastLoadedData = json.data;
 
-    if(mode === 'day') renderDayTable(lastLoadedData, currentYear, currentMonth);
-    else renderMonthTable(lastLoadedData, currentYear);
+    if(mode === 'day') renderDayTable(json.data, year, month);
+    else renderMonthTable(json.data, year, month);
 
   }catch(err){
     tbody.innerHTML = `<tr><td colspan="8">오류: ${err.message}</td></tr>`;
@@ -194,28 +194,32 @@ function buildMonthHead(){
   tableHead.appendChild(tr2);
 }
 
-function renderMonthTable(data, year){
+// ★ 월별 모드 클릭 시 실제 날짜 불러오기 ★
+function renderMonthTable(data, year, month){
   buildMonthHead();
   tbody.innerHTML = '';
 
   for(let m=1; m<=12; m++){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${m}월</td>`;
+    const ym = `${year}-${String(m).padStart(2,'0')}`;
 
     CELL_MAP_MONTH.forEach(cell=>{
       const td = document.createElement('td');
       td.classList.add('clickable');
 
-      // 해당 월 데이터 필터링
+      // 해당월 데이터 필터링
       const monthData = data.filter(r=>{
         if(!r.date) return false;
         const [ry, rm] = r.date.split('-').map(Number);
         return ry === year && rm === m;
       });
 
+      // 해당 항목(period+item) 데이터 찾기
       const matchedData = monthData.filter(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
 
       if(matchedData.length > 0){
+        // 완료가 하나라도 있으면 ●, 모두 미완료면 ○
         const hasComplete = matchedData.some(r=>{
           const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
           return s?.status === '완료';
@@ -225,12 +229,18 @@ function renderMonthTable(data, year){
         td.textContent = '';
       }
 
+      // 클릭 시: 완료 데이터 우선, 없으면 미완료, 없으면 월 1일
       td.onclick = ()=>{
         if(matchedData.length > 0){
-          // 실제 존재하는 첫 번째 날짜
-          openForm(matchedData[0].date, cell.period, cell.item);
+          // 완료 있는 데이터 우선
+          const completeData = matchedData.filter(r=>{
+            const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
+            return s?.status === '완료';
+          });
+          const firstDate = completeData.length > 0 ? completeData[0].date : matchedData[0].date;
+          openForm(firstDate, cell.period, cell.item);
         } else {
-          openForm(`${year}-${String(m).padStart(2,'0')}-01`, cell.period, cell.item);
+          openForm(`${ym}-01`, cell.period, cell.item);
         }
       };
 
@@ -253,20 +263,13 @@ function openForm(dateStr, period, item){
 function changeMonth(delta){
   let newMonth = currentMonth + delta;
   let newYear = currentYear;
-
   if(newMonth < 1){ newMonth = 12; newYear -= 1; }
   if(newMonth > 12){ newMonth = 1; newYear += 1; }
 
   currentYear = newYear;
   currentMonth = newMonth;
   monthInput.value = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-
-  // 월 변경 시 자동 일별 모드
-  mode = 'day';
-  dayModeBtn.classList.add('active');
-  monthModeBtn.classList.remove('active');
-
-  loadData(currentYear);
+  loadData(currentYear, currentMonth);
 }
 
 //
@@ -280,7 +283,7 @@ function setMode(newMode){
     monthModeBtn.classList.add('active');
     dayModeBtn.classList.remove('active');
   }
-  loadData(currentYear);
+  loadData(currentYear, currentMonth);
 }
 
 //
@@ -299,18 +302,17 @@ function init(){
     const [y,m] = monthInput.value.split('-').map(Number);
     currentYear = y;
     currentMonth = m;
-    loadData(currentYear);
+    loadData(currentYear, currentMonth);
   });
 
   dayModeBtn.addEventListener('click', ()=> setMode('day'));
   monthModeBtn.addEventListener('click', ()=> setMode('month'));
 
-  loadData(currentYear);
+  loadData(currentYear, currentMonth);
 }
 
 window.onload = init;
 </script>
-
 
 
 </body>
