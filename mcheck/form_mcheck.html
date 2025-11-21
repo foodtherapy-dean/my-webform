@@ -28,24 +28,7 @@ td.clickable { cursor:pointer; text-decoration: underline; font-weight:bold; }
 </div>
 
 <table id="statusTable">
-  <thead id="tableHead">
-    <tr>
-      <th rowspan="2">월</th>
-      <th>분기</th>
-      <th colspan="2">반기</th>
-      <th colspan="3">연간</th>
-    </tr>
-    <tr>
-      <th>품질검사</th>
-      <th>탱크청소</th>
-      <th>에어필터</th>
-      <th>지하수검사</th>
-      <th>검교정</th>
-      <th>유효성평가</th>
-    </tr>
-  </thead>
-
-  <!-- ★★★★★ 문제 해결: tbody 추가 ★★★★★ -->
+  <thead id="tableHead"></thead>
   <tbody></tbody>
 </table>
 
@@ -53,6 +36,7 @@ td.clickable { cursor:pointer; text-decoration: underline; font-weight:bold; }
 
 <script>
 const BASE_URL="https://script.google.com/macros/s/AKfycbxXHby92qoccnlrQ1t8mNyq2jEUTM3hn8TnywpbeU2KXHs6NWZy7wHkkRm1uoxrPm3H7g/exec";
+
 const CELL_MAP_MONTH=[
   { period:"분기", item:"품질검사" },
   { period:"반기", item:"탱크청소" },
@@ -61,70 +45,124 @@ const CELL_MAP_MONTH=[
   { period:"연간", item:"검교정" },
   { period:"연간", item:"유효성평가" }
 ];
+
 const tbody=document.querySelector("#statusTable tbody");
 const tableHead=document.querySelector("#tableHead");
 const yearInput=document.getElementById("yearInput");
 const loadBtn=document.getElementById("loadBtn");
 
-// 헤더
+
+// ==========================
+// ✔ 헤더 생성(월 열 rowspan 정상 적용)
+// ==========================
 function buildHead(){
   tableHead.innerHTML="";
+
+  // 1행
   const tr1=document.createElement("tr");
-  tr1.innerHTML=`<th>월</th><th>분기</th><th colspan="2">반기</th><th colspan="3">연간</th>`;
+  tr1.innerHTML = `
+    <th rowspan="2">월</th>
+    <th>분기</th>
+    <th colspan="2">반기</th>
+    <th colspan="3">연간</th>
+  `;
+
+  // 2행
   const tr2=document.createElement("tr");
-  tr2.innerHTML=`<th>품질검사</th><th>탱크청소</th><th>에어필터</th><th>지하수검사</th><th>검교정</th><th>유효성평가</th>`;
+  tr2.innerHTML = `
+    <th>품질검사</th>
+    <th>탱크청소</th>
+    <th>에어필터</th>
+    <th>지하수검사</th>
+    <th>검교정</th>
+    <th>유효성평가</th>
+  `;
+
   tableHead.appendChild(tr1);
   tableHead.appendChild(tr2);
 }
 
+
+// ==========================
 // 데이터 로드
+// ==========================
 async function loadData(year){
-  tbody.innerHTML=`<tr><td colspan="7">불러오는 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7">불러오는 중...</td></tr>`;
+
   try{
     const url=`${BASE_URL}?mode=data_month&year=${year}`;
     const resp=await fetch(url);
     const json=await resp.json();
-    if(!json.success) throw new Error(json.message||"데이터 로드 실패");
+
+    if(!json.success) throw new Error(json.message || "데이터 로드 실패");
+
     renderTable(json.data);
+
   }catch(err){
     tbody.innerHTML=`<tr><td colspan="7">오류: ${err.message}</td></tr>`;
   }
 }
 
+
+// ==========================
 // 테이블 렌더링
+// ==========================
 function renderTable(data){
   buildHead();
-  tbody.innerHTML="";
+  tbody.innerHTML = "";
+
   data.forEach(m=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${m.month}월</td>`;
+
+    tr.innerHTML = `<td>${m.month}월</td>`;
+
     CELL_MAP_MONTH.forEach(cell=>{
       const td=document.createElement("td");
       td.classList.add("clickable");
-      const status=m.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-      td.textContent=status && status.status==="완료" ? "●" : status && status.status==="미완료" ? "○" : "";
-      td.onclick=()=>openForm(m.month, cell.period, cell.item);
+
+      const status = m.statusArray.find(
+        s => s.period===cell.period && s.item===cell.item
+      );
+
+      td.textContent =
+        status ? (status.status==="완료" ? "●" : "○") : "";
+
+      td.onclick = () => openForm(m.month, cell.period, cell.item);
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   });
 }
 
+
+// ==========================
 // 폼 열기
+// ==========================
 function openForm(month, period, item){
-  const url=`https://foodtherapy-dean.github.io/my-webform/check/form_check.html?month=${month}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
-  window.open(url,"_blank");
+  const url =
+    `https://foodtherapy-dean.github.io/my-webform/check/form_check.html` +
+    `?month=${month}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
+  window.open(url, "_blank");
 }
 
+
+// ==========================
 // 초기화
+// ==========================
 function init(){
-  const params=new URLSearchParams(location.search);
-  const year=params.get("year") || new Date().getFullYear();
-  yearInput.value=year;
+  const params = new URLSearchParams(location.search);
+  const year = params.get("year") || new Date().getFullYear();
+
+  yearInput.value = year;
   loadData(parseInt(year,10));
-  loadBtn.addEventListener("click",()=>loadData(parseInt(yearInput.value,10)));
+
+  loadBtn.addEventListener("click",()=>{
+    loadData(parseInt(yearInput.value,10));
+  });
 }
-window.onload=init;
+
+window.onload = init;
 </script>
 
 </body>
