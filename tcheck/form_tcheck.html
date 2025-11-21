@@ -133,7 +133,14 @@ function renderTable(data){
         const s=record.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
         td.textContent=convertStatus(s && s.status);
       }
-      td.onclick=()=>openForm(dateStr, cell.period, cell.item);
+      td.onclick = () => {
+  const statusObj = record?.statusArray?.find(
+    s => s.period === cell.period && s.item === cell.item
+  );
+  const status = statusObj?.status || "미완료";
+
+  openForm(dateStr, cell.period, cell.item, status);
+};
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -141,8 +148,14 @@ function renderTable(data){
 }
 
 // 폼 열기
-function openForm(dateStr, period, item){
-  const url=`https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${encodeURIComponent(period)}&item=${encodeURIComponent(item)}`;
+function openForm(dateStr, period, item, status){
+  const url =
+    `https://foodtherapy-dean.github.io/my-webform/check/form_check.html` +
+    `?date=${encodeURIComponent(dateStr)}` +
+    `&period=${encodeURIComponent(period)}` +
+    `&item=${encodeURIComponent(item)}` +
+    `&status=${encodeURIComponent(status)}`;
+
   window.open(url,"_blank");
 }
 
