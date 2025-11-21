@@ -206,29 +206,42 @@ function renderMonthTable(data, year, month){
   for(let m=1; m<=12; m++){
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${m}월</td>`;
+
     const ym = `${year}-${String(m).padStart(2,'0')}`;
 
     CELL_MAP_MONTH.forEach(cell=>{
       const td = document.createElement('td');
       td.classList.add('clickable');
 
-      // ★ 해당 월 전체 데이터 탐색 (날짜 무관, 월만 확인)
-      const found = data.find(r=>{
+      // 해당월 데이터 필터링
+      const monthData = data.filter(r=>{
         if(!r.date) return false;
         const [ry, rm] = r.date.split('-').map(Number);
-        return ry === year && rm === m && r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item);
+        return ry === year && rm === m;
       });
 
-      if(found){
-        const matched = found.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-        td.textContent = convertStatus(matched.status); // 완료→●, 미완료→○
+      // 해당 항목(period+item) 데이터 찾기
+      const matchedData = monthData.filter(r=>r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item));
+
+      if(matchedData.length > 0){
+        // 상태 집계: 완료가 하나라도 있으면 ●, 모두 미완료면 ○
+        const hasComplete = matchedData.some(r=>{
+          const s = r.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
+          return s?.status === '완료';
+        });
+        td.textContent = hasComplete ? '●' : '○';
       } else {
         td.textContent = '';
       }
 
+      // 클릭 시: 데이터가 있으면 실제 날짜, 없으면 1일
       td.onclick = ()=>{
-        if(found) openForm(found.date, cell.period, cell.item); // 실제 데이터 날짜
-        else openForm(`${ym}-01`, cell.period, cell.item); // 빈셀 → 1일
+        if(matchedData.length > 0){
+          const firstDate = matchedData[0].date;
+          openForm(firstDate, cell.period, cell.item);
+        } else {
+          openForm(`${ym}-01`, cell.period, cell.item);
+        }
       };
 
       tr.appendChild(td);
@@ -237,6 +250,7 @@ function renderMonthTable(data, year, month){
     tbody.appendChild(tr);
   }
 }
+
 
 //
 // ------------------- FORM OPEN -------------------
