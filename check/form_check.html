@@ -190,14 +190,20 @@ function checkDuplicate(){
 
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
   fetch(url)
-    .then(r => r.json())
     .then(d => {
-      if(d.status && (d.data === "완료" || d.data === "미완료")){
-        selectedStatus = d.data;
-        statusBox.classList.remove("hidden");
-        updateStatusUI();
-      }
-    })
+  if(d.status){
+    const value = String(d.data).trim();
+    if(value === "완료" || value === "미완료"){
+      selectedStatus = value;
+      statusBox.classList.remove("hidden");
+      updateStatusUI();
+    }
+  } else {
+    selectedStatus = "미완료";
+    statusBox.classList.remove("hidden");
+    updateStatusUI();
+  }
+})
     .catch(err => console.error("중복 체크 오류:", err));
 }
 
