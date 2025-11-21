@@ -212,24 +212,23 @@ function renderMonthTable(data, year, month){
       const td = document.createElement('td');
       td.classList.add('clickable');
 
-      // ★ 해당 월 전체 데이터 탐색
+      // ★ 해당 월 전체 데이터 탐색 (날짜 무관, 월만 확인)
       const found = data.find(r=>{
         if(!r.date) return false;
-        if(!r.date.startsWith(ym)) return false;
-        return r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item);
+        const [ry, rm] = r.date.split('-').map(Number);
+        return ry === year && rm === m && r.statusArray?.some(s=>s.period===cell.period && s.item===cell.item);
       });
 
       if(found){
-        // 상태에 따라 ●/○ 표시
         const matched = found.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-        td.textContent = convertStatus(matched.status);  // 완료→●, 미완료→○
+        td.textContent = convertStatus(matched.status); // 완료→●, 미완료→○
       } else {
         td.textContent = '';
       }
 
       td.onclick = ()=>{
-        if(found) openForm(found.date, cell.period, cell.item);
-        else openForm(`${ym}-01`, cell.period, cell.item);
+        if(found) openForm(found.date, cell.period, cell.item); // 실제 데이터 날짜
+        else openForm(`${ym}-01`, cell.period, cell.item); // 빈셀 → 1일
       };
 
       tr.appendChild(td);
@@ -238,7 +237,6 @@ function renderMonthTable(data, year, month){
     tbody.appendChild(tr);
   }
 }
-
 
 //
 // ------------------- FORM OPEN -------------------
