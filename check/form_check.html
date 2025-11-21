@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼</title>
+
 <style>
 body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
 .header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff;
@@ -33,8 +34,8 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 .hidden { display:none; }
 </style>
 </head>
-<body>
 
+<body>
 <div class="header">정기검증 입력폼</div>
 
 <div class="content">
@@ -66,7 +67,7 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
     <label>점검상태</label>
     <div class="toggle-row">
       <div id="btnDone" class="toggle-btn">완료</div>
-      <div id="btnNot" class="toggle-btn active">미완료</div>
+      <div id="btnNot" class="toggle-btn">미완료</div>
     </div>
   </div>
 </div>
@@ -97,6 +98,7 @@ const btnNot       = document.getElementById("btnNot");
 const saveBtn      = document.getElementById("saveBtn");
 
 let selectedStatus = "";  // 현재 선택 상태
+let urlStatus = "";       // URL로 받은 상태 저장
 
 // ==============================
 // 상태 버튼 UI 갱신
@@ -107,67 +109,16 @@ function updateStatusUI() {
 }
 
 // ==============================
-// 폼 리셋
-// ==============================
-function resetForm(){
-  periodSelect.value = "";
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
-
-  selectedStatus = "";
-  updateStatusUI();
-}
-
-// ==============================
 // 상태 버튼 클릭
 // ==============================
-btnDone.onclick = () => {
-  selectedStatus = "완료";
-  updateStatusUI();
-};
-btnNot.onclick = () => {
-  selectedStatus = "미완료";
-  updateStatusUI();
-};
-
-// ==============================
-// 날짜 변경 시 → 폼 리셋
-// ==============================
-dateInput.addEventListener("change", () => {
-  resetForm();
-});
-
-// ==============================
-// 주기 선택 시
-// ==============================
-periodSelect.addEventListener("change", () => {
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  statusBox.classList.add("hidden");
-
-  const period = periodSelect.value;
-  if(!period){
-    itemBox.classList.add("hidden");
-    return;
-  }
-
-  itemsMap[period].forEach(item => {
-    const op = document.createElement("option");
-    op.value = item;
-    op.textContent = item;
-    itemSelect.appendChild(op);
-  });
-
-  itemBox.classList.remove("hidden");
-});
+btnDone.onclick = () => { selectedStatus = "완료"; updateStatusUI(); };
+btnNot.onclick  = () => { selectedStatus = "미완료"; updateStatusUI(); };
 
 // ==============================
 // 항목 선택 시 → 중복 체크
 // ==============================
 itemSelect.addEventListener("change", () => {
-  statusBox.classList.add("hidden");
   if(!itemSelect.value) return;
-
   checkDuplicate();
 });
 
@@ -184,15 +135,19 @@ function checkDuplicate(){
     .then(d => {
       statusBox.classList.remove("hidden");
 
-      if(d.status){
+      // URL 파라미터 status가 우선
+      if(urlStatus){
+        selectedStatus = urlStatus;
+      } 
+      else if(d.status){
         selectedStatus = d.data === "완료" ? "완료" : "미완료";
-      } else {
+      }
+      else {
         selectedStatus = "미완료";
       }
 
       updateStatusUI();
-    })
-    .catch(err => console.error("중복 체크 오류:", err));
+    });
 }
 
 // ==============================
@@ -218,9 +173,7 @@ saveBtn.onclick = () => {
     .then(r => r.json())
     .then(d => {
       alert(d.message);
-      resetForm();
-    })
-    .catch(err => console.error("저장 오류:", err));
+    });
 };
 
 // ==============================
@@ -229,18 +182,17 @@ saveBtn.onclick = () => {
 window.onload = () => {
   const params = new URLSearchParams(location.search);
 
-  let date   = params.get("date");
-  let period = params.get("period");
-  let item   = params.get("item");
-  let status = params.get("status");   // ★ 추가됨
+  const date   = params.get("date");
+  const period = params.get("period");
+  const item   = params.get("item");
+  urlStatus    = params.get("status");
 
-  // 날짜값 비어있으면 오늘이 아니라 '그대로 비워둠'
+  // 날짜
   if(date) dateInput.value = date;
 
-  // 주기 반영
+  // 주기
   if(period){
     periodSelect.value = period;
-
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
     itemsMap[period].forEach(i=>{
       const op=document.createElement("option");
@@ -251,25 +203,24 @@ window.onload = () => {
     itemBox.classList.remove("hidden");
   }
 
-  // 항목 반영
+  // 항목
   if(item){
     itemSelect.value = item;
   }
 
-  // ======== ★ URL 파라미터 status 반영 (가장 중요) ========
-  if(status === "완료" || status === "미완료"){
-    selectedStatus = status;
+  // 상태 (URL 기반 우선 적용)
+  if(urlStatus === "완료" || urlStatus === "미완료"){
+    selectedStatus = urlStatus;
     statusBox.classList.remove("hidden");
     updateStatusUI();
   }
 
-  // ======== 항목이 있을 경우 → 실제 데이터 중복 체크 ========
-  if(item){
+  // 마지막에 중복 체크
+  if(date && period && item){
     checkDuplicate();
   }
 };
 </script>
-
 
 </body>
 </html>
