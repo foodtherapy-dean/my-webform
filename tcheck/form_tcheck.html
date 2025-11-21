@@ -86,11 +86,11 @@ function convertStatus(s){
   return "";
 }
 
-// 테이블 헤더
+// 테이블 헤더 (1행: 그룹, 2행: 항목) - 날짜/요일은 rowspan=2
 function buildHead(){
   tableHead.innerHTML="";
   const tr1=document.createElement("tr");
-  tr1.innerHTML=`<th>날짜</th><th>요일</th><th colspan="2">주간</th><th colspan="2">월간</th>`;
+  tr1.innerHTML=`<th rowspan="2">날짜</th><th rowspan="2">요일</th><th colspan="2">주간</th><th colspan="2">월간</th>`;
   const tr2=document.createElement("tr");
   tr2.innerHTML=`<th>방재점검</th><th>기타청소</th><th>CCP검증</th><th>위생교육</th>`;
   tableHead.appendChild(tr1);
@@ -127,10 +127,11 @@ function renderTable(data){
     CELL_MAP_DAY.forEach(cell=>{
       const td=document.createElement("td");
       td.classList.add("clickable");
-      const record=data.find(r=>r.date===dateStr && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item));
+      // 안전하게 검사: statusArray 존재 여부 확인
+      const record = data.find(r=> r.date===dateStr && Array.isArray(r.statusArray) && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item));
       if(record){
         const s=record.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-        td.textContent=convertStatus(s.status);
+        td.textContent=convertStatus(s && s.status);
       }
       td.onclick=()=>openForm(dateStr, cell.period, cell.item);
       tr.appendChild(td);
