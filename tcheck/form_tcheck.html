@@ -32,9 +32,24 @@ td.saturday { background:#e9f2ff; }
   <button id="openMonthBtn">월별 보기</button>
 </div>
 
-<table id="statusTable">
-  <thead id="tableHead"></thead>
-  <tbody></tbody>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">날짜</th>
+      <th rowspan="2">요일</th>
+      <th colspan="2">주간</th>
+      <th colspan="2">월별</th>
+    </tr>
+    <tr>
+      <th>방재점검</th>
+      <th>기타청소</th>
+      <th>CCP검증</th>
+      <th>위생교육</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody">
+    <!-- 여기에 JS에서 날짜별 데이터 렌더링 -->
+  </tbody>
 </table>
 
 <div id="note" class="small">● = 완료, ○ = 미완료. 클릭 시 입력폼 새창 열림</div>
