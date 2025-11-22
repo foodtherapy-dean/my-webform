@@ -12,7 +12,7 @@ body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
   border-top:1px solid #ccc; z-index:100; text-align:center; }
 #saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px;
   background:#4caf50; color:#fff; cursor:pointer; }
-.content { padding:140px 16px 90px; } /* 상단 header 공간 확보 */
+.content { padding:100px 16px 90px; }
 .input-box { background:white; padding:14px; margin-top:10px; border-radius:12px;
   box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 label { font-size:18px; display:block; margin-bottom:6px; }
@@ -31,20 +31,6 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 }
 
 .hidden { display:none; }
-
-/* ============================= */
-/* 상단 년월 + 버튼 한 줄 구성 */
-.month-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
-.month-row input[type="month"] { flex:1; padding:10px; font-size:16px; border-radius:8px; border:1px solid #ccc; }
-.month-row button { padding:10px 16px; font-size:16px; border-radius:8px; border:none; background:#4caf50; color:white; cursor:pointer; }
-
-/* ============================= */
-/* 달력/테이블 토요일/일요일 표시 */
-.calendar-row { display:flex; }
-.calendar-row div { flex:1; text-align:center; padding:6px; border:1px solid #ddd; }
-.saturday { background:#e0f7fa; } /* 토요일 연청색 */
-.sunday   { background:#ffebee; } /* 일요일 연분홍 */
-.weekday  { background:#fff; }
 </style>
 </head>
 <body>
@@ -52,16 +38,6 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 <div class="header">정기검증 입력폼</div>
 
 <div class="content">
-
-  <!-- 년월 선택 + 월별 보기 버튼 한 줄 -->
-  <div class="month-row">
-    <button id="prevMonth">&lt;</button>
-    <input type="month" id="monthInput">
-    <button id="nextMonth">&gt;</button>
-    <button id="monthViewBtn">월별</button>
-  </div>
-
-  <!-- 기존 입력폼 -->
   <div class="input-box">
     <label>날짜</label>
     <input type="date" id="dateInput">
@@ -93,23 +69,6 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
       <div id="btnNot" class="toggle-btn active">미완료</div>
     </div>
   </div>
-
-  <!-- 예시 달력/표 -->
-  <div class="input-box">
-    <label>달력 예시</label>
-    <div class="calendar-row weekday"><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div><div>일</div></div>
-    <div class="calendar-row">
-      <div class="weekday">1</div>
-      <div class="weekday">2</div>
-      <div class="weekday">3</div>
-      <div class="weekday">4</div>
-      <div class="weekday">5</div>
-      <div class="saturday">6</div>
-      <div class="sunday">7</div>
-    </div>
-    <!-- 필요한 날짜 행 추가 -->
-  </div>
-
 </div>
 
 <div class="footer">
@@ -117,9 +76,6 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 </div>
 
 <script>
-// ==============================
-// 기존 스크립트 그대로 적용
-// ==============================
 const BASE_URL = "https://script.google.com/macros/s/AKfycbwND_y__FE73AHXjvWWX0LFIytR2deVJfGK6Qupp8s9UdRNLT_KawXdiwgkXX5bQ-8xFw/exec";
 
 const itemsMap = {
@@ -139,17 +95,21 @@ const btnDone      = document.getElementById("btnDone");
 const btnNot       = document.getElementById("btnNot");
 const saveBtn      = document.getElementById("saveBtn");
 
-let selectedStatus = "미완료";
+let selectedStatus = "미완료";  // 기본 상태는 미완료
 
+// ==============================
 // 상태 버튼 UI 갱신
+// ==============================
 function updateStatusUI() {
   btnDone.classList.toggle("active", selectedStatus === "완료");
   btnNot.classList.toggle("active", selectedStatus === "미완료");
 }
 
-// 폼 리셋
+// ==============================
+// 폼 리셋 (날짜 제외)
+// ==============================
 function resetForm(excludeDate = false){
-  if(!excludeDate) dateInput.value = new Date().toISOString().slice(0,10);
+  if(!excludeDate) dateInput.value = getToday();
 
   periodSelect.value = "";
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
@@ -160,26 +120,53 @@ function resetForm(excludeDate = false){
   updateStatusUI();
 }
 
+// ==============================
+// 오늘 날짜 반환 (YYYY-MM-DD)
+// ==============================
+function getToday(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+// ==============================
 // 상태 버튼 클릭
+// ==============================
 btnDone.onclick = () => { selectedStatus = "완료"; updateStatusUI(); };
 btnNot.onclick  = () => { selectedStatus = "미완료"; updateStatusUI(); };
 
-// 주기 선택
+// ==============================
+// 날짜 변경 시 → 폼 리셋
+// ==============================
+dateInput.addEventListener("change", () => {
+  resetForm(true); // 날짜는 그대로 유지
+});
+
+// ==============================
+// 주기 선택 시 → 항목 활성화
+// ==============================
 periodSelect.addEventListener("change", () => {
   const period = periodSelect.value;
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
   statusBox.classList.add("hidden");
-  if(!period) { itemBox.classList.add("hidden"); return; }
+
+  if(!period){
+    itemBox.classList.add("hidden");
+    return;
+  }
+
   itemsMap[period].forEach(item => {
     const op = document.createElement("option");
     op.value = item;
     op.textContent = item;
     itemSelect.appendChild(op);
   });
+
   itemBox.classList.remove("hidden");
 });
 
-// 항목 선택
+// ==============================
+// 항목 선택 시 → 상태창 표시
+// ==============================
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){
     statusBox.classList.add("hidden");
@@ -187,64 +174,102 @@ itemSelect.addEventListener("change", () => {
     updateStatusUI();
     return;
   }
-  statusBox.classList.add("hidden");
+  statusBox.classList.remove("hidden");
   selectedStatus = "미완료";
+  updateStatusUI();
+
+  // 중복 체크
   checkDuplicate();
 });
 
+// ==============================
 // 서버 중복 체크
+// ==============================
 function checkDuplicate(){
   if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
+
   const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      if(d.success && (d.data === "완료" || d.data === "미완료")){
+      if(d.status && (d.data === "완료" || d.data === "미완료")){
         selectedStatus = d.data;
-      } else {
-        selectedStatus = "미완료";
+        statusBox.classList.remove("hidden");
+        updateStatusUI();
       }
-      statusBox.classList.remove("hidden");
-      updateStatusUI();
     })
-    .catch(err => { console.error("중복 체크 오류:", err); statusBox.classList.remove("hidden"); selectedStatus="미완료"; updateStatusUI(); });
+    .catch(err => console.error("중복 체크 오류:", err));
 }
 
+// ==============================
 // 저장
+// ==============================
 saveBtn.onclick = () => {
   if(!dateInput.value){ alert("날짜 선택 필요"); return; }
   if(!periodSelect.value){ alert("주기 선택 필요"); return; }
   if(!itemSelect.value){ alert("항목 선택 필요"); return; }
 
-  const payload = { mode: "write", date: dateInput.value, period: periodSelect.value, item: itemSelect.value, status: selectedStatus };
+  const payload = {
+    mode: "write",
+    date: dateInput.value,
+    period: periodSelect.value,
+    item: itemSelect.value,
+    status: selectedStatus
+  };
 
-  fetch(BASE_URL, { method:"POST", body:JSON.stringify(payload) })
-    .then(r=>r.json()).then(d=>{ alert(d.message); resetForm(); })
-    .catch(err=>console.error("저장 오류:", err));
+  fetch(BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(d.message);
+    resetForm(); // 저장 후 모든 초기화 + 오늘 날짜
+  })
+  .catch(err => console.error("저장 오류:", err));
 };
 
+// ==============================
 // URL 파라미터 자동 세팅
+// ==============================
 window.onload = () => {
   const params = new URLSearchParams(location.search);
+
   const date   = params.get("date");
   const period = params.get("period");
   const item   = params.get("item");
   const status = params.get("status");
 
   if(date) dateInput.value = date;
-  else dateInput.value = new Date().toISOString().slice(0,10);
+  else dateInput.value = getToday(); // 단독 실행 시 오늘
 
   if(period){
     periodSelect.value = period;
     itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-    itemsMap[period].forEach(i=>{ const op=document.createElement("option"); op.value=i; op.textContent=i; itemSelect.appendChild(op); });
+    itemsMap[period].forEach(i=>{
+      const op = document.createElement("option");
+      op.value = i;
+      op.textContent = i;
+      itemSelect.appendChild(op);
+    });
     itemBox.classList.remove("hidden");
   }
 
-  if(item) itemSelect.value = item;
-  if(item) checkDuplicate();
+  if(item){
+    itemSelect.value = item;
+    statusBox.classList.remove("hidden");
+  }
+
+  if(status === "완료" || status === "미완료"){
+    selectedStatus = status;
+    statusBox.classList.remove("hidden");
+    updateStatusUI();
+  }
+
+  if(item){
+    checkDuplicate();
+  }
 };
 </script>
-
 </body>
 </html>
