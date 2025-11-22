@@ -165,7 +165,7 @@ periodSelect.addEventListener("change", () => {
 });
 
 // ==============================
-// 항목 선택 시 → 상태창 표시
+// 항목 선택 시 → 서버 확인 후 상태창 표시
 // ==============================
 itemSelect.addEventListener("change", () => {
   if(!itemSelect.value){
@@ -174,11 +174,12 @@ itemSelect.addEventListener("change", () => {
     updateStatusUI();
     return;
   }
-  statusBox.classList.remove("hidden");
-  selectedStatus = "미완료";
-  updateStatusUI();
 
-  // 중복 체크
+  // 상태 버튼은 서버 확인 후 보여줌
+  statusBox.classList.add("hidden");
+  selectedStatus = "미완료"; // 기본 상태
+
+  // 서버 중복 체크
   checkDuplicate();
 });
 
@@ -192,13 +193,23 @@ function checkDuplicate(){
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      if(d.status && (d.data === "완료" || d.data === "미완료")){
+      if(d.success && (d.data === "완료" || d.data === "미완료")){
         selectedStatus = d.data;
-        statusBox.classList.remove("hidden");
-        updateStatusUI();
+      } else {
+        selectedStatus = "미완료"; // 없으면 기본
       }
+
+      // 서버 확인 후 상태 버튼 표시
+      statusBox.classList.remove("hidden");
+      updateStatusUI();
     })
-    .catch(err => console.error("중복 체크 오류:", err));
+    .catch(err => {
+      console.error("중복 체크 오류:", err);
+      // 오류 시에도 버튼 표시
+      statusBox.classList.remove("hidden");
+      selectedStatus = "미완료";
+      updateStatusUI();
+    });
 }
 
 // ==============================
@@ -257,19 +268,13 @@ window.onload = () => {
 
   if(item){
     itemSelect.value = item;
-    statusBox.classList.remove("hidden");
-  }
-
-  if(status === "완료" || status === "미완료"){
-    selectedStatus = status;
-    statusBox.classList.remove("hidden");
-    updateStatusUI();
   }
 
   if(item){
-    checkDuplicate();
+    checkDuplicate(); // 서버 확인 후 상태 버튼 표시
   }
 };
 </script>
+
 </body>
 </html>
