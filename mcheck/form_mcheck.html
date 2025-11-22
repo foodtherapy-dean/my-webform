@@ -121,19 +121,21 @@ function renderTable(data) {
 
       // 클릭 시 값 전달 (실제 날짜 포함, 없으면 월 첫 날)
       td.onclick = () => {
-  let date = status?.date;
+        let date = status?.date;
 
-  // date가 존재하고, 문자열이라면 그대로 사용
-  if (date && typeof date === "string" && date.trim() !== "") {
-    // 그대로 사용
-  } else {
-    const year = parseInt(yearInput.value, 10);
-    const mm = String(m.month).padStart(2, "0");
-    date = `${year}-${mm}-01`; // 월 첫 날 기본
-  }
+        // date가 존재하면 ISO 문자열 처리
+        if (date && typeof date === "string" && date.trim() !== "") {
+          if (date.includes("T")) {
+            date = date.split("T")[0]; // YYYY-MM-DD만 추출
+          }
+        } else {
+          const year = parseInt(yearInput.value, 10);
+          const mm = String(m.month).padStart(2, "0");
+          date = `${year}-${mm}-01`; // 월 첫 날 기본
+        }
 
-  openForm(m.month, cell.period, cell.item, date, status?.status || null);
-};
+        openForm(m.month, cell.period, cell.item, date, status?.status || null);
+      };
 
       tr.appendChild(td);
     });
