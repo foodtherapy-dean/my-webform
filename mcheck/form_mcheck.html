@@ -120,17 +120,14 @@ function renderTable(data) {
         "";
 
       // 클릭 시 값 전달 (실제 날짜 포함)
-      td.onclick = () => {
-  // 데이터가 있을 경우 그대로 전달, 없으면 월 첫 날로 세팅
-  let date = status?.date || `${yearInput.value}-${String(m.month).padStart(2,"0")}-01`;
+   td.onclick = () => {
+  // 데이터가 있는 경우 그대로 전달, 없으면 월 첫 날로 기본
+  const year = parseInt(yearInput.value, 10);
+  const mm = String(m.month).padStart(2, "0");
+  const date = status?.date ? status.date : `${year}-${mm}-01`;
 
   openForm(m.month, cell.period, cell.item, date, status?.status || null);
 };
-        openForm(m.month, cell.period, cell.item, date, status?.status || null);
-      };
-
-      tr.appendChild(td);
-    });
 
     tbody.appendChild(tr);
   });
