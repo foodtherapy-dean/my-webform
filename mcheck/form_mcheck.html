@@ -121,12 +121,17 @@ function renderTable(data) {
 
       // 클릭 시 값 전달 (실제 날짜 포함, 없으면 월 첫 날)
       td.onclick = () => {
-        const year = parseInt(yearInput.value, 10);
-        const mm = String(m.month).padStart(2, "0");
-        const date = status?.date ? status.date : `${year}-${mm}-01`;
+  let date = status?.date;
 
-        openForm(m.month, cell.period, cell.item, date, status?.status || "미완료");
-      };
+  // date가 유효한 값이면 그대로, 아니면 월 첫 날로 초기화
+  if (!date || date.trim() === "") {
+    const year = parseInt(yearInput.value, 10);
+    const mm = String(m.month).padStart(2, "0");
+    date = `${year}-${mm}-01`; // 월 첫 날 기본
+  }
+
+  openForm(m.month, cell.period, cell.item, date, status?.status || null);
+};
 
       tr.appendChild(td);
     });
