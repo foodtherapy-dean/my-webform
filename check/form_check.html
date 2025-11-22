@@ -192,14 +192,18 @@ function checkDuplicate(){
   fetch(url)
     .then(r => r.json())
     .then(d => {
-      if(d.status && (d.data === "완료" || d.data === "미완료")){
+      // Apps Script JSON 구조: { success: true/false, data: "완료" or "미완료" }
+      if(d.success && (d.data === "완료" || d.data === "미완료")){
         selectedStatus = d.data;
-        statusBox.classList.remove("hidden");
-        updateStatusUI();
+      } else {
+        selectedStatus = "미완료"; // 없으면 기본
       }
+      statusBox.classList.remove("hidden");
+      updateStatusUI();
     })
     .catch(err => console.error("중복 체크 오류:", err));
 }
+
 
 // ==============================
 // 저장
