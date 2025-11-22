@@ -1,0 +1,23 @@
+﻿{
+  "name": "Total check",
+  "short_name": "정기체크",
+  "start_url": "/my-webform/tcheck/form_test.tcheckl",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "Ttotal.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Ttotal.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+
