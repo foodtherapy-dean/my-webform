@@ -7,29 +7,41 @@
 <style>
 body { font-family: Arial, sans-serif; margin:16px; }
 h2 { text-align:center; margin-bottom:8px; }
-.controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; }
-button { padding:6px 10px; border-radius:6px; border:1px solid #888; background:#fff; cursor:pointer; }
-button.active { background:#4caf50; color:#fff; border-color:#4caf50; }
+
+/* ===== 컨트롤 영역 한 줄로 배치 ===== */
+.controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.controls button { padding:6px 10px; border-radius:6px; border:1px solid #888; background:#fff; cursor:pointer; }
+.controls button.active { background:#4caf50; color:#fff; border-color:#4caf50; }
+.controls input[type="month"] { padding:6px 10px; border-radius:6px; border:1px solid #888; }
+
+/* ===== 테이블 스타일 ===== */
 table { width:100%; border-collapse: collapse; margin-top:12px; }
 th, td { border:1px solid #ccc; padding:8px; text-align:center; }
 th { background:#f5f5f5; }
 td.clickable { cursor: pointer; text-decoration: underline; font-size: 20px; font-weight: bold; }
-td.sunday { background:#ffecec; }
-td.saturday { background:#e9f2ff; }
+td.sunday, tr.sunday td { background:#ffecec; } /* 일요일 전체 행 */
+td.saturday, tr.saturday td { background:#e9f2ff; } /* 토요일 전체 행 */
 .small { font-size:12px; color:#666; }
 #note { text-align:center; margin-top:8px; color:#444; }
-@media (max-width:800px){ .controls{flex-direction:column;} table{font-size:12px} td.clickable{font-size:16px} }
+
+/* ===== 모바일 대응 ===== */
+@media (max-width:800px){ 
+  .controls{flex-direction:row; flex-wrap:wrap; justify-content:center;} 
+  table{font-size:12px} 
+  td.clickable{font-size:16px} 
+}
 </style>
 </head>
 <body>
 
 <h2>정기검증 취합 (일별)</h2>
 
+<!-- ===== 컨트롤 영역 (한 줄) ===== -->
 <div class="controls">
   <button id="prevMonth">&lt;</button>
   <input type="month" id="monthInput" />
   <button id="nextMonth">&gt;</button>
-  <button id="openMonthBtn">월별 보기</button>
+  <button id="openMonthBtn">월별</button>
 </div>
 
 <table id="statusTable">
@@ -86,7 +98,7 @@ function convertStatus(s){
   return "";
 }
 
-// 테이블 헤더 (1행: 그룹, 2행: 항목) - 날짜/요일은 rowspan=2
+// 테이블 헤더 (1행: 그룹, 2행: 항목)
 function buildHead(){
   tableHead.innerHTML="";
   const tr1=document.createElement("tr");
@@ -121,26 +133,27 @@ function renderTable(data){
     const dateStr=formatDate(d);
     const tr=document.createElement("tr");
     const wday=WEEKDAYS[d.getDay()];
+
+    // 토/일 전체 행 색 적용
     if(wday==="일") tr.classList.add("sunday");
     if(wday==="토") tr.classList.add("saturday");
+
     tr.innerHTML=`<td>${d.getDate()}</td><td>${wday}</td>`;
     CELL_MAP_DAY.forEach(cell=>{
       const td=document.createElement("td");
       td.classList.add("clickable");
-      // 안전하게 검사: statusArray 존재 여부 확인
       const record = data.find(r=> r.date===dateStr && Array.isArray(r.statusArray) && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item));
       if(record){
         const s=record.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
         td.textContent=convertStatus(s && s.status);
       }
       td.onclick = () => {
-  const statusObj = record?.statusArray?.find(
-    s => s.period === cell.period && s.item === cell.item
-  );
-  const status = statusObj?.status || "미완료";
-
-  openForm(dateStr, cell.period, cell.item, status);
-};
+        const statusObj = record?.statusArray?.find(
+          s => s.period === cell.period && s.item === cell.item
+        );
+        const status = statusObj?.status || "미완료";
+        openForm(dateStr, cell.period, cell.item, status);
+      };
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -155,7 +168,6 @@ function openForm(dateStr, period, item, status){
     `&period=${encodeURIComponent(period)}` +
     `&item=${encodeURIComponent(item)}` +
     `&status=${encodeURIComponent(status)}`;
-
   window.open(url,"_blank");
 }
 
