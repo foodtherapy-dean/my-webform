@@ -119,16 +119,13 @@ function renderTable(data) {
         status?.status === "미완료" ? "○" :
         "";
 
-      // 클릭 시 값 전달 (실제 날짜 포함)
-   td.onclick = () => {
-        let date = status?.date;
-        if (!date) {
-          // 날짜 없으면 해당 월의 마지막 날짜를 기준으로 YYYY-MM-DD 생성
-          const year = parseInt(yearInput.value, 10);
-          const mm = String(m.month).padStart(2, "0");
-          date = `${year}-${mm}-01`; // 월 첫 날 기본
-        }
-        openForm(m.month, cell.period, cell.item, date, status?.status || null);
+      // 클릭 시 값 전달 (실제 날짜 포함, 없으면 월 첫 날)
+      td.onclick = () => {
+        const year = parseInt(yearInput.value, 10);
+        const mm = String(m.month).padStart(2, "0");
+        const date = status?.date ? status.date : `${year}-${mm}-01`;
+
+        openForm(m.month, cell.period, cell.item, date, status?.status || "미완료");
       };
 
       tr.appendChild(td);
@@ -148,7 +145,7 @@ function openForm(month, period, item, date, status) {
     `&period=${encodeURIComponent(period)}` +
     `&item=${encodeURIComponent(item)}` +
     `&date=${encodeURIComponent(date)}` +
-    `&status=${encodeURIComponent(status || "미완료")}`;
+    `&status=${encodeURIComponent(status)}`;
 
   window.open(url, "_blank");
 }
@@ -171,6 +168,7 @@ function init() {
 
 window.onload = init;
 </script>
+
 
 </body>
 </html>
