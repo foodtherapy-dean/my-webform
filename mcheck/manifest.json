@@ -1,0 +1,23 @@
+﻿{
+  "name": "Total check",
+  "short_name": "월별체크",
+  "start_url": "/my-webform/mcheck/form_mcheck.tcheckl",
+  "display": "standalone",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "mcheck.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "mcheck.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+
