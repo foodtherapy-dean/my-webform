@@ -123,8 +123,10 @@ function renderTable(data) {
       td.onclick = () => {
   let date = status?.date;
 
-  // date가 유효한 값이면 그대로, 아니면 월 첫 날로 초기화
-  if (!date || date.trim() === "") {
+  // date가 존재하고, 문자열이라면 그대로 사용
+  if (date && typeof date === "string" && date.trim() !== "") {
+    // 그대로 사용
+  } else {
     const year = parseInt(yearInput.value, 10);
     const mm = String(m.month).padStart(2, "0");
     date = `${year}-${mm}-01`; // 월 첫 날 기본
