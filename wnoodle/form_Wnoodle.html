@@ -16,7 +16,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-footer { flex:0 0 auto; }
 #submitBtn { width:100%; font-size:1.8rem; padding:24px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; }
 .row { display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex-wrap:nowrap; }
-.label { flex:0 0 60px; font-weight:bold; font-size:1.4rem; cursor:pointer; }
+.label { flex:0 0 80px; font-weight:bold; font-size:1.4rem; cursor:pointer; }
 .btn { flex:1 1 0; min-width:0; padding:16px 12px; border-radius:8px; cursor:pointer; border:none; font-size:1.4rem; font-weight:bold; background:#e0e0e0; color:#333; transition:background .2s,color .2s,box-shadow .2s; }
 .btn.selected { background:#4CAF50; color:#fff; box-shadow:inset 0 0 0 2px #2e7d32; }
 .result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.4rem; font-weight:bold; color:#333; }
@@ -27,49 +27,70 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 #lotInput { font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px; }
 </style>
 </head>
+
 <body>
 <div class="app-container">
   <div class="app-header">생면공정 점검</div>
+
   <div class="app-body">
+
+    <!-- 날짜 -->
     <label for="date">날짜</label>
-    <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
+    <input type="date" id="date" required
+      style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
+
+    <!-- 생산제품 (추가됨) -->
     <label for="product">생산제품</label>
-<select id="product" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px;">
-  <option value="">-- 선택하세요 --</option>
-  <option value="메밀생면">메밀생면</option>
-  <option value="생칼국수">생칼국수</option>
-  <option value="생우동면">생우동면</option>
-</select>
+    <select id="product" required
+      style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px;">
+      <option value="">-- 선택하세요 --</option>
+      <option value="메밀생면">메밀생면</option>
+      <option value="생칼국수">생칼국수</option>
+      <option value="생우동면">생우동면</option>
+    </select>
+
+    <!-- LOT 수 -->
     <label for="lotInput">총생산 LOT 수</label>
     <select id="lotInput"></select>
+
+    <!-- 총중량 (LOT × 20kg 자동계산) -->
+    <div class="row" style="margin-top:10px;">
+      <label class="label" style="flex:0 0 100px;">총중량</label>
+      <input type="number" id="totalKg" readonly
+        style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
+      <span style="font-size:1.4rem; font-weight:bold;">kg</span>
+    </div>
+
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
+
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
       <button id="duplicateCancelBtn">취소</button>
     </div>
-    <div class="row" style="margin-top:10px;">
-  <label class="label" style="flex:0 0 110px;">총중량</label>
-  <input type="number" id="totalKg" readonly
-         style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
-  <span style="font-size:1.4rem; font-weight:bold;">kg</span>
-</div>
+
     <div id="rounds"></div>
+
   </div>
+
   <div class="app-footer">
     <button id="submitBtn">📥 저장하기</button>
   </div>
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
+const scriptUrl =
+  "https://script.google.com/macros/s/AKfycby9wi2mK2hN_HNnhTeKpxTO4j1w8zy0ei9ZvOrUMeK2SapvTBDWdJY7NmdSh4Y6ECFQYA/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
+
   const params = new URLSearchParams(location.search);
   const paramDate = params.get("date");
 
   const dateInput = document.getElementById("date");
+  const productInput = document.getElementById("product");
   const lotInput = document.getElementById("lotInput");
+  const totalKgInput = document.getElementById("totalKg");
   const submitBtn = document.getElementById("submitBtn");
   const roundsDiv = document.getElementById("rounds");
   const duplicateMsg = document.getElementById("duplicateMsg");
@@ -81,12 +102,22 @@ document.addEventListener("DOMContentLoaded", () => {
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
   let roundData = {};
 
-  // LOT 옵션 생성 (0~20)
+  /** LOT 옵션 생성 */
   lotInput.innerHTML = `
     <option value="0" selected>0</option>
-    ${Array.from({length: 20}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join("")}
+    ${Array.from({length: 20}, (_, i) =>
+      `<option value="${i+1}">${i+1}</option>`
+    ).join("")}
   `;
 
+  /** LOT × 20 = 총중량 계산 */
+  lotInput.addEventListener("change", () => {
+    createRounds(parseInt(lotInput.value));
+    const lot = parseInt(lotInput.value) || 0;
+    totalKgInput.value = lot * 20;
+  });
+
+  /** LOT 라운드 구성 */
   function createRounds(lotCount) {
     roundsDiv.innerHTML = "";
     roundData = {};
@@ -112,126 +143,64 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resultEl = row.querySelector(".result");
 
-      // 초기값: 3포 선택
       btn3.classList.add("selected");
       roundData[i] = { no: 60, value: 1 };
       resultEl.textContent = `주정 1 kg`;
 
       [btn3, btn2].forEach(btn => {
         btn.addEventListener("click", () => {
-          const roundIndex = parseInt(row.dataset.round);
-          if (btn.classList.contains("selected")) {
-            // 선택 해제 → 재정렬
-            const keys = Object.keys(roundData).map(k => parseInt(k)).sort((a,b)=>a-b);
-            const newRoundData = {};
-            let newIdx = 1;
-            keys.forEach(k => {
-              if (k !== roundIndex) {
-                newRoundData[newIdx] = roundData[k];
-                const rEl = roundsDiv.querySelector(`.row[data-round='${k}']`);
-                if(rEl) {
-                  rEl.dataset.round = newIdx;
-                  rEl.querySelector(".label").textContent = `${newIdx}차`;
-                }
-                newIdx++;
-              }
-            });
-            roundData = newRoundData;
-            lotInput.value = Object.keys(roundData).length;
-            createRounds(Object.keys(roundData).length);
-          } else {
-            row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-            btn.classList.add("selected");
-            const type = btn.dataset.type;
-            const value = (type === "3포") ? 1 : 0.7;
-            const no = (type === "3포") ? 60 : 40;
-            roundData[roundIndex] = { no, value };
-            resultEl.textContent = `주정 ${value} kg`;
-          }
+          row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+
+          const type = btn.dataset.type;
+          const value = type === "3포" ? 1 : 0.7;
+          const no = type === "3포" ? 60 : 40;
+
+          roundData[i] = { no, value };
+          resultEl.textContent = `주정 ${value} kg`;
         });
       });
     }
     roundsDiv.style.display = "block";
   }
 
-  lotInput.addEventListener("change", () => createRounds(parseInt(lotInput.value)));
-lotInput.addEventListener("change", () => {
-  createRounds(parseInt(lotInput.value));
+  /** 날짜 변경 시 중복 확인 */
+  dateInput.addEventListener("change", () => {
+    lotInput.value = "0";
+    totalKgInput.value = "";
+    createRounds(0);
+    if (dateInput.value) checkDuplicate(dateInput.value);
+  });
 
-  // LOT × 20kg 자동 계산
-  const lot = parseInt(lotInput.value) || 0;
-  document.getElementById("totalKg").value = lot * 20;
-});
-  // 중복 확인
+  /** 중복 확인 요청 */
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
-    loadingMsg.textContent = "⏳ 중복 확인 중...";
-    duplicateMsg.style.display = "none";
-    roundsDiv.style.display = "none";
     submitBtn.disabled = true;
+    duplicateMsg.style.display = "none";
 
     try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
+      const res = await fetch(
+        `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`
+      );
       const data = await res.json();
       loadingMsg.style.display = "none";
 
       if (data.exists) {
-        duplicateText.textContent = `⚠️ ${date} 에 이미 입력된 데이터가 있습니다.`;
+        duplicateText.textContent = `⚠️ ${date} 에 이미 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
       } else {
-        duplicateMsg.style.display = "none";
         submitBtn.disabled = false;
       }
-    } catch (err) {
+    } catch (e) {
+      alert("중복 확인 오류");
       loadingMsg.style.display = "none";
-      alert("중복 확인 중 오류가 발생했습니다.");
     }
   }
 
-  // 기존 데이터 복원
-  async function restoreDuplicateData(date) {
-    loadingMsg.style.display = "block";
-    loadingMsg.textContent = "⏳데이터를 가져오고 있습니다.";
-    try {
-      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-
-      if (data.values) {
-        const noValues = data.values.slice(0, 20);
-        const lotCount = noValues.filter(v => v !== "").length;
-        lotInput.value = lotCount;
-        createRounds(lotCount);
-
-        noValues.forEach((v, idx) => {
-          const rowEl = roundsDiv.querySelector(`.row[data-round='${idx+1}']`);
-          if (!rowEl) return;
-          const btn3 = rowEl.querySelector(".btn[data-type='3포']");
-          const btn2 = rowEl.querySelector(".btn[data-type='2포']");
-          const resultEl = rowEl.querySelector(".result");
-
-          rowEl.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-          if (v == 60) { btn3.classList.add("selected"); roundData[idx+1]={no:60,value:1}; resultEl.textContent="주정 1 kg"; }
-          else if (v == 40) { btn2.classList.add("selected"); roundData[idx+1]={no:40,value:0.7}; resultEl.textContent="주정 0.7 kg"; }
-        });
-      }
-    } catch (err) {
-      loadingMsg.style.display = "none";
-      alert("기존 데이터 로드 중 오류가 발생했습니다.");
-    }
-  }
-
-  dateInput.addEventListener("change", () => {
-    lotInput.value = "0";
-    createRounds(0);
-    roundData = {};
-    if (dateInput.value) checkDuplicate(dateInput.value);
-  });
-
+  /** 기존 데이터 불러오기 */
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     submitBtn.disabled = false;
-    if (dateInput.value) restoreDuplicateData(dateInput.value);
   });
 
   duplicateCancelBtn.addEventListener("click", () => {
@@ -239,38 +208,53 @@ lotInput.addEventListener("change", () => {
     dateInput.valueAsDate = new Date();
   });
 
-  // 저장
+  /** 저장 */
   submitBtn.addEventListener("click", async () => {
-   if (!dateInput.value) return alert("날짜를 선택하세요.");
 
-const product = document.getElementById("product").value;
-if (!product) return alert("생산제품을 선택하세요.");
-
-const lotCount = parseInt(lotInput.value);
-if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
-
-const totalKg = document.getElementById("totalKg").value;
-if (!totalKg || totalKg == 0) return alert("총중량 계산 오류입니다.");
+    if (!dateInput.value) return alert("날짜를 선택하세요.");
+    if (!productInput.value) return alert("생산제품을 선택하세요.");
 
     const lotCount = parseInt(lotInput.value);
-    const noArr = [], valueArr = [];
+    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+
+    if (!totalKgInput.value || totalKgInput.value === "0")
+      return alert("총중량 계산 오류입니다.");
+
+    const noArr = [];
+    const valueArr = [];
     for (let i = 1; i <= lotCount; i++) {
-      if (roundData[i]) { noArr.push(roundData[i].no); valueArr.push(roundData[i].value); }
-      else { noArr.push(""); valueArr.push(""); }
+      noArr.push(roundData[i].no);
+      valueArr.push(roundData[i].value);
     }
 
-    const payload = { date: dateInput.value, lot: lotCount, no: noArr, value: valueArr };
+    const body = {
+      date: dateInput.value,
+      product: productInput.value,
+      lot: lotCount,
+      totalKg: totalKgInput.value,
+      noArr,
+      valueArr
+    };
 
     try {
-      const res = await fetch(scriptUrl, { method:"POST", body: new URLSearchParams({ saengmyeon: JSON.stringify(payload) }) });
-      const text = await res.text();
-      alert("저장 완료: " + text);
-    } catch (err) {
-      alert("에러 발생: " + err.message);
+      submitBtn.disabled = true;
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      submitBtn.disabled = false;
+
+      if (data.result === "success") {
+        alert("저장되었습니다.");
+      } else {
+        alert("저장 오류");
+      }
+    } catch (e) {
+      alert("서버 오류");
+      submitBtn.disabled = false;
     }
   });
-
-  if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
 
