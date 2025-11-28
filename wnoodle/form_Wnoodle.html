@@ -33,8 +33,21 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
   <div class="app-body">
     <label for="date">날짜</label>
     <input type="date" id="date" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
+    <label for="product">생산제품</label>
+<select id="product" required style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px;">
+  <option value="">-- 선택하세요 --</option>
+  <option value="메밀생면">메밀생면</option>
+  <option value="생칼국수">생칼국수</option>
+  <option value="생우동면">생우동면</option>
+</select>
     <label for="lotInput">총생산 LOT 수</label>
     <select id="lotInput"></select>
+    <div class="row" style="margin-top:10px;">
+  <label class="label" style="flex:0 0 110px;">총중량</label>
+  <input type="number" id="totalKg" readonly
+         style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
+  <span style="font-size:1.4rem; font-weight:bold;">kg</span>
+</div>
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
@@ -142,7 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   lotInput.addEventListener("change", () => createRounds(parseInt(lotInput.value)));
+lotInput.addEventListener("change", () => {
+  createRounds(parseInt(lotInput.value));
 
+  // LOT × 20kg 자동 계산
+  const lot = parseInt(lotInput.value) || 0;
+  document.getElementById("totalKg").value = lot * 20;
+});
   // 중복 확인
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
@@ -222,8 +241,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 저장
   submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value) return alert("날짜를 선택하세요.");
-    if (parseInt(lotInput.value) === 0) return alert("총생산 LOT 수를 선택하세요.");
+   if (!dateInput.value) return alert("날짜를 선택하세요.");
+
+const product = document.getElementById("product").value;
+if (!product) return alert("생산제품을 선택하세요.");
+
+const lotCount = parseInt(lotInput.value);
+if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+
+const totalKg = document.getElementById("totalKg").value;
+if (!totalKg || totalKg == 0) return alert("총중량 계산 오류입니다.");
 
     const lotCount = parseInt(lotInput.value);
     const noArr = [], valueArr = [];
