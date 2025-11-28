@@ -248,6 +248,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         createRounds(lotCount, existing);
+        roundData = {};
+for (let i=1; i<=lotCount; i++) {
+  roundData[i] = {
+    no: existing[i].no,
+    value: existing[i].value
+  };
+}
       } else {
         alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
       }
