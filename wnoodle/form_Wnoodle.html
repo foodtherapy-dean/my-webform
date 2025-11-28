@@ -17,14 +17,14 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 #submitBtn { width:100%; font-size:1.8rem; padding:24px 0; background:#4CAF50; color:#fff; border:none; cursor:pointer; }
 .row { display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex-wrap:nowrap; }
 .label { flex:0 0 80px; font-weight:bold; font-size:1.4rem; cursor:pointer; }
-.btn { flex:1 1 0; min-width:0; padding:16px 12px; border-radius:8px; cursor:pointer; border:none; font-size:1.4rem; font-weight:bold; background:#e0e0e0; color:#333; transition:background .2s,color .2s,box-shadow .2s; }
+.btn { flex:1 1 0; min-width:0; padding:12px 10px; border-radius:8px; cursor:pointer; border:none; font-size:1.2rem; font-weight:bold; background:#e0e0e0; color:#333; transition:background .2s,color .2s,box-shadow .2s; }
 .btn.selected { background:#4CAF50; color:#fff; box-shadow:inset 0 0 0 2px #2e7d32; }
-.result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.4rem; font-weight:bold; color:#333; }
+.result { margin-left:auto; flex:0 0 auto; min-width:110px; text-align:right; font-size:1.2rem; font-weight:bold; color:#333; }
 #loadingMsg { display:none; margin:10px 0; font-size:1.2rem; color:#555; font-weight:bold; }
 #duplicateMsg { display:none; background:#ffcccc; color:#900; padding:14px; margin-top:8px; border:1px solid #900; border-radius:6px; font-weight:bold; font-size:1.2rem; }
 #duplicateMsg button { margin-left:14px; background:#900; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:1rem; }
 #rounds { display:none; }
-#lotInput { font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px; }
+select, input[type="number"], input[type="date"] { font-size:1.2rem; padding:8px; box-sizing:border-box; }
 </style>
 </head>
 
@@ -39,7 +39,7 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
     <input type="date" id="date" required
       style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:10px;" />
 
-    <!-- 생산제품 (추가됨) -->
+    <!-- 생산제품 (필수) -->
     <label for="product">생산제품</label>
     <select id="product" required
       style="font-size:1.4rem; padding:10px; width:100%; margin-bottom:15px;">
@@ -49,16 +49,15 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
       <option value="생우동면">생우동면</option>
     </select>
 
-    <!-- LOT 수 -->
-    <label for="lotInput">총생산 LOT 수</label>
-    <select id="lotInput"></select>
+    <!-- LOT 수 와 총중량을 같은 행에 배치 -->
+    <div class="row" style="align-items:center;">
+      <label class="label" for="lotInput" style="flex:0 0 140px;">총생산 LOT 수</label>
+      <select id="lotInput" style="flex:0 0 110px; padding:8px;"></select>
 
-    <!-- 총중량 (LOT × 20kg 자동계산) -->
-    <div class="row" style="margin-top:10px;">
-      <label class="label" style="flex:0 0 100px;">총중량</label>
-      <input type="number" id="totalKg" readonly
-        style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
-      <span style="font-size:1.4rem; font-weight:bold;">kg</span>
+      <!-- 총중량을 같은 행에 -->
+      <label class="label" style="flex:0 0 80px; margin-left:12px;">총중량</label>
+      <input type="number" id="totalKg" readonly style="flex:1; padding:8px; font-size:1.2rem; text-align:right;" />
+      <span style="font-size:1.2rem; font-weight:bold; margin-left:8px;">kg</span>
     </div>
 
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
@@ -100,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingMsg = document.getElementById("loadingMsg");
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
-  let roundData = {};
+  let roundData = {}; // {1:{no:60,value:1}, 2:{...}, ...}
 
   /** LOT 옵션 생성 */
   lotInput.innerHTML = `
@@ -110,16 +109,10 @@ document.addEventListener("DOMContentLoaded", () => {
     ).join("")}
   `;
 
-  /** LOT × 20 = 총중량 계산 */
-  lotInput.addEventListener("change", () => {
-    createRounds(parseInt(lotInput.value));
-    const lot = parseInt(lotInput.value) || 0;
-    totalKgInput.value = lot * 20;
-  });
-
-  /** LOT 라운드 구성 */
-  function createRounds(lotCount) {
+  /** createRounds: 기존 상태를 보존할 수 있게 existingData 파라미터 허용 */
+  function createRounds(lotCount, existingData = null) {
     roundsDiv.innerHTML = "";
+    const prev = existingData ? JSON.parse(JSON.stringify(existingData)) : null;
     roundData = {};
 
     if (lotCount <= 0) {
@@ -131,6 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("div");
       row.className = "row";
       row.dataset.round = i;
+      row.style.alignItems = "center";
       row.innerHTML = `
         <div class="label">${i}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
@@ -143,28 +137,72 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resultEl = row.querySelector(".result");
 
-      btn3.classList.add("selected");
-      roundData[i] = { no: 60, value: 1 };
-      resultEl.textContent = `주정 1 kg`;
+      // 기존 데이터가 있으면 그 상태로, 아니면 기본값(3포)
+      if (prev && prev[i]) {
+        const { no, value } = prev[i];
+        roundData[i] = { no, value };
+        if (no === 60) {
+          btn3.classList.add("selected");
+          resultEl.textContent = `주정 1 kg`;
+        } else {
+          btn2.classList.add("selected");
+          resultEl.textContent = `주정 0.7 kg`;
+        }
+      } else {
+        btn3.classList.add("selected");
+        roundData[i] = { no: 60, value: 1 };
+        resultEl.textContent = `주정 1 kg`;
+      }
 
+      // 버튼 클릭 이벤트: 이미 선택된 버튼 클릭하면 해당 차수 삭제(취수). 아니면 선택 변경.
       [btn3, btn2].forEach(btn => {
         btn.addEventListener("click", () => {
-          row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
+          const roundIndex = parseInt(row.dataset.round);
 
-          const type = btn.dataset.type;
-          const value = type === "3포" ? 1 : 0.7;
-          const no = type === "3포" ? 60 : 40;
+          if (btn.classList.contains("selected")) {
+            // 이미 선택된 버튼을 다시 클릭 -> 해당 차수 삭제
+            const keys = Object.keys(roundData).map(k => parseInt(k)).sort((a,b)=>a-b);
+            const newRoundData = {};
+            let newIdx = 1;
+            keys.forEach(k => {
+              if (k !== roundIndex) {
+                newRoundData[newIdx] = roundData[k];
+                newIdx++;
+              }
+            });
 
-          roundData[i] = { no, value };
-          resultEl.textContent = `주정 ${value} kg`;
+            const newCount = Object.keys(newRoundData).length;
+            // 업데이트: lotInput 값 및 총중량
+            lotInput.value = newCount;
+            totalKgInput.value = newCount * 20;
+
+            // 재생성 (기존 선택 상태 전달)
+            createRounds(newCount, newRoundData);
+            return;
+          } else {
+            // 일반 선택 변경: 해당 차수에 반영
+            row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            const type = btn.dataset.type;
+            const value = (type === "3포") ? 1 : 0.7;
+            const no = (type === "3포") ? 60 : 40;
+            roundData[roundIndex] = { no, value };
+            resultEl.textContent = `주정 ${value} kg`;
+          }
         });
       });
     }
     roundsDiv.style.display = "block";
   }
 
-  /** 날짜 변경 시 중복 확인 */
+  /** LOT 변경 시 라운드 재생성 및 총중량 계산 */
+  lotInput.addEventListener("change", () => {
+    const count = parseInt(lotInput.value) || 0;
+    totalKgInput.value = count * 20;
+    createRounds(count);
+  });
+
+  /** 날짜 변경 시 중복 확인 (간단히 기존 로직 유지) */
   dateInput.addEventListener("change", () => {
     lotInput.value = "0";
     totalKgInput.value = "";
@@ -197,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /** 기존 데이터 불러오기 */
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     submitBtn.disabled = false;
@@ -215,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!productInput.value) return alert("생산제품을 선택하세요.");
 
     const lotCount = parseInt(lotInput.value);
-    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+    if (!lotCount || lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
 
     if (!totalKgInput.value || totalKgInput.value === "0")
       return alert("총중량 계산 오류입니다.");
@@ -223,8 +260,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const noArr = [];
     const valueArr = [];
     for (let i = 1; i <= lotCount; i++) {
-      noArr.push(roundData[i].no);
-      valueArr.push(roundData[i].value);
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
     }
 
     const body = {
@@ -240,12 +282,14 @@ document.addEventListener("DOMContentLoaded", () => {
       submitBtn.disabled = true;
       const res = await fetch(scriptUrl, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+      // 서버 응답이 JSON이라고 가정
       const data = await res.json();
       submitBtn.disabled = false;
 
-      if (data.result === "success") {
+      if (data && data.result === "success") {
         alert("저장되었습니다.");
       } else {
         alert("저장 오류");
@@ -255,6 +299,9 @@ document.addEventListener("DOMContentLoaded", () => {
       submitBtn.disabled = false;
     }
   });
+
+  // 초기 체크
+  if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
 
