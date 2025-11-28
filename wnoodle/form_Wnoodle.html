@@ -276,56 +276,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 저장: POST (JSON or form-encoded supported on server)
   submitBtn.addEventListener("click", async ()=>{
-    if (!dateInput.value) return alert("날짜를 선택하세요.");
-    if (!productInput.value) return alert("생산제품을 선택하세요.");
-    const lotCount = parseInt(lotInput.value) || 0;
-    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
-    if (!totalKgInput.value || parseFloat(totalKgInput.value) === 0) return alert("총중량 오류입니다.");
+  if (!dateInput.value) return alert("날짜를 선택하세요.");
+  if (!productInput.value) return alert("생산제품을 선택하세요.");
+  const lotCount = parseInt(lotInput.value) || 0;
+  if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+  if (!totalKgInput.value || parseFloat(totalKgInput.value) === 0) return alert("총중량 오류입니다.");
 
-    const noArr = [];
-    const valueArr = [];
-    for (let i=1;i<=lotCount;i++){
-      if (roundData[i]) {
-        noArr.push(roundData[i].no);
-        valueArr.push(roundData[i].value);
-      } else {
-        noArr.push("");
-        valueArr.push("");
-      }
+  const noArr = [];
+  const valueArr = [];
+  for (let i=1;i<=lotCount;i++){
+    if (roundData[i]) {
+      noArr.push(roundData[i].no);
+      valueArr.push(roundData[i].value);
+    } else {
+      noArr.push("");
+      valueArr.push("");
     }
+  }
 
-    const payload = {
-      date: dateInput.value,
-      product: productInput.value,
-      weight: totalKgInput.value,
-      lot: lotCount,
-      no: noArr,
-      value: valueArr
-    };
+  const payload = {
+    date: dateInput.value,
+    product: productInput.value,
+    weight: totalKgInput.value,
+    lot: lotCount,
+    no: noArr,
+    value: valueArr
+  };
 
-    try {
-      submitBtn.disabled = true;
+  try {
+    submitBtn.disabled = true;
 
-      // POST JSON body
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", data: payload })
-      });
+    // form-encoded 방식으로 전송 -> preflight 회피
+    const formBody = new URLSearchParams();
+    formBody.append("saengmyeon", JSON.stringify(payload));
 
-      const result = await res.json();
-      submitBtn.disabled = false;
+    const res = await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: formBody.toString()
+    });
 
-      if (result && (result.success || result.result === "success")) {
-        alert("저장되었습니다.");
-      } else {
-        alert("저장 중 오류: " + (result.error || JSON.stringify(result)));
-      }
-    } catch (err) {
-      submitBtn.disabled = false;
-      alert("서버 오류: " + err.message);
+    // 정상적으로 응답이 왔는지 확인
+    const result = await res.json();
+    submitBtn.disabled = false;
+
+    if (result && (result.result === "success" || result.success)) {
+      alert("저장되었습니다.");
+    } else {
+      alert("저장 중 오류: " + (result.error || result.message || JSON.stringify(result)));
     }
-  });
+  } catch (err) {
+    submitBtn.disabled = false;
+    alert("서버 오류: " + (err.message || err));
+  }
+});
 
   // 초기 중복 체크
   if (dateInput.value) checkDuplicate(dateInput.value);
