@@ -50,15 +50,18 @@ select, input[type="number"], input[type="date"] { font-size:1.2rem; padding:8px
     </select>
 
     <!-- LOT 수 와 총중량을 같은 행에 배치 -->
-    <div class="row" style="align-items:center;">
-      <label class="label" for="lotInput" style="flex:0 0 140px;">총생산 LOT 수</label>
-      <select id="lotInput" style="flex:0 0 110px; padding:8px;"></select>
+    <div style="display:flex; gap:10px; margin-bottom:12px;">
+  <div style="flex:1;">
+    <label style="font-size:1.2rem;">총생산 LOT</label>
+    <select id="lot" style="width:100%; font-size:1.2rem; padding:8px;"></select>
+  </div>
 
-      <!-- 총중량을 같은 행에 -->
-      <label class="label" style="flex:0 0 80px; margin-left:12px;">총중량</label>
-      <input type="number" id="totalKg" readonly style="flex:1; padding:8px; font-size:1.2rem; text-align:right;" />
-      <span style="font-size:1.2rem; font-weight:bold; margin-left:8px;">kg</span>
-    </div>
+  <div style="flex:1;">
+    <label style="font-size:1.2rem;">총중량(kg)</label>
+    <input id="totalKg" type="number" readonly
+           style="width:100%; font-size:1.2rem; padding:8px; text-align:right;">
+  </div>
+</div>
 
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
 
