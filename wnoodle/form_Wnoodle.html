@@ -42,18 +42,18 @@ body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
 </select>
     <label for="lotInput">총생산 LOT 수</label>
     <select id="lotInput"></select>
-    <div class="row" style="margin-top:10px;">
-  <label class="label" style="flex:0 0 110px;">총중량</label>
-  <input type="number" id="totalKg" readonly
-         style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
-  <span style="font-size:1.4rem; font-weight:bold;">kg</span>
-</div>
     <div id="loadingMsg">⏳ 중복 확인 중...</div>
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
       <button id="duplicateConfirmBtn">확인</button>
       <button id="duplicateCancelBtn">취소</button>
     </div>
+    <div class="row" style="margin-top:10px;">
+  <label class="label" style="flex:0 0 110px;">총중량</label>
+  <input type="number" id="totalKg" readonly
+         style="flex:1; font-size:1.4rem; padding:10px; text-align:right;">
+  <span style="font-size:1.4rem; font-weight:bold;">kg</span>
+</div>
     <div id="rounds"></div>
   </div>
   <div class="app-footer">
