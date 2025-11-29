@@ -112,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
+  // LOT 옵션 (최대 20차까지)
   lotInput.innerHTML =
     `<option value="0">0</option>` +
     Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
@@ -127,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!lotCount || lotCount <= 0) {
       roundsDiv.style.display = "none";
-      lotInput.value = 0; // LOT값 초기화
+      lotInput.value = 0; 
       return;
     }
 
@@ -184,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     updateTotalKg();
-    lotInput.value = lotCount; // LOT 입력창 동기화
+    lotInput.value = lotCount;
     roundsDiv.style.display = "block";
   }
 
@@ -194,11 +195,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleSelect(idx, no, value, row) {
     const current = roundData[idx];
 
-    // 이미 선택된 버튼 클릭 → 삭제
     if (current && current.no === no) {
       delete roundData[idx];
 
-      // 차수 이후 데이터 한 칸씩 앞으로 이동
       const keys = Object.keys(roundData).map(Number).sort((a, b) => a - b);
       for (let i = idx + 1; i <= keys[keys.length - 1] + 1; i++) {
         if (roundData[i]) {
@@ -207,13 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // UI 다시 렌더
       const newLotCount = Object.keys(roundData).length;
       createRounds(newLotCount, Object.values(roundData));
       return;
     }
 
-    // 일반 선택
     row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
     const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
     if (btn) btn.classList.add("selected");
@@ -235,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isNaN(nv)) total += nv;
     });
     totalKgInput.value = total;
-    lotInput.value = Object.keys(roundData).length; // LOT 입력창 동기화
+    lotInput.value = Object.keys(roundData).length;
   }
 
   lotInput.addEventListener("change", () => {
@@ -308,9 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const lotCount = filled.length;
-      lotInput.value = lotCount;
       createRounds(lotCount, filled);
-
       updateTotalKg();
       submitBtn.disabled = false;
 
@@ -401,8 +396,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
-
-
 
 
 </body>
