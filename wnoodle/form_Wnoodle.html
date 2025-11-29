@@ -139,16 +139,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const resEl = row.querySelector(".result");
 
       if (existing && existing[i]) {
-        let no = Number(existing[i].no);
-        let value = Number(existing[i].value);
-        roundData[i] = {no,value};
-        if (no === 60){ btn3.classList.add("selected"); resEl.textContent = `주정 ${value} kg`; }
-        else { btn2.classList.add("selected"); resEl.textContent = `주정 ${value} kg`; }
-      } else {
-        btn3.classList.add("selected");
-        roundData[i] = {no:60, value:1};
-        resEl.textContent = "주정 1 kg";
-      }
+    const no = Number(existing[i].no);
+    const value = Number(existing[i].value);
+    roundData[i] = { no, value };
+
+    if (no === 60) { 
+        btn3.classList.add("selected"); 
+    } else { 
+        btn2.classList.add("selected"); 
+    }
+    resEl.textContent = `주정 ${value} kg`;
+} else {
+    // 기존처럼 기본값 3포
+    btn3.classList.add("selected");
+    roundData[i] = { no: 60, value: 1 };
+    resEl.textContent = "주정 1 kg";
+}
 
       [btn3, btn2].forEach(btn=>{
         btn.addEventListener("click", ()=>{
@@ -163,8 +169,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // 총중량 재계산
           let total = 0;
-          Object.values(roundData).forEach(r => { total += r.no; });
-          totalKgInput.value = total;
+Object.values(roundData).forEach(r => { total += r.no; });
+totalKgInput.value = total;
         });
       });
     }
