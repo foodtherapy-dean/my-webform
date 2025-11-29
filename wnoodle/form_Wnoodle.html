@@ -81,6 +81,7 @@
 
 <script>
 const scriptUrl = "https://script.google.com/macros/s/AKfycbyJLLPxmTPoTaaIKk_QKwMyFHaNR0yDAuCXEK13SQQyd8SYg0vzlj73bFVqYdP9VaviWQ/exec";
+const MAX_ROUNDS = 20; // 최대 차수 (LOT)를 20으로 설정
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -99,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 상단 헤더 높이에 맞춰 버튼 고정
+  // 상단 헤더 높이와 하단 버튼 고정
   const header = document.querySelector(".app-header");
   if (header) {
     const headerHeight = header.offsetHeight || 48;
@@ -113,16 +114,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
-  let roundData = {}; // { idx: {no, value} }
+  let roundData = {};
 
   // =========================
-  // createRounds: LOT UI 생성
+  // lotInput 초기 옵션 설정 (최대 20차까지 고정)
+  // =========================
+  lotInput.innerHTML = `<option value="0">0</option>` +
+    Array.from({ length: MAX_ROUNDS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+  lotInput.value = "0";
+
+  // =========================
+  // createRounds: UI 생성
   // =========================
   function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
 
-    // 실제 생성할 차수 결정
+    // 중복 데이터가 있으면 그 길이(차수)를, 아니면 lotCount(사용자가 선택한 값)을 사용
     const actualCount = (existing && Array.isArray(existing)) ? existing.length : lotCount;
     if (!actualCount || actualCount <= 0) {
       roundsDiv.style.display = "none";
@@ -130,11 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // LOT 선택 옵션 동기화
-    lotInput.innerHTML = `<option value="0">0</option>` +
-      Array.from({ length: actualCount }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+    // ⭐ 중요: lotInput 옵션 재생성 로직 제거됨. 옵션은 MAX_ROUNDS(20)으로 고정됩니다.
 
-    // 각 LOT 차수별 버튼 생성
+    // 버튼 생성 (actualCount만큼만 생성)
     for (let i = 1; i <= actualCount; i++) {
       const row = document.createElement("div");
       row.className = "row";
@@ -159,11 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
-      // 초기값
       let initNo = 60;
       let initValue = 1;
 
-      // 기존 데이터(existing) 적용
       if (existing && Array.isArray(existing) && existing[i - 1]) {
         const raw = existing[i - 1];
         const rawNo = raw.no ?? "";
@@ -178,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       roundData[i] = { no: initNo, value: initValue };
 
-      // 버튼 선택 상태 반영
       btn2.classList.remove("selected");
       btn3.classList.remove("selected");
       if (initNo === 60) btn3.classList.add("selected");
@@ -190,21 +193,30 @@ document.addEventListener("DOMContentLoaded", () => {
       btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
 
+    // lotInput의 값만 실제 차수로 업데이트
     lotInput.value = actualCount;
     roundsDiv.style.display = "block";
     updateTotalKg();
   }
 
   // =========================
-  // handleSelect: 버튼 선택/삭제 처리
+  // handleSelect: 선택/삭제
   // =========================
   function handleSelect(idx, no, value, row) {
     const current = roundData[idx];
 
     if (current && current.no === no) {
       delete roundData[idx];
+
       const keys = Object.keys(roundData).map(Number).sort((a, b) => a - b);
-      const newLotCount = keys.length;
+      for (let i = idx + 1; i <= keys[keys.length - 1] + 1; i++) {
+        if (roundData[i]) {
+          roundData[i - 1] = roundData[i];
+          delete roundData[i];
+        }
+      }
+
+      const newLotCount = Object.keys(roundData).length;
       createRounds(newLotCount, Object.values(roundData));
       return;
     }
@@ -221,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // updateTotalKg: 총합 갱신
+  // updateTotalKg
   // =========================
   function updateTotalKg() {
     let total = 0;
@@ -234,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   lotInput.addEventListener("change", () => {
     const cnt = Number(lotInput.value) || 0;
+    // cnt 만큼만 버튼을 생성하고, lotInput 값도 cnt로 설정됨.
     createRounds(cnt, null);
   });
 
@@ -264,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // 중복 데이터 불러오기
+  // restoreDuplicateData
   // =========================
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
@@ -289,19 +302,20 @@ document.addEventListener("DOMContentLoaded", () => {
         let parsedNo = 60;
         let parsedVal = 1;
 
-        const rawNo = noArr[i] ?? "";
-        const rawVal = valueArr[i] ?? "";
+        const rawNo = (noArr[i] ?? "").toString().trim();
+        const rawVal = (valueArr[i] ?? "").toString().trim();
 
         if (rawNo !== "") parsedNo = Number(rawNo);
         if (rawVal !== "") parsedVal = Number(rawVal);
 
-        if (rawNo === "" && rawVal !== "") parsedNo = (Number(rawVal) === 1 ? 60 : 40);
-        if (rawVal === "" && rawNo !== "") parsedVal = (Number(rawNo) === 60 ? 1 : 0.7);
+        if (rawNo === "" && rawVal !== "") parsedNo = (parsedVal === 1 ? 60 : 40);
+        if (rawVal === "" && rawNo !== "") parsedVal = (parsedNo === 60 ? 1 : 0.7);
 
         filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      createRounds(filled.length, filled);
+      // actualCount = filled.length (실제 데이터 차수, 예: 5)
+      createRounds(filled.length, filled); 
       submitBtn.disabled = false;
 
     } catch (err) {
@@ -312,9 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // =========================
-  // 이벤트 등록
-  // =========================
   dateInput.addEventListener("change", () => {
     productInput.value = "";
     lotInput.value = "0";
@@ -333,20 +344,26 @@ document.addEventListener("DOMContentLoaded", () => {
     checkDuplicate(dateInput.value);
   });
 
+  // =========================
+  // submit
+  // =========================
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productInput.value) return alert("생산제품을 선택하세요.");
-    const lotCount = Number(lotInput.value);
+
+    const lotCount = Object.keys(roundData).length;
     if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
     if (!totalKgInput.value || Number(totalKgInput.value) === 0) return alert("총중량 오류");
 
     const noArr = [];
     const valueArr = [];
+    // 생성된 차수(lotCount) 만큼만 데이터를 수집
     for (let i = 1; i <= lotCount; i++) {
       if (roundData[i]) {
         noArr.push(Number(roundData[i].no));
         valueArr.push(Number(roundData[i].value));
       } else {
+        // 데이터가 없으면 빈 값으로 채움 (시트에 맞추기 위함)
         noArr.push("");
         valueArr.push("");
       }
@@ -382,15 +399,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (err) {
       submitBtn.disabled = false;
-      alert("서버 오류: " + (err && err.message ? err.message : err));
+      alert("서버 오류: " + (err?.message || err));
     }
   });
 
-  // 초기 로딩 시 중복 체크
   if (dateInput.value) checkDuplicate(dateInput.value);
+
 });
 </script>
-
 
 
 
