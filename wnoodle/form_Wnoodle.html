@@ -308,7 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
         filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      createRounds(null, filled); // 실제 LOT 수만큼 버튼 생성
+      const lotCountFromData = filled.length;
+createRounds(lotCountFromData, filled);
       updateTotalKg();
       submitBtn.disabled = false;
 
