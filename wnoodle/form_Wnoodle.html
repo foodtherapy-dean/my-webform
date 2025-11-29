@@ -121,77 +121,76 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.innerHTML = "";
     roundData = {};
 
-    // 실제 생성할 차수
+    // actualCount 결정: existing이 있으면 existing.length, 없으면 lotCount
     const actualCount = (existing && Array.isArray(existing)) ? existing.length : lotCount;
 
     if (!actualCount || actualCount <= 0) {
-      roundsDiv.style.display = "none";
-      lotInput.value = 0;
-      return;
+        roundsDiv.style.display = "none";
+        lotInput.value = 0;
+        return;
     }
 
-    // LOT 옵션 동기화
+    // LOT 선택창 동기화
     lotInput.innerHTML = `<option value="0">0</option>` +
       Array.from({ length: actualCount }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
-    for (let i = 0; i < actualCount; i++) {
-      const roundIdx = i + 1; // 1-based index
-      const row = document.createElement("div");
-      row.className = "row";
-      row.dataset.round = roundIdx;
-      row.style.display = "flex";
-      row.style.alignItems = "center";
-      row.style.gap = "8px";
-      row.style.padding = "8px";
-      row.style.border = "1px solid #eee";
-      row.style.borderRadius = "8px";
-      row.style.marginBottom = "8px";
+    // 실제 버튼 생성 루프
+    for (let i = 1; i <= actualCount; i++) {  // <-- 반드시 actualCount 사용
+        const row = document.createElement("div");
+        row.className = "row";
+        row.dataset.round = i;
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.gap = "8px";
+        row.style.padding = "8px";
+        row.style.border = "1px solid #eee";
+        row.style.borderRadius = "8px";
+        row.style.marginBottom = "8px";
 
-      row.innerHTML = `
-        <div style="flex:0 0 48px;font-weight:700;">${roundIdx}차</div>
-        <button class="btn" type="button" data-type="3포">3포</button>
-        <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" id="result${roundIdx}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
-      `;
-      roundsDiv.appendChild(row);
+        row.innerHTML = `
+            <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
+            <button class="btn" type="button" data-type="3포">3포</button>
+            <button class="btn" type="button" data-type="2포">2포</button>
+            <div class="result" id="result${i}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+        `;
+        roundsDiv.appendChild(row);
 
-      const btn3 = row.querySelector(".btn[data-type='3포']");
-      const btn2 = row.querySelector(".btn[data-type='2포']");
-      const resEl = row.querySelector(".result");
+        const btn3 = row.querySelector(".btn[data-type='3포']");
+        const btn2 = row.querySelector(".btn[data-type='2포']");
+        const resEl = row.querySelector(".result");
 
-      let initNo = 60;
-      let initValue = 1;
+        let initNo = 60;
+        let initValue = 1;
 
-      if (existing && Array.isArray(existing) && existing[i]) {
-        const raw = existing[i];
-        const rawNo = (raw.no === undefined || raw.no === null || raw.no === "") ? "" : String(raw.no).trim();
-        const rawVal = (raw.value === undefined || raw.value === null || raw.value === "") ? "" : String(raw.value).trim();
+        if (existing && Array.isArray(existing) && existing[i - 1]) {
+            const raw = existing[i - 1];
+            const rawNo = raw.no ?? "";
+            const rawVal = raw.value ?? "";
 
-        if (rawNo !== "") initNo = Number(rawNo);
-        if (rawVal !== "") initValue = Number(rawVal);
+            if (rawNo !== "") initNo = Number(rawNo);
+            if (rawVal !== "") initValue = Number(rawVal);
 
-        if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
-        if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
-      }
+            if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
+            if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
+        }
 
-      roundData[roundIdx] = { no: initNo, value: initValue };
+        roundData[i] = { no: initNo, value: initValue };
 
-      btn2.classList.remove("selected");
-      btn3.classList.remove("selected");
-      if (initNo === 60) btn3.classList.add("selected");
-      else btn2.classList.add("selected");
+        btn2.classList.remove("selected");
+        btn3.classList.remove("selected");
+        if (initNo === 60) btn3.classList.add("selected");
+        else btn2.classList.add("selected");
 
-      resEl.textContent = `주정 ${initValue} kg`;
+        resEl.textContent = `주정 ${initValue} kg`;
 
-      btn3.addEventListener("click", () => handleSelect(roundIdx, 60, 1, row));
-      btn2.addEventListener("click", () => handleSelect(roundIdx, 40, 0.7, row));
+        btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
+        btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
 
-    lotInput.value = actualCount; // actualCount 기준으로 고정
+    lotInput.value = actualCount;
     roundsDiv.style.display = "block";
     updateTotalKg();
-  }
-
+}
   // =========================
   // handleSelect: 선택/삭제 처리
   // =========================
