@@ -122,13 +122,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
   // createRounds: UI 생성
   // =========================
-  function createRounds(lotCount, existing = null) {
+ function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
 
-    if (!lotCount || lotCount <= 0) {
+    // 중복 데이터가 있으면 existing.length 사용, 없으면 lotCount 사용
+    const actualCount = (existing && Array.isArray(existing)) ? existing.length : lotCount;
+
+    if (!actualCount || actualCount <= 0) {
       roundsDiv.style.display = "none";
-      lotInput.value = 0; 
+      lotInput.value = actualCount; 
       return;
     }
 
@@ -304,8 +307,9 @@ document.addEventListener("DOMContentLoaded", () => {
         filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      const lotCount = filled.length;
-      createRounds(lotCount, filled);
+      const lotCount = filled.length; 
+lotInput.value = lotCount; // LOT 선택창 동기화
+createRounds(lotCount, filled);
       updateTotalKg();
       submitBtn.disabled = false;
 
