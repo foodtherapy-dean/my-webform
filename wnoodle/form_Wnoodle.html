@@ -83,12 +83,9 @@ const scriptUrl = "https://script.google.com/macros/s/AKfycbySUdJC8MbFWQcI5Oiyoa
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ----------------------------------------------------
-     기본 요소 가져오기
-  ---------------------------------------------------- */
+  // ----- DOM elements -----
   const params = new URLSearchParams(location.search);
   const paramDate = params.get("date");
-
   const dateInput = document.getElementById("date");
   const productInput = document.getElementById("product");
   const lotInput = document.getElementById("lotInput");
@@ -97,42 +94,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingMsg = document.getElementById("loadingMsg");
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
-
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  /* ----------------------------------------------------
-      저장 버튼(고정 레이아웃)
-  ---------------------------------------------------- */
-  const headerHeight = document.querySelector(".app-header").offsetHeight;
-  submitBtn.style.height = `${headerHeight}px`;
+  // ----- UI: fixed submit button height -----
+  const header = document.querySelector(".app-header");
+  if (header) {
+    const headerHeight = header.offsetHeight || 48;
+    submitBtn.style.height = `${headerHeight}px`;
+  }
   submitBtn.style.position = "fixed";
   submitBtn.style.bottom = "0";
   submitBtn.style.left = "0";
   submitBtn.style.width = "100%";
   submitBtn.style.zIndex = "9999";
 
-  /* ----------------------------------------------------
-      날짜 기본값
-  ---------------------------------------------------- */
+  // ----- defaults -----
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
-  /* ----------------------------------------------------
-      LOT 옵션 구성
-  ---------------------------------------------------- */
   lotInput.innerHTML =
     `<option value="0">0</option>` +
     Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
-  /* ----------------------------------------------------
-      roundData = { 1:{no:60, value:1}, ... }
-  ---------------------------------------------------- */
+  // roundData: 1-based index -> {1:{no:60, value:1}, ...}
   let roundData = {};
 
-  /* ====================================================
-       1) 차수 버튼 구성
-  ==================================================== */
+  // =========================
+  // createRounds: generate UI
+  // existing: array of {no,value} (may be strings) OR null
+  // =========================
   function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
@@ -143,15 +134,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     for (let i = 1; i <= lotCount; i++) {
-
       const row = document.createElement("div");
       row.className = "row";
       row.dataset.round = i;
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "8px";
+      row.style.padding = "8px";
+      row.style.border = "1px solid #eee";
+      row.style.borderRadius = "8px";
+      row.style.marginBottom = "8px";
+
       row.innerHTML = `
-        <div style="flex:0 0 48px; font-weight:700;">${i}차</div>
+        <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
         <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" id="result${i}"></div>
+        <div class="result" id="result${i}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
       `;
       roundsDiv.appendChild(row);
 
@@ -159,64 +157,64 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
-      /* 기존 데이터가 있다면 해당 값 복원 (안전한 파싱) */
-      let initNo = 60;
-      let initValue = 1;
+      // initialize defaults
+      let initNo = 60;      // store weight units used for total (60 or 40)
+      let initValue = 1;    // value stored in valueX (1 or 0.7)
 
+      // if existing provided, parse safely (Case A: strings)
       if (existing && Array.isArray(existing) && existing[i - 1]) {
-        const rawNo = existing[i - 1].no;
-        const rawVal = existing[i - 1].value;
+        const raw = existing[i - 1];
 
-        const sNo = (rawNo === undefined || rawNo === null) ? "" : String(rawNo).trim();
-        const sVal = (rawVal === undefined || rawVal === null) ? "" : String(rawVal).trim();
+        // raw.no or raw.value may be strings like "60","40","1","0.7"
+        const rawNo = (raw.no === undefined || raw.no === null) ? "" : String(raw.no).trim();
+        const rawVal = (raw.value === undefined || raw.value === null) ? "" : String(raw.value).trim();
 
-        if (sNo !== "") {
-          const p = Number(sNo);
+        // parse no if present
+        if (rawNo !== "") {
+          const p = Number(rawNo);
           if (!isNaN(p)) initNo = p;
-        } else if (sVal !== "") {
-          // no 비어있고 value만 있는 경우 value로 no 추론
-          const pv = Number(sVal);
+        }
+
+        // parse value if present
+        if (rawVal !== "") {
+          const pv = Number(rawVal);
+          if (!isNaN(pv)) initValue = pv;
+        }
+
+        // if no missing but value present -> infer no
+        if ((rawNo === "" || isNaN(Number(rawNo))) && rawVal !== "") {
+          const pv = Number(rawVal);
           if (!isNaN(pv)) initNo = (pv === 1 ? 60 : 40);
         }
 
-        if (sVal !== "") {
-          const pv = Number(sVal);
-          if (!isNaN(pv)) initValue = pv;
-        } else {
-          initValue = (initNo === 60 ? 1 : 0.7);
+        // if value missing but no present -> infer value
+        if ((rawVal === "" || isNaN(Number(rawVal))) && rawNo !== "") {
+          const p = Number(rawNo);
+          if (!isNaN(p)) initValue = (p === 60 ? 1 : 0.7);
         }
       }
 
+      // ensure numeric types
+      initNo = Number(initNo);
+      initValue = Number(initValue);
+
+      // set roundData
       roundData[i] = { no: initNo, value: initValue };
 
-      // 버튼 선택 복원: 숫자비교(엄격)
+      // button restore: remove both then set correct one
       btn2.classList.remove("selected");
       btn3.classList.remove("selected");
-      if (initNo === 60) {
-        btn3.classList.add("selected");
-      } else {
-        btn2.classList.add("selected");
-      }
+      if (initNo === 60) btn3.classList.add("selected");
+      else btn2.classList.add("selected");
 
       resEl.textContent = `주정 ${initValue} kg`;
 
-      /* 버튼 클릭 이벤트 */
-      [btn3, btn2].forEach(btn => {
-        btn.addEventListener("click", () => {
-          const idx = Number(row.dataset.round);
-
-          row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-
-          const is3po = btn.dataset.type === "3포";
-          const no = is3po ? 60 : 40;
-          const value = is3po ? 1 : 0.7;
-
-          roundData[idx] = { no, value };
-          resEl.textContent = `주정 ${value} kg`;
-
-          updateTotalKg();
-        });
+      // click handlers
+      btn3.addEventListener("click", () => {
+        handleSelect(i, 60, 1, row);
+      });
+      btn2.addEventListener("click", () => {
+        handleSelect(i, 40, 0.7, row);
       });
     }
 
@@ -224,9 +222,25 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.style.display = "block";
   }
 
-  /* ====================================================
-      2) 총중량 계산
-  ==================================================== */
+  // handle selection central function
+  function handleSelect(idx, no, value, row) {
+    // mark buttons
+    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+    const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
+    if (btn) btn.classList.add("selected");
+
+    // update data
+    roundData[idx] = { no: Number(no), value: Number(value) };
+
+    // update display
+    const resEl = row.querySelector(".result");
+    if (resEl) resEl.textContent = `주정 ${value} kg`;
+
+    // recalc
+    updateTotalKg();
+  }
+
+  // update total weight based on no values (60 or 40)
   function updateTotalKg() {
     let total = 0;
     Object.values(roundData).forEach(r => {
@@ -236,26 +250,22 @@ document.addEventListener("DOMContentLoaded", () => {
     totalKgInput.value = total;
   }
 
-  /* LOT 변경 → 빈 차수 생성 */
+  // LOT change
   lotInput.addEventListener("change", () => {
     const cnt = Number(lotInput.value) || 0;
     createRounds(cnt, null);
   });
 
-  /* ====================================================
-      3) 날짜 중복 확인
-  ==================================================== */
+  // =========================
+  // checkDuplicate
+  // =========================
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
     submitBtn.disabled = true;
-
     try {
-      const res = await fetch(
-        `${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`
-      );
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
-
       loadingMsg.style.display = "none";
 
       if (data && data.exists) {
@@ -265,7 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
         duplicateMsg.style.display = "none";
         submitBtn.disabled = false;
       }
-
     } catch (e) {
       loadingMsg.style.display = "none";
       alert("중복 확인 오류");
@@ -273,19 +282,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* ====================================================
-      4) 중복 데이터 불러오기
-         — 빈값 처리 엄격히 해서 '20개 모두 생성' 문제 방지
-  ==================================================== */
+  // =========================
+  // restoreDuplicateData
+  // =========================
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
-
     try {
-      const res = await fetch(
-        `${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`
-      );
+      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
-
       loadingMsg.style.display = "none";
 
       if (!data || !Array.isArray(data.no)) {
@@ -297,54 +301,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const noArr = data.no || [];
       const valueArr = data.value || [];
-
-      /* 시트 데이터 → 안전한 배열(filled)로 변환
-         - raw 문자열이 비어있으면 건너뜀 (both empty -> skip)
-         - no가 비어있고 value만 있는 경우 value로 no 추론
-      */
       const filled = [];
+
       const maxLen = Math.max(noArr.length, valueArr.length);
       for (let i = 0; i < maxLen; i++) {
         const rawNo = (noArr[i] === undefined || noArr[i] === null) ? "" : String(noArr[i]).trim();
         const rawVal = (valueArr[i] === undefined || valueArr[i] === null) ? "" : String(valueArr[i]).trim();
 
-        if (rawNo === "" && rawVal === "") continue; // 빈 항목은 무시
+        if (rawNo === "" && rawVal === "") continue; // skip empty slot
 
-        let no = NaN;
-        let value = NaN;
+        let parsedNo = NaN;
+        let parsedVal = NaN;
 
         if (rawNo !== "") {
-          const p = Number(rawNo);
-          if (!isNaN(p)) no = p;
+          const pn = Number(rawNo);
+          if (!isNaN(pn)) parsedNo = pn;
         }
         if (rawVal !== "") {
           const pv = Number(rawVal);
-          if (!isNaN(pv)) value = pv;
+          if (!isNaN(pv)) parsedVal = pv;
         }
 
-        // no가 비어있지만 value가 있으면 추론
-        if (isNaN(no) && !isNaN(value)) {
-          no = (value === 1 ? 60 : 40);
+        // infer if needed
+        if (isNaN(parsedNo) && !isNaN(parsedVal)) {
+          parsedNo = (parsedVal === 1 ? 60 : 40);
+        }
+        if (isNaN(parsedVal) && !isNaN(parsedNo)) {
+          parsedVal = (parsedNo === 60 ? 1 : 0.7);
         }
 
-        // value가 비어있으면 no로 추론
-        if (isNaN(value) && !isNaN(no)) {
-          value = (no === 60 ? 1 : 0.7);
-        }
-
-        if (!isNaN(no)) {
-          filled.push({ no: no, value: value });
+        if (!isNaN(parsedNo)) {
+          filled.push({ no: parsedNo, value: parsedVal });
         }
       }
 
       const lotCount = filled.length;
       lotInput.value = lotCount;
 
-      // UI 생성하면서 filled를 existing으로 전달 → createRounds가 안전하게 처리
+      // create rounds with existing parsed data (numbers)
       createRounds(lotCount, filled);
 
-      // roundData는 createRounds에서 이미 설정됨 — 추가 덮어쓰기 불필요
-
+      // roundData is already set inside createRounds
       updateTotalKg();
       submitBtn.disabled = false;
 
@@ -356,51 +353,44 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* 날짜 변경 → 중복 체크 */
+  // date change
   dateInput.addEventListener("change", () => {
     productInput.value = "";
     lotInput.value = "0";
     roundsDiv.innerHTML = "";
     totalKgInput.value = "";
-
     if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  /* 중복 → "불러오기" 버튼 */
+  // duplicate buttons
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     if (dateInput.value) restoreDuplicateData(dateInput.value);
   });
-
-  /* 중복 → "취소" 버튼 */
   duplicateCancelBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     dateInput.valueAsDate = new Date();
     checkDuplicate(dateInput.value);
   });
 
-  /* ====================================================
-      5) 저장
-  ==================================================== */
+  // =========================
+  // submit / save
+  // =========================
   submitBtn.addEventListener("click", async () => {
-
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productInput.value) return alert("생산제품을 선택하세요.");
 
     const lotCount = Number(lotInput.value);
     if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+    if (!totalKgInput.value || Number(totalKgInput.value) === 0) return alert("총중량 오류");
 
-    if (!totalKgInput.value || Number(totalKgInput.value) === 0)
-      return alert("총중량 오류");
-
-    /* roundData → 배열 변환 */
     const noArr = [];
     const valueArr = [];
-
     for (let i = 1; i <= lotCount; i++) {
       if (roundData[i]) {
-        noArr.push(roundData[i].no);
-        valueArr.push(roundData[i].value);
+        // ensure numeric values (numbers, not strings)
+        noArr.push(Number(roundData[i].no));
+        valueArr.push(Number(roundData[i].value));
       } else {
         noArr.push("");
         valueArr.push("");
@@ -418,39 +408,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       submitBtn.disabled = true;
-
       const formBody = new URLSearchParams();
       formBody.append("saengmyeon", JSON.stringify(payload));
 
       const res = await fetch(scriptUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: formBody.toString()
       });
 
       const result = await res.json();
-
       submitBtn.disabled = false;
 
       if (result && (result.result === "success" || result.success)) {
         alert(result.message || "저장되었습니다.");
       } else {
-        alert("저장 오류: " + (result.error || result.message));
+        alert("저장 오류: " + (result.error || result.message || JSON.stringify(result)));
       }
-
     } catch (err) {
       submitBtn.disabled = false;
-      alert("서버 오류: " + err.message);
+      alert("서버 오류: " + (err && err.message ? err.message : err));
     }
   });
 
-  /* 페이지 로딩 시 최초 체크 */
+  // initial duplicate check
   if (dateInput.value) checkDuplicate(dateInput.value);
-
 });
 </script>
+
 
 </body>
 </html>
