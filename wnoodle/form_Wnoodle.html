@@ -112,28 +112,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
-  // LOT 옵션 (최대 20차까지)
-  lotInput.innerHTML =
-    `<option value="0">0</option>` +
-    Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
-
   let roundData = {};
 
   // =========================
   // createRounds: UI 생성
   // =========================
- function createRounds(lotCount, existing = null) {
+  function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
 
-    // 중복 데이터가 있으면 existing.length 사용, 없으면 lotCount 사용
+    // 실제 생성할 차수
     const actualCount = (existing && Array.isArray(existing)) ? existing.length : lotCount;
 
     if (!actualCount || actualCount <= 0) {
       roundsDiv.style.display = "none";
-      lotInput.value = actualCount; 
+      lotInput.value = 0;
       return;
     }
+
+    // LOT 옵션 동기화
+    lotInput.innerHTML = `<option value="0">0</option>` +
+      Array.from({ length: actualCount }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
     for (let i = 1; i <= actualCount; i++) {
       const row = document.createElement("div");
@@ -187,9 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
       btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
 
-    updateTotalKg();
     lotInput.value = actualCount;
     roundsDiv.style.display = "block";
+    updateTotalKg();
   }
 
   // =========================
@@ -307,9 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
         filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      const lotCount = filled.length; 
-lotInput.value = lotCount; // LOT 선택창 동기화
-createRounds(lotCount, filled);
+      createRounds(null, filled); // 실제 LOT 수만큼 버튼 생성
       updateTotalKg();
       submitBtn.disabled = false;
 
@@ -400,6 +397,7 @@ createRounds(lotCount, filled);
 
 });
 </script>
+
 
 
 </body>
