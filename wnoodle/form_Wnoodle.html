@@ -80,7 +80,7 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzT-xblDC3qY1Vh8OVZypxvfxU6a7j8GfLxOY-SxSRr4DWQAXpBuOk47AhYBJd-SzJ6Mg/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbySUdJC8MbFWQcI5OiyoaLLknYuCphzDcy8O93TSHT11kgw6JCMytiwr8q2bwCHgJFuXQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
@@ -97,6 +97,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
+
+  // --- 위치 고정 스타일(간단하게 JS로 적용) ---
+  // 필요하면 CSS로 옮겨서 커스터마이즈 하세요.
+  submitBtn.style.position = "fixed";
+  submitBtn.style.bottom = "12px";
+  submitBtn.style.left = "50%";
+  submitBtn.style.transform = "translateX(-50%)";
+  submitBtn.style.zIndex = "9999";
+  submitBtn.style.padding = "10px 18px";
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
@@ -131,9 +140,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const resEl = row.querySelector(".result");
 
       if (existing && existing[i]) {
-        const {no,value} = existing[i];
+        // 타입 안전성 보강: 문자열로 온 경우 숫자로 변환
+        let no = existing[i].no;
+        let value = existing[i].value;
+        no = (typeof no === "string" && no.trim() !== "") ? parseInt(no, 10) : Number(no);
+        value = (typeof value === "string" && value.trim() !== "") ? parseFloat(value) : Number(value);
+
+        // fallback
+        if (!no) no = value === 1 ? 60 : 40;
+        if (!value) value = no === 60 ? 1 : 0.7;
+
         roundData[i] = {no,value};
-        if (no==60){ btn3.classList.add("selected"); resEl.textContent = "주정 1 kg"; }
+        if (no === 60){ btn3.classList.add("selected"); resEl.textContent = "주정 1 kg"; }
         else { btn2.classList.add("selected"); resEl.textContent = "주정 0.7 kg"; }
       } else {
         btn3.classList.add("selected");
@@ -194,6 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.exists) {
         duplicateText.textContent = `${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
+        // keep submit disabled until user confirms restore
       } else {
         duplicateMsg.style.display = "none";
         submitBtn.disabled = false;
@@ -206,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =============================
-  // 🔥 수정 완료된 중복 데이터 복구 함수
+  // 수정된 중복 데이터 복구 함수
   // =============================
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
@@ -216,25 +235,22 @@ document.addEventListener("DOMContentLoaded", () => {
       loadingMsg.style.display = "none";
 
       if (data && data.no && data.value) {
+        // fill product + weight
         productInput.value = data.product || "";
         totalKgInput.value = data.weight || "";
 
         const noArr = data.no;
         const valueArr = data.value;
 
-        // 🔥 수정 1 — LOT 판정 조건 강화
+        // LOT 판정: 둘 다 비어있지 않은 것만 인정
         const filledData = [];
-        for (let i = 0; i < noArr.length; i++) {
-          if (
-            String(noArr[i]).trim() !== "" &&
-            String(valueArr[i]).trim() !== ""
-          ) {
-            const rawNo = String(noArr[i]).trim();
-            const rawValue = String(valueArr[i]).trim();
+        for (let i = 0; i < Math.max(noArr.length, valueArr.length); i++) {
+          const rawNo = String(noArr[i] ?? "").trim();
+          const rawValue = String(valueArr[i] ?? "").trim();
 
-            const no = parseInt(rawNo);
+          if (rawNo !== "" && rawValue !== "") {
+            const no = parseInt(rawNo, 10);
             const value = rawValue === "" ? (no === 60 ? 1 : 0.7) : parseFloat(rawValue);
-
             filledData.push({ no, value });
           }
         }
@@ -259,17 +275,25 @@ document.addEventListener("DOMContentLoaded", () => {
           };
         }
 
+        // 핵심: 복원 완료 후 저장 가능하도록 활성화
+        submitBtn.disabled = false;
+
       } else {
         alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
+        // leave submit disabled (user must choose another action)
       }
     } catch (err) {
       loadingMsg.style.display = "none";
       alert("데이터 불러오기 오류");
       console.error(err);
+      // 안전하게 제출 가능하도록 해제
+      submitBtn.disabled = false;
     }
   }
 
   dateInput.addEventListener("change", ()=>{
+    // 날짜 변경 시 제품 입력 초기화 요청 반영
+    productInput.value = "";
     lotInput.value = "0";
     totalKgInput.value = "";
     createRounds(0);
@@ -284,6 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
   duplicateCancelBtn.addEventListener("click", ()=>{
     duplicateMsg.style.display = "none";
     dateInput.valueAsDate = new Date();
+    // 날짜가 바뀌면 중복 체크도 다시 실행해서 submit 상태를 맞춤
+    if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
   submitBtn.addEventListener("click", async ()=>{
@@ -329,8 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
       submitBtn.disabled = false;
 
+      // 서버가 보낸 메시지를 그대로 보여주도록 변경
       if (result && (result.result === "success" || result.success)) {
-        alert("저장되었습니다.");
+        alert(result.message ? result.message : "저장되었습니다.");
       } else {
         alert("저장 중 오류: " + (result.error || result.message || JSON.stringify(result)));
       }
@@ -344,6 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
 
 </body>
 </html>
