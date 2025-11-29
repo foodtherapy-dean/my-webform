@@ -134,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
        1) 차수 버튼 구성
   ==================================================== */
   function createRounds(lotCount, existing = null) {
-
     roundsDiv.innerHTML = "";
     roundData = {};
 
@@ -160,20 +159,44 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
-      /* 기존 데이터가 있다면 해당 값 복원 */
+      /* 기존 데이터가 있다면 해당 값 복원 (안전한 파싱) */
       let initNo = 60;
       let initValue = 1;
 
-      if (existing && existing[i - 1]) {
-        initNo = Number(existing[i - 1].no);
-        initValue = Number(existing[i - 1].value);
+      if (existing && Array.isArray(existing) && existing[i - 1]) {
+        const rawNo = existing[i - 1].no;
+        const rawVal = existing[i - 1].value;
+
+        const sNo = (rawNo === undefined || rawNo === null) ? "" : String(rawNo).trim();
+        const sVal = (rawVal === undefined || rawVal === null) ? "" : String(rawVal).trim();
+
+        if (sNo !== "") {
+          const p = Number(sNo);
+          if (!isNaN(p)) initNo = p;
+        } else if (sVal !== "") {
+          // no 비어있고 value만 있는 경우 value로 no 추론
+          const pv = Number(sVal);
+          if (!isNaN(pv)) initNo = (pv === 1 ? 60 : 40);
+        }
+
+        if (sVal !== "") {
+          const pv = Number(sVal);
+          if (!isNaN(pv)) initValue = pv;
+        } else {
+          initValue = (initNo === 60 ? 1 : 0.7);
+        }
       }
 
       roundData[i] = { no: initNo, value: initValue };
 
-      // 버튼 선택 복원
-      if (initNo === 60) btn3.classList.add("selected");
-      else btn2.classList.add("selected");
+      // 버튼 선택 복원: 숫자비교(엄격)
+      btn2.classList.remove("selected");
+      btn3.classList.remove("selected");
+      if (initNo === 60) {
+        btn3.classList.add("selected");
+      } else {
+        btn2.classList.add("selected");
+      }
 
       resEl.textContent = `주정 ${initValue} kg`;
 
@@ -206,7 +229,10 @@ document.addEventListener("DOMContentLoaded", () => {
   ==================================================== */
   function updateTotalKg() {
     let total = 0;
-    Object.values(roundData).forEach(r => total += Number(r.no));
+    Object.values(roundData).forEach(r => {
+      const nv = Number(r && r.no);
+      if (!isNaN(nv)) total += nv;
+    });
     totalKgInput.value = total;
   }
 
@@ -220,7 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
       3) 날짜 중복 확인
   ==================================================== */
   async function checkDuplicate(date) {
-
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
     submitBtn.disabled = true;
@@ -233,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       loadingMsg.style.display = "none";
 
-      if (data.exists) {
+      if (data && data.exists) {
         duplicateText.textContent = `${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
       } else {
@@ -250,9 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ====================================================
       4) 중복 데이터 불러오기
+         — 빈값 처리 엄격히 해서 '20개 모두 생성' 문제 방지
   ==================================================== */
   async function restoreDuplicateData(date) {
-
     loadingMsg.style.display = "block";
 
     try {
@@ -263,41 +288,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
       loadingMsg.style.display = "none";
 
-      if (!data || !data.no) {
+      if (!data || !Array.isArray(data.no)) {
         alert("불러올 데이터 없음");
         return;
       }
 
       productInput.value = data.product || "";
 
-      const noArr = data.no;
-      const valueArr = data.value;
+      const noArr = data.no || [];
+      const valueArr = data.value || [];
 
-      /* 시트 데이터 → 객체 배열로 변환 */
+      /* 시트 데이터 → 안전한 배열(filled)로 변환
+         - raw 문자열이 비어있으면 건너뜀 (both empty -> skip)
+         - no가 비어있고 value만 있는 경우 value로 no 추론
+      */
       const filled = [];
+      const maxLen = Math.max(noArr.length, valueArr.length);
+      for (let i = 0; i < maxLen; i++) {
+        const rawNo = (noArr[i] === undefined || noArr[i] === null) ? "" : String(noArr[i]).trim();
+        const rawVal = (valueArr[i] === undefined || valueArr[i] === null) ? "" : String(valueArr[i]).trim();
 
-      for (let i = 0; i < Math.max(noArr.length, valueArr.length); i++) {
-        const no = Number(noArr[i]);
-        const value = Number(valueArr[i]);
+        if (rawNo === "" && rawVal === "") continue; // 빈 항목은 무시
+
+        let no = NaN;
+        let value = NaN;
+
+        if (rawNo !== "") {
+          const p = Number(rawNo);
+          if (!isNaN(p)) no = p;
+        }
+        if (rawVal !== "") {
+          const pv = Number(rawVal);
+          if (!isNaN(pv)) value = pv;
+        }
+
+        // no가 비어있지만 value가 있으면 추론
+        if (isNaN(no) && !isNaN(value)) {
+          no = (value === 1 ? 60 : 40);
+        }
+
+        // value가 비어있으면 no로 추론
+        if (isNaN(value) && !isNaN(no)) {
+          value = (no === 60 ? 1 : 0.7);
+        }
+
         if (!isNaN(no)) {
-          filled.push({
-            no: no,
-            value: value || (no === 60 ? 1 : 0.7)
-          });
+          filled.push({ no: no, value: value });
         }
       }
 
       const lotCount = filled.length;
       lotInput.value = lotCount;
 
-      // UI 생성 + 기존 데이터로 복원
+      // UI 생성하면서 filled를 existing으로 전달 → createRounds가 안전하게 처리
       createRounds(lotCount, filled);
 
-      // 반드시 처음 구성된 roundData를 덮어쓰기
-      roundData = {};
-      for (let i = 0; i < filled.length; i++) {
-        roundData[i + 1] = filled[i];
-      }
+      // roundData는 createRounds에서 이미 설정됨 — 추가 덮어쓰기 불필요
 
       updateTotalKg();
       submitBtn.disabled = false;
