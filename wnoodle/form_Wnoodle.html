@@ -97,8 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 저장 버튼 높이 헤더와 동일
-  submitBtn.style.height = `${document.querySelector(".app-header").offsetHeight}px`;
+  // 저장 버튼 높이 맞춤
+  const headerHeight = document.querySelector(".app-header").offsetHeight;
+  submitBtn.style.height = `${headerHeight}px`;
   submitBtn.style.position = "fixed";
   submitBtn.style.bottom = "0";
   submitBtn.style.left = "0";
@@ -106,46 +107,35 @@ document.addEventListener("DOMContentLoaded", () => {
   submitBtn.style.zIndex = "9999";
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
+
+  // LOT 0~20
   lotInput.innerHTML = `<option value="0">0</option>` +
     Array.from({length:20}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");
 
   let roundData = {};
 
-  function selectRound(roundIdx, typeBtn) {
-    const row = roundsDiv.querySelector(`.row[data-round='${roundIdx}']`);
-    const btn3 = row.querySelector(".btn[data-type='3포']");
-    const btn2 = row.querySelector(".btn[data-type='2포']");
-    const resEl = row.querySelector(".result");
-
-    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-    typeBtn.classList.add("selected");
-
-    const type = typeBtn.dataset.type;
+  function selectRound(idx, btn){
+    const row = roundsDiv.querySelector(`.row[data-round='${idx}']`);
+    row.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    const type = btn.dataset.type;
     const value = type === "3포" ? 1 : 0.7;
     const no = type === "3포" ? 60 : 40;
-
-    roundData[roundIdx] = { no, value };
-    resEl.textContent = `주정 ${value} kg`;
-
-    // 총중량 재계산
+    roundData[idx] = {no,value};
+    row.querySelector(".result").textContent = `주정 ${value} kg`;
+    // 총중량 계산
     let total = 0;
-    Object.values(roundData).forEach(r => { total += r.no; });
+    Object.values(roundData).forEach(r=>total += r.no);
     totalKgInput.value = total;
   }
 
-  function createRounds(lotCount, existing=null) {
+  function createRounds(lotCount){
     roundsDiv.innerHTML = "";
-    roundData = {};
-    if (!lotCount || lotCount <= 0) {
-      roundsDiv.style.display = "none";
-      return;
-    }
-
-    for (let i=1;i<=lotCount;i++){
+    for(let i=1;i<=lotCount;i++){
       const row = document.createElement("div");
-      row.className = "row";
+      row.className="row";
       row.dataset.round = i;
-      row.innerHTML = `
+      row.innerHTML=`
         <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
         <button class="btn" type="button" data-type="2포">2포</button>
@@ -156,161 +146,152 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn3 = row.querySelector(".btn[data-type='3포']");
       const btn2 = row.querySelector(".btn[data-type='2포']");
 
-      [btn3, btn2].forEach(btn=>{
-        btn.addEventListener("click", ()=>selectRound(i, btn));
+      [btn3,btn2].forEach(b=>{
+        b.addEventListener("click",()=>selectRound(i,b));
       });
 
-      // 기존 데이터 복원
-      if (existing && existing[i]) {
-        const no = Number(existing[i].no);
-        const typeBtn = no === 60 ? btn3 : btn2;
-        selectRound(i, typeBtn);
+      // 데이터 없으면 기본값 3포
+      if(!roundData[i]){
+        selectRound(i, btn3);
       } else {
-        selectRound(i, btn3); // 기본값 3포
+        // 이미 데이터 존재하면 버튼 선택 적용
+        const btnToSelect = roundData[i].no===60 ? btn3 : btn2;
+        selectRound(i, btnToSelect);
       }
     }
-
-    roundsDiv.style.display = "block";
+    roundsDiv.style.display = lotCount>0?"block":"none";
   }
 
-  lotInput.addEventListener("change", ()=>{
-    const cnt = parseInt(lotInput.value) || 0;
+  lotInput.addEventListener("change",()=>{
+    const cnt = parseInt(lotInput.value)||0;
     createRounds(cnt);
   });
 
-  async function checkDuplicate(date) {
-    loadingMsg.style.display = "block";
-    duplicateMsg.style.display = "none";
-    submitBtn.disabled = true;
-    try {
+  async function checkDuplicate(date){
+    loadingMsg.style.display="block";
+    duplicateMsg.style.display="none";
+    submitBtn.disabled=true;
+    try{
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
-      loadingMsg.style.display = "none";
-      if (data.exists) {
-        duplicateText.textContent = `${date} 에 이미 입력된 데이터가 있습니다.`;
-        duplicateMsg.style.display = "block";
+      loadingMsg.style.display="none";
+      if(data.exists){
+        duplicateText.textContent=`${date} 에 이미 입력된 데이터가 있습니다.`;
+        duplicateMsg.style.display="block";
       } else {
-        duplicateMsg.style.display = "none";
-        submitBtn.disabled = false;
+        duplicateMsg.style.display="none";
+        submitBtn.disabled=false;
       }
-    } catch (err) {
-      loadingMsg.style.display = "none";
+    }catch(err){
+      loadingMsg.style.display="none";
       alert("중복 확인 중 오류가 발생했습니다.");
-      submitBtn.disabled = false;
+      submitBtn.disabled=false;
     }
   }
 
-  async function restoreDuplicateData(date) {
-    loadingMsg.style.display = "block";
-    try {
+  async function restoreDuplicateData(date){
+    loadingMsg.style.display="block";
+    try{
       const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
-      loadingMsg.style.display = "none";
+      loadingMsg.style.display="none";
 
-      if (data && data.no && data.value) {
-        productInput.value = data.product || "";
-
-        const noArr = data.no;
-        const valueArr = data.value;
-
-        const filledData = [];
-        for (let i = 0; i < Math.max(noArr.length, valueArr.length); i++) {
-          const no = parseInt(noArr[i] ?? 0,10);
-          const value = parseFloat(valueArr[i] ?? (no===60?1:0.7));
-          if(!isNaN(no)) filledData.push({no,value});
+      if(data && data.no && data.value){
+        productInput.value=data.product||"";
+        const noArr=data.no;
+        const valueArr=data.value;
+        roundData={};
+        for(let i=0;i<noArr.length;i++){
+          const no=parseInt(noArr[i]??0,10);
+          const value=parseFloat(valueArr[i]??(no===60?1:0.7));
+          roundData[i+1]={no,value};
         }
 
-        const lotCount = filledData.length;
-        lotInput.value = lotCount;
+        const lotCount=Object.keys(roundData).length;
+        lotInput.value=lotCount;
+        createRounds(lotCount);
 
-        const existing = {};
-        for (let i=0;i<lotCount;i++){ existing[i+1] = filledData[i]; }
-
-        createRounds(lotCount, existing);
-        submitBtn.disabled = false;
+        submitBtn.disabled=false;
       } else {
         alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
       }
-    } catch (err) {
-      loadingMsg.style.display = "none";
+    }catch(err){
+      loadingMsg.style.display="none";
       alert("데이터 불러오기 오류");
       console.error(err);
-      submitBtn.disabled = false;
+      submitBtn.disabled=false;
     }
   }
 
-  dateInput.addEventListener("change", ()=>{
-    productInput.value = "";
-    lotInput.value = "0";
-    totalKgInput.value = "";
+  dateInput.addEventListener("change",()=>{
+    productInput.value="";
+    lotInput.value="0";
+    totalKgInput.value="";
+    roundData={};
     createRounds(0);
-    if (dateInput.value) checkDuplicate(dateInput.value);
+    if(dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  duplicateConfirmBtn.addEventListener("click", ()=>{
-    duplicateMsg.style.display = "none";
-    if (dateInput.value) restoreDuplicateData(dateInput.value);
+  duplicateConfirmBtn.addEventListener("click",()=>{
+    duplicateMsg.style.display="none";
+    if(dateInput.value) restoreDuplicateData(dateInput.value);
   });
 
-  duplicateCancelBtn.addEventListener("click", ()=>{
-    duplicateMsg.style.display = "none";
-    dateInput.valueAsDate = new Date();
-    if (dateInput.value) checkDuplicate(dateInput.value);
+  duplicateCancelBtn.addEventListener("click",()=>{
+    duplicateMsg.style.display="none";
+    dateInput.valueAsDate=new Date();
+    if(dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  submitBtn.addEventListener("click", async ()=>{
-    if (!dateInput.value) return alert("날짜를 선택하세요.");
-    if (!productInput.value) return alert("생산제품을 선택하세요.");
-    const lotCount = parseInt(lotInput.value) || 0;
-    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
-    if (!totalKgInput.value || parseFloat(totalKgInput.value) === 0) return alert("총중량 오류입니다.");
+  submitBtn.addEventListener("click",async ()=>{
+    if(!dateInput.value)return alert("날짜를 선택하세요.");
+    if(!productInput.value)return alert("생산제품을 선택하세요.");
+    const lotCount=parseInt(lotInput.value)||0;
+    if(lotCount===0)return alert("총생산 LOT 수를 선택하세요.");
+    if(!totalKgInput.value||parseFloat(totalKgInput.value)===0)return alert("총중량 오류입니다.");
 
-    const noArr = [];
-    const valueArr = [];
-    for (let i=1;i<=lotCount;i++){
-      if (roundData[i]) {
+    const noArr=[];
+    const valueArr=[];
+    for(let i=1;i<=lotCount;i++){
+      if(roundData[i]){
         noArr.push(roundData[i].no);
         valueArr.push(roundData[i].value);
-      } else {
-        noArr.push("");
-        valueArr.push("");
-      }
+      } else { noArr.push(""); valueArr.push(""); }
     }
 
-    const payload = {
-      date: dateInput.value,
-      product: productInput.value,
-      weight: totalKgInput.value,
-      lot: lotCount,
-      no: noArr,
-      value: valueArr
+    const payload={
+      date:dateInput.value,
+      product:productInput.value,
+      weight:totalKgInput.value,
+      lot:lotCount,
+      no:noArr,
+      value:valueArr
     };
 
-    try {
-      submitBtn.disabled = true;
-      const formBody = new URLSearchParams();
-      formBody.append("saengmyeon", JSON.stringify(payload));
-
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: formBody.toString()
+    try{
+      submitBtn.disabled=true;
+      const formBody=new URLSearchParams();
+      formBody.append("saengmyeon",JSON.stringify(payload));
+      const res=await fetch(scriptUrl,{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+        body:formBody.toString()
       });
-
-      const result = await res.json();
-      submitBtn.disabled = false;
-      if (result && (result.result === "success" || result.success)) {
-        alert(result.message ? result.message : "저장되었습니다.");
+      const result=await res.json();
+      submitBtn.disabled=false;
+      if(result && (result.result==="success"||result.success)){
+        alert(result.message?result.message:"저장되었습니다.");
       } else {
-        alert("저장 중 오류: " + (result.error || result.message || JSON.stringify(result)));
+        alert("저장 중 오류: "+(result.error||result.message||JSON.stringify(result)));
       }
-    } catch (err) {
-      submitBtn.disabled = false;
-      alert("서버 오류: " + (err.message || err));
+    }catch(err){
+      submitBtn.disabled=false;
+      alert("서버 오류: "+(err.message||err));
     }
   });
 
-  if (dateInput.value) checkDuplicate(dateInput.value);
+  if(dateInput.value) checkDuplicate(dateInput.value);
+
 });
 </script>
 </body>
