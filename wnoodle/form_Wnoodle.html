@@ -11,7 +11,7 @@ html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background
 .app-container{display:flex;flex-direction:column;min-height:100vh;}
 .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
 .app-body{flex:1;padding:12px;box-sizing:border-box;}
-.app-footer{padding:0;}
+.app-footer{padding:10px;}
 .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
 label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
 input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
@@ -97,10 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // 저장 버튼 높이를 헤더와 동일하게
-  const headerHeight = document.querySelector(".app-header").offsetHeight;
-  submitBtn.style.height = `${headerHeight}px`;
-
+  // 저장 버튼 높이 헤더와 동일
+  submitBtn.style.height = `${document.querySelector(".app-header").offsetHeight}px`;
   submitBtn.style.position = "fixed";
   submitBtn.style.bottom = "0";
   submitBtn.style.left = "0";
@@ -108,11 +106,32 @@ document.addEventListener("DOMContentLoaded", () => {
   submitBtn.style.zIndex = "9999";
 
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
-
   lotInput.innerHTML = `<option value="0">0</option>` +
     Array.from({length:20}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");
 
   let roundData = {};
+
+  function selectRound(roundIdx, typeBtn) {
+    const row = roundsDiv.querySelector(`.row[data-round='${roundIdx}']`);
+    const btn3 = row.querySelector(".btn[data-type='3포']");
+    const btn2 = row.querySelector(".btn[data-type='2포']");
+    const resEl = row.querySelector(".result");
+
+    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+    typeBtn.classList.add("selected");
+
+    const type = typeBtn.dataset.type;
+    const value = type === "3포" ? 1 : 0.7;
+    const no = type === "3포" ? 60 : 40;
+
+    roundData[roundIdx] = { no, value };
+    resEl.textContent = `주정 ${value} kg`;
+
+    // 총중량 재계산
+    let total = 0;
+    Object.values(roundData).forEach(r => { total += r.no; });
+    totalKgInput.value = total;
+  }
 
   function createRounds(lotCount, existing=null) {
     roundsDiv.innerHTML = "";
@@ -136,49 +155,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const btn3 = row.querySelector(".btn[data-type='3포']");
       const btn2 = row.querySelector(".btn[data-type='2포']");
-      const resEl = row.querySelector(".result");
-
-      if (existing && existing[i]) {
-    const no = Number(existing[i].no);
-    const value = Number(existing[i].value);
-    roundData[i] = { no, value };
-
-    if (no === 60) { 
-        btn3.classList.add("selected"); 
-    } else { 
-        btn2.classList.add("selected"); 
-    }
-    resEl.textContent = `주정 ${value} kg`;
-} else {
-    // 기존처럼 기본값 3포
-    btn3.classList.add("selected");
-    roundData[i] = { no: 60, value: 1 };
-    resEl.textContent = "주정 1 kg";
-}
 
       [btn3, btn2].forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          const idx = parseInt(row.dataset.round);
-          row.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
-          btn.classList.add("selected");
-          const type = btn.dataset.type;
-          const value = type === "3포" ? 1 : 0.7;
-          const no = type === "3포" ? 60 : 40;
-          roundData[idx] = {no,value};
-          resEl.textContent = `주정 ${value} kg`;
-
-          // 총중량 재계산
-          let total = 0;
-Object.values(roundData).forEach(r => { total += r.no; });
-totalKgInput.value = total;
-        });
+        btn.addEventListener("click", ()=>selectRound(i, btn));
       });
-    }
 
-    // 초기 총중량 계산
-    let total = 0;
-    Object.values(roundData).forEach(r => { total += r.no; });
-    totalKgInput.value = total;
+      // 기존 데이터 복원
+      if (existing && existing[i]) {
+        const no = Number(existing[i].no);
+        const typeBtn = no === 60 ? btn3 : btn2;
+        selectRound(i, typeBtn);
+      } else {
+        selectRound(i, btn3); // 기본값 3포
+      }
+    }
 
     roundsDiv.style.display = "block";
   }
@@ -237,14 +227,6 @@ totalKgInput.value = total;
         for (let i=0;i<lotCount;i++){ existing[i+1] = filledData[i]; }
 
         createRounds(lotCount, existing);
-
-        roundData = {};
-        for (let i=1;i<=lotCount;i++){ roundData[i] = existing[i]; }
-
-        let total = 0;
-        Object.values(roundData).forEach(r => { total += r.no; });
-        totalKgInput.value = total;
-
         submitBtn.disabled = false;
       } else {
         alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
@@ -306,7 +288,6 @@ totalKgInput.value = total;
 
     try {
       submitBtn.disabled = true;
-
       const formBody = new URLSearchParams();
       formBody.append("saengmyeon", JSON.stringify(payload));
 
