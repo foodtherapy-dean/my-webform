@@ -168,26 +168,37 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   async function checkDuplicate(date){
-    loadingMsg.style.display="block";
-    duplicateMsg.style.display="none";
-    submitBtn.disabled=true;
-    try{
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
-      const data = await res.json();
-      loadingMsg.style.display="none";
-      if(data.exists){
-        duplicateText.textContent=`${date} 에 이미 입력된 데이터가 있습니다.`;
-        duplicateMsg.style.display="block";
-      } else {
-        duplicateMsg.style.display="none";
-        submitBtn.disabled=false;
-      }
-    }catch(err){
-      loadingMsg.style.display="none";
-      alert("중복 확인 중 오류가 발생했습니다.");
+  loadingMsg.style.display="block";
+  duplicateMsg.style.display="none";
+  submitBtn.disabled=true;
+  try{
+    const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
+    const data = await res.json();
+
+    console.log("중복 확인 응답:", data);  // ★ 서버 응답 확인용
+
+    loadingMsg.style.display="none";
+
+    // 서버 응답 구조에 맞게 처리
+    const exists = data.exists || false;
+
+    if(exists){
+      duplicateText.textContent=`${date} 에 이미 입력된 데이터가 있습니다.`;
+      duplicateMsg.style.display="block";
+      submitBtn.disabled=true;
+    } else {
+      duplicateMsg.style.display="none";
       submitBtn.disabled=false;
     }
+
+  }catch(err){
+    loadingMsg.style.display="none";
+    alert("중복 확인 중 오류가 발생했습니다.");
+    console.error(err);
+    submitBtn.disabled=false;
   }
+}
+
 
   async function restoreDuplicateData(date){
     loadingMsg.style.display="block";
