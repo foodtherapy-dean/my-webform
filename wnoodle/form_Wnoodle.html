@@ -99,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
+  // 상단 헤더 높이와 하단 버튼 고정
   const header = document.querySelector(".app-header");
   if (header) {
     const headerHeight = header.offsetHeight || 48;
@@ -121,78 +122,77 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.innerHTML = "";
     roundData = {};
 
-    // actualCount 결정: existing이 있으면 existing.length, 없으면 lotCount
     const actualCount = (existing && Array.isArray(existing)) ? existing.length : lotCount;
-
     if (!actualCount || actualCount <= 0) {
-        roundsDiv.style.display = "none";
-        lotInput.value = 0;
-        return;
+      roundsDiv.style.display = "none";
+      lotInput.value = 0;
+      return;
     }
 
-    // LOT 선택창 동기화
+    // LOT 선택 옵션
     lotInput.innerHTML = `<option value="0">0</option>` +
       Array.from({ length: actualCount }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
-    // 실제 버튼 생성 루프
-    for (let i = 1; i <= actualCount; i++) {  // <-- 반드시 actualCount 사용
-        const row = document.createElement("div");
-        row.className = "row";
-        row.dataset.round = i;
-        row.style.display = "flex";
-        row.style.alignItems = "center";
-        row.style.gap = "8px";
-        row.style.padding = "8px";
-        row.style.border = "1px solid #eee";
-        row.style.borderRadius = "8px";
-        row.style.marginBottom = "8px";
+    // 버튼 생성
+    for (let i = 1; i <= actualCount; i++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.dataset.round = i;
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "8px";
+      row.style.padding = "8px";
+      row.style.border = "1px solid #eee";
+      row.style.borderRadius = "8px";
+      row.style.marginBottom = "8px";
 
-        row.innerHTML = `
-            <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
-            <button class="btn" type="button" data-type="3포">3포</button>
-            <button class="btn" type="button" data-type="2포">2포</button>
-            <div class="result" id="result${i}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
-        `;
-        roundsDiv.appendChild(row);
+      row.innerHTML = `
+        <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
+        <button class="btn" type="button" data-type="3포">3포</button>
+        <button class="btn" type="button" data-type="2포">2포</button>
+        <div class="result" id="result${i}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+      `;
+      roundsDiv.appendChild(row);
 
-        const btn3 = row.querySelector(".btn[data-type='3포']");
-        const btn2 = row.querySelector(".btn[data-type='2포']");
-        const resEl = row.querySelector(".result");
+      const btn3 = row.querySelector(".btn[data-type='3포']");
+      const btn2 = row.querySelector(".btn[data-type='2포']");
+      const resEl = row.querySelector(".result");
 
-        let initNo = 60;
-        let initValue = 1;
+      let initNo = 60;
+      let initValue = 1;
 
-        if (existing && Array.isArray(existing) && existing[i - 1]) {
-            const raw = existing[i - 1];
-            const rawNo = raw.no ?? "";
-            const rawVal = raw.value ?? "";
+      if (existing && Array.isArray(existing) && existing[i - 1]) {
+        const raw = existing[i - 1];
+        const rawNo = raw.no ?? "";
+        const rawVal = raw.value ?? "";
 
-            if (rawNo !== "") initNo = Number(rawNo);
-            if (rawVal !== "") initValue = Number(rawVal);
+        if (rawNo !== "") initNo = Number(rawNo);
+        if (rawVal !== "") initValue = Number(rawVal);
 
-            if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
-            if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
-        }
+        if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
+        if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
+      }
 
-        roundData[i] = { no: initNo, value: initValue };
+      roundData[i] = { no: initNo, value: initValue };
 
-        btn2.classList.remove("selected");
-        btn3.classList.remove("selected");
-        if (initNo === 60) btn3.classList.add("selected");
-        else btn2.classList.add("selected");
+      btn2.classList.remove("selected");
+      btn3.classList.remove("selected");
+      if (initNo === 60) btn3.classList.add("selected");
+      else btn2.classList.add("selected");
 
-        resEl.textContent = `주정 ${initValue} kg`;
+      resEl.textContent = `주정 ${initValue} kg`;
 
-        btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
-        btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
+      btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
+      btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
 
     lotInput.value = actualCount;
     roundsDiv.style.display = "block";
     updateTotalKg();
-}
+  }
+
   // =========================
-  // handleSelect: 선택/삭제 처리
+  // handleSelect: 선택/삭제
   // =========================
   function handleSelect(idx, no, value, row) {
     const current = roundData[idx];
@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // updateTotalKg: 총합 갱신 + LOT 동기화
+  // updateTotalKg
   // =========================
   function updateTotalKg() {
     let total = 0;
@@ -234,8 +234,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isNaN(nv)) total += nv;
     });
     totalKgInput.value = total;
-    // LOT는 실제 생성된 차수 기준
-    // lotInput.value = Object.keys(roundData).length; // 삭제
   }
 
   lotInput.addEventListener("change", () => {
@@ -289,27 +287,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const noArr = data.no || [];
       const valueArr = data.value || [];
       const maxLen = Math.max(noArr.length, valueArr.length);
-
       const filled = [];
+
       for (let i = 0; i < maxLen; i++) {
         let parsedNo = 60;
         let parsedVal = 1;
 
-        const rawNo = (noArr[i] === undefined || noArr[i] === null || noArr[i] === "") ? "" : String(noArr[i]).trim();
-        const rawVal = (valueArr[i] === undefined || valueArr[i] === null || valueArr[i] === "") ? "" : String(valueArr[i]).trim();
+        const rawNo = (noArr[i] ?? "").toString().trim();
+        const rawVal = (valueArr[i] ?? "").toString().trim();
 
         if (rawNo !== "") parsedNo = Number(rawNo);
         if (rawVal !== "") parsedVal = Number(rawVal);
 
-        if (rawNo === "" && rawVal !== "") parsedNo = (Number(rawVal) === 1 ? 60 : 40);
-        if (rawVal === "" && rawNo !== "") parsedVal = (Number(rawNo) === 60 ? 1 : 0.7);
+        if (rawNo === "" && rawVal !== "") parsedNo = (parsedVal === 1 ? 60 : 40);
+        if (rawVal === "" && rawNo !== "") parsedVal = (parsedNo === 60 ? 1 : 0.7);
 
         filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      const lotCountFromData = filled.length;
-createRounds(lotCountFromData, filled);
-      updateTotalKg();
+      createRounds(filled.length, filled);
       submitBtn.disabled = false;
 
     } catch (err) {
@@ -339,13 +335,13 @@ createRounds(lotCountFromData, filled);
   });
 
   // =========================
-  // submit / save
+  // submit
   // =========================
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productInput.value) return alert("생산제품을 선택하세요.");
 
-    const lotCount = Number(lotInput.value);
+    const lotCount = Object.keys(roundData).length;
     if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
     if (!totalKgInput.value || Number(totalKgInput.value) === 0) return alert("총중량 오류");
 
@@ -391,7 +387,7 @@ createRounds(lotCountFromData, filled);
       }
     } catch (err) {
       submitBtn.disabled = false;
-      alert("서버 오류: " + (err && err.message ? err.message : err));
+      alert("서버 오류: " + (err?.message || err));
     }
   });
 
@@ -399,6 +395,7 @@ createRounds(lotCountFromData, filled);
 
 });
 </script>
+
 
 
 
