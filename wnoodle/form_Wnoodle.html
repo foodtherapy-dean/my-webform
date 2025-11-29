@@ -83,9 +83,9 @@ const scriptUrl = "https://script.google.com/macros/s/AKfycbySUdJC8MbFWQcI5Oiyoa
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ----- DOM elements -----
   const params = new URLSearchParams(location.search);
   const paramDate = params.get("date");
+
   const dateInput = document.getElementById("date");
   const productInput = document.getElementById("product");
   const lotInput = document.getElementById("lotInput");
@@ -98,7 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  // ----- UI: fixed submit button height -----
   const header = document.querySelector(".app-header");
   if (header) {
     const headerHeight = header.offsetHeight || 48;
@@ -110,19 +109,16 @@ document.addEventListener("DOMContentLoaded", () => {
   submitBtn.style.width = "100%";
   submitBtn.style.zIndex = "9999";
 
-  // ----- defaults -----
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
 
   lotInput.innerHTML =
     `<option value="0">0</option>` +
     Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
-  // roundData: 1-based index -> {1:{no:60, value:1}, ...}
   let roundData = {};
 
   // =========================
-  // createRounds: generate UI
-  // existing: array of {no,value} OR null
+  // createRounds: UI 생성
   // =========================
   function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
@@ -157,39 +153,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
-      // 기본값
       let initNo = 60;
       let initValue = 1;
 
       if (existing && Array.isArray(existing) && existing[i - 1]) {
         const raw = existing[i - 1];
-        const rawNo = raw.no !== undefined && raw.no !== null ? String(raw.no).trim() : "";
-        const rawVal = raw.value !== undefined && raw.value !== null ? String(raw.value).trim() : "";
+        const rawNo = (raw.no === undefined || raw.no === null || raw.no === "") ? "" : String(raw.no).trim();
+        const rawVal = (raw.value === undefined || raw.value === null || raw.value === "") ? "" : String(raw.value).trim();
 
-        // 숫자 변환
-        const nNo = Number(rawNo);
-        const nVal = Number(rawVal);
+        if (rawNo !== "") initNo = Number(rawNo);
+        if (rawVal !== "") initValue = Number(rawVal);
 
-        // 1) no와 value 모두 존재
-        if (!isNaN(nNo) && !isNaN(nVal)) {
-          initNo = nNo;
-          initValue = nVal;
-        }
-        // 2) no만 존재
-        else if (!isNaN(nNo)) {
-          initNo = nNo;
-          initValue = nNo === 60 ? 1 : 0.7;
-        }
-        // 3) value만 존재
-        else if (!isNaN(nVal)) {
-          initValue = nVal;
-          initNo = nVal === 1 ? 60 : 40;
-        }
+        // 빈 값 추론
+        if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
+        if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
       }
 
       roundData[i] = { no: initNo, value: initValue };
 
-      // 버튼 상태 복원
       btn2.classList.remove("selected");
       btn3.classList.remove("selected");
       if (initNo === 60) btn3.classList.add("selected");
@@ -197,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       resEl.textContent = `주정 ${initValue} kg`;
 
-      // 클릭 이벤트
       btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
       btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
@@ -206,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.style.display = "block";
   }
 
-  // 선택 처리
   function handleSelect(idx, no, value, row) {
     row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
     const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
@@ -219,23 +198,20 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTotalKg();
   }
 
-  // 총중량 계산
   function updateTotalKg() {
     let total = 0;
     Object.values(roundData).forEach(r => {
-      const nv = Number(r.no);
+      const nv = Number(r && r.no);
       if (!isNaN(nv)) total += nv;
     });
     totalKgInput.value = total;
   }
 
-  // LOT 변경
   lotInput.addEventListener("change", () => {
     const cnt = Number(lotInput.value) || 0;
     createRounds(cnt, null);
   });
 
-  // 중복 확인
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
@@ -259,7 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 중복 데이터 불러오기
+  // =========================
+  // restoreDuplicateData (빈칸 포함)
+  // =========================
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
     try {
@@ -273,32 +251,34 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       productInput.value = data.product || "";
+
       const noArr = data.no || [];
       const valueArr = data.value || [];
-      const filled = [];
-
       const maxLen = Math.max(noArr.length, valueArr.length);
+
+      // 빈칸 포함해서 filled 생성
+      const filled = [];
       for (let i = 0; i < maxLen; i++) {
-        const rawNo = noArr[i] !== undefined && noArr[i] !== null ? String(noArr[i]).trim() : "";
-        const rawVal = valueArr[i] !== undefined && valueArr[i] !== null ? String(valueArr[i]).trim() : "";
+        let parsedNo = 60;   // 기본값
+        let parsedVal = 1;
 
-        let parsedNo = Number(rawNo);
-        let parsedVal = Number(rawVal);
+        const rawNo = (noArr[i] === undefined || noArr[i] === null || noArr[i]==="") ? "" : String(noArr[i]).trim();
+        const rawVal = (valueArr[i] === undefined || valueArr[i] === null || valueArr[i]==="") ? "" : String(valueArr[i]).trim();
 
-        if (rawNo === "" && rawVal === "") {
-          parsedNo = NaN;
-          parsedVal = NaN;
-        }
+        if (rawNo !== "") parsedNo = Number(rawNo);
+        if (rawVal !== "") parsedVal = Number(rawVal);
 
-        if (isNaN(parsedNo) && !isNaN(parsedVal)) parsedNo = parsedVal === 1 ? 60 : 40;
-        if (isNaN(parsedVal) && !isNaN(parsedNo)) parsedVal = parsedNo === 60 ? 1 : 0.7;
+        // 추론
+        if (rawNo === "" && rawVal !== "") parsedNo = (Number(rawVal) === 1 ? 60 : 40);
+        if (rawVal === "" && rawNo !== "") parsedVal = (Number(rawNo) === 60 ? 1 : 0.7);
 
-        filled.push({ no: !isNaN(parsedNo) ? parsedNo : 60, value: !isNaN(parsedVal) ? parsedVal : 1 });
+        filled.push({ no: parsedNo, value: parsedVal });
       }
 
       const lotCount = filled.length;
       lotInput.value = lotCount;
       createRounds(lotCount, filled);
+
       updateTotalKg();
       submitBtn.disabled = false;
 
@@ -310,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 날짜 변경
   dateInput.addEventListener("change", () => {
     productInput.value = "";
     lotInput.value = "0";
@@ -319,7 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  // 중복 버튼
   duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
     if (dateInput.value) restoreDuplicateData(dateInput.value);
@@ -330,7 +308,6 @@ document.addEventListener("DOMContentLoaded", () => {
     checkDuplicate(dateInput.value);
   });
 
-  // 저장
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productInput.value) return alert("생산제품을 선택하세요.");
@@ -385,12 +362,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // initial duplicate check
   if (dateInput.value) checkDuplicate(dateInput.value);
-
 });
 </script>
-
 
 
 </body>
