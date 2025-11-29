@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.values(roundData).forEach(r => { total += r.no; });
     totalKgInput.value = total;
     roundsDiv.style.display = "block";
-}
+  }
 
   lotInput.addEventListener("change", ()=>{
     const cnt = parseInt(lotInput.value) || 0;
@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     duplicateMsg.style.display="none";
     submitBtn.disabled=true;
     try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))})`);
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
       loadingMsg.style.display="none";
       if(data.exists){
@@ -224,12 +224,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const lotCount = filledData.length;
         lotInput.value = lotCount;
-        const existing = [];
-for(let i=0;i<filledData.length;i++){
-    existing.push(filledData[i]);
-}
-createRounds(filledData.length, existing);;
-        roundData = {...existing};
+
+        createRounds(lotCount, filledData);
+
+        // roundData 재세팅 (1-based)
+        roundData = {};
+        for(let i=0;i<filledData.length;i++){
+          roundData[i+1] = filledData[i];
+        }
 
         let total = 0;
         Object.values(roundData).forEach(r=>{total+=r.no;});
@@ -302,5 +304,6 @@ createRounds(filledData.length, existing);;
   if(dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
+
 </body>
 </html>
