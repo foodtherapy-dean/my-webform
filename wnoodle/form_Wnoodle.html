@@ -134,10 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
     lotInput.innerHTML = `<option value="0">0</option>` +
       Array.from({ length: actualCount }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
 
-    for (let i = 1; i <= actualCount; i++) {
+    for (let i = 0; i < actualCount; i++) {
+      const roundIdx = i + 1; // 1-based index
       const row = document.createElement("div");
       row.className = "row";
-      row.dataset.round = i;
+      row.dataset.round = roundIdx;
       row.style.display = "flex";
       row.style.alignItems = "center";
       row.style.gap = "8px";
@@ -147,10 +148,10 @@ document.addEventListener("DOMContentLoaded", () => {
       row.style.marginBottom = "8px";
 
       row.innerHTML = `
-        <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
+        <div style="flex:0 0 48px;font-weight:700;">${roundIdx}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
         <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" id="result${i}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+        <div class="result" id="result${roundIdx}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
       `;
       roundsDiv.appendChild(row);
 
@@ -161,8 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
       let initNo = 60;
       let initValue = 1;
 
-      if (existing && Array.isArray(existing) && existing[i - 1]) {
-        const raw = existing[i - 1];
+      if (existing && Array.isArray(existing) && existing[i]) {
+        const raw = existing[i];
         const rawNo = (raw.no === undefined || raw.no === null || raw.no === "") ? "" : String(raw.no).trim();
         const rawVal = (raw.value === undefined || raw.value === null || raw.value === "") ? "" : String(raw.value).trim();
 
@@ -173,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
       }
 
-      roundData[i] = { no: initNo, value: initValue };
+      roundData[roundIdx] = { no: initNo, value: initValue };
 
       btn2.classList.remove("selected");
       btn3.classList.remove("selected");
@@ -182,11 +183,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       resEl.textContent = `주정 ${initValue} kg`;
 
-      btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
-      btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
+      btn3.addEventListener("click", () => handleSelect(roundIdx, 60, 1, row));
+      btn2.addEventListener("click", () => handleSelect(roundIdx, 40, 0.7, row));
     }
 
-    lotInput.value = actualCount;
+    lotInput.value = actualCount; // actualCount 기준으로 고정
     roundsDiv.style.display = "block";
     updateTotalKg();
   }
@@ -234,7 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isNaN(nv)) total += nv;
     });
     totalKgInput.value = total;
-    lotInput.value = Object.keys(roundData).length;
+    // LOT는 실제 생성된 차수 기준
+    // lotInput.value = Object.keys(roundData).length; // 삭제
   }
 
   lotInput.addEventListener("change", () => {
@@ -397,6 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
 
 
 
