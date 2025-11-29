@@ -224,10 +224,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const lotCount = filledData.length;
         lotInput.value = lotCount;
-        const existing = {};
-        for(let i=0;i<lotCount;i++){ existing[i+1] = filledData[i]; }
-
-        createRounds(lotCount, existing);
+        const existing = [];
+for(let i=0;i<filledData.length;i++){
+    existing.push(filledData[i]);
+}
+createRounds(filledData.length, existing);;
         roundData = {...existing};
 
         let total = 0;
