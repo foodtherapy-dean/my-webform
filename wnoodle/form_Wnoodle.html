@@ -80,7 +80,7 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbySUdJC8MbFWQcI5OiyoaLLknYuCphzDcy8O93TSHT11kgw6JCMytiwr8q2bwCHgJFuXQ/exec"; // ← 당신의 URL로 교체
+const scriptUrl = "https://script.google.com/macros/s/AKfycbySUdJC8MbFWQcI5OiyoaLLknYuCphzDcy8O93TSHT11kgw6JCMytiwr8q2bwCHgJFuXQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   lotInput.innerHTML = `<option value="0">0</option>` +
     Array.from({length:20}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");
 
-  let roundData = {}; // {index: {no,value}}
+  let roundData = {};
 
   function createRounds(lotCount, existing=null) {
     roundsDiv.innerHTML = "";
@@ -114,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // existing: object keyed by 1..n
     for (let i=1;i<=lotCount;i++){
       const row = document.createElement("div");
       row.className = "row";
@@ -145,9 +144,8 @@ document.addEventListener("DOMContentLoaded", () => {
       [btn3, btn2].forEach(btn=>{
         btn.addEventListener("click", ()=>{
           const idx = parseInt(row.dataset.round);
-          // 이미 선택된 버튼 클릭 -> 해당 차수 삭제(취수)
+
           if (btn.classList.contains("selected")) {
-            // remove idx from roundData and rebuild
             const keys = Object.keys(roundData).map(k=>parseInt(k)).sort((a,b)=>a-b);
             const newData = {};
             let ni = 1;
@@ -164,7 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
-          // normal selection change
           row.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
           btn.classList.add("selected");
           const type = btn.dataset.type;
@@ -179,14 +176,12 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.style.display = "block";
   }
 
-  // LOT change -> update total kg + rounds
   lotInput.addEventListener("change", ()=>{
     const cnt = parseInt(lotInput.value) || 0;
     totalKgInput.value = cnt * 20;
     createRounds(cnt);
   });
 
-  // 중복체크: GET parameter 방식 (existing code 호환)
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
@@ -210,60 +205,70 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 기존 데이터 불러오기: GET 방식
+  // =============================
+  // 🔥 수정 완료된 중복 데이터 복구 함수
+  // =============================
   async function restoreDuplicateData(date) {
-    loadingMsg.style.display = "block";
-    try {
-      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
-      const data = await res.json();
-      loadingMsg.style.display = "none";
+    loadingMsg.style.display = "block";
+    try {
+      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
+      const data = await res.json();
+      loadingMsg.style.display = "none";
 
-      if (data && data.no && data.value) { // 👈 no와 value 배열이 모두 있는지 확인
-        productInput.value = data.product || "";
-        totalKgInput.value = data.weight || "";
-        
-        const noArr = data.no;    // 20개의 NO 값 배열
-        const valueArr = data.value; // 20개의 VALUE 값 배열
-        
-        // 빈 값을 제외하고 실제 데이터만 순차적으로 추출
-        const filledData = [];
-        for (let i = 0; i < noArr.length; i++) {
-          // NO나 VALUE 중 하나라도 값이 있으면 유효한 LOT으로 간주
-          if (String(noArr[i]).trim() !== "" || String(valueArr[i]).trim() !== "") { 
-            const no = parseInt(noArr[i]) || (parseFloat(valueArr[i]) === 1 ? 60 : 40);
-            const value = parseFloat(valueArr[i]) || (no === 60 ? 1 : 0.7);
+      if (data && data.no && data.value) {
+        productInput.value = data.product || "";
+        totalKgInput.value = data.weight || "";
 
-            filledData.push({ no, value });
-          }
-        }
+        const noArr = data.no;
+        const valueArr = data.value;
 
-        const lotCount = filledData.length;
-        lotInput.value = lotCount;
-        totalKgInput.value = lotCount * 20;
+        // 🔥 수정 1 — LOT 판정 조건 강화
+        const filledData = [];
+        for (let i = 0; i < noArr.length; i++) {
+          if (
+            String(noArr[i]).trim() !== "" &&
+            String(valueArr[i]).trim() !== ""
+          ) {
+            const rawNo = String(noArr[i]).trim();
+            const rawValue = String(valueArr[i]).trim();
 
-        // build existing object {1: {no,value}, 2: {no,value}, ...}
-        const existing = {};
-        for (let i=0;i<lotCount;i++){
-          existing[i+1] = filledData[i];
-        }
-        
-        createRounds(lotCount, existing);
+            const no = parseInt(rawNo);
+            const value = rawValue === "" ? (no === 60 ? 1 : 0.7) : parseFloat(rawValue);
+
+            filledData.push({ no, value });
+          }
+        }
+
+        const lotCount = filledData.length;
+        lotInput.value = lotCount;
+        totalKgInput.value = lotCount * 20;
+
+        const existing = {};
+        for (let i=0;i<lotCount;i++){
+          existing[i+1] = filledData[i];
+        }
+
+        createRounds(lotCount, existing);
+
+        // roundData 재설정
         roundData = {};
-for (let i=1; i<=lotCount; i++) {
-  roundData[i] = {
-    no: existing[i].no,
-    value: existing[i].value
-  };
-}
-      } else {
-        alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
-      }
-    } catch (err) {
-      loadingMsg.style.display = "none";
-      alert("데이터 불러오기 오류");
-      console.error(err);
-    }
-  }
+        for (let i=1; i<=lotCount; i++) {
+          roundData[i] = {
+            no: existing[i].no,
+            value: existing[i].value
+          };
+        }
+
+      } else {
+        alert("불러올 데이터가 없거나 형식이 올바르지 않습니다.");
+      }
+    } catch (err) {
+      loadingMsg.style.display = "none";
+      alert("데이터 불러오기 오류");
+      console.error(err);
+    }
+  }
+
   dateInput.addEventListener("change", ()=>{
     lotInput.value = "0";
     totalKgInput.value = "";
@@ -281,67 +286,64 @@ for (let i=1; i<=lotCount; i++) {
     dateInput.valueAsDate = new Date();
   });
 
-  // 저장: POST (JSON or form-encoded supported on server)
   submitBtn.addEventListener("click", async ()=>{
-  if (!dateInput.value) return alert("날짜를 선택하세요.");
-  if (!productInput.value) return alert("생산제품을 선택하세요.");
-  const lotCount = parseInt(lotInput.value) || 0;
-  if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
-  if (!totalKgInput.value || parseFloat(totalKgInput.value) === 0) return alert("총중량 오류입니다.");
+    if (!dateInput.value) return alert("날짜를 선택하세요.");
+    if (!productInput.value) return alert("생산제품을 선택하세요.");
+    const lotCount = parseInt(lotInput.value) || 0;
+    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+    if (!totalKgInput.value || parseFloat(totalKgInput.value) === 0) return alert("총중량 오류입니다.");
 
-  const noArr = [];
-  const valueArr = [];
-  for (let i=1;i<=lotCount;i++){
-    if (roundData[i]) {
-      noArr.push(roundData[i].no);
-      valueArr.push(roundData[i].value);
-    } else {
-      noArr.push("");
-      valueArr.push("");
+    const noArr = [];
+    const valueArr = [];
+    for (let i=1;i<=lotCount;i++){
+      if (roundData[i]) {
+        noArr.push(roundData[i].no);
+        valueArr.push(roundData[i].value);
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
     }
-  }
 
-  const payload = {
-    date: dateInput.value,
-    product: productInput.value,
-    weight: totalKgInput.value,
-    lot: lotCount,
-    no: noArr,
-    value: valueArr
-  };
+    const payload = {
+      date: dateInput.value,
+      product: productInput.value,
+      weight: totalKgInput.value,
+      lot: lotCount,
+      no: noArr,
+      value: valueArr
+    };
 
-  try {
-    submitBtn.disabled = true;
+    try {
+      submitBtn.disabled = true;
 
-    // form-encoded 방식으로 전송 -> preflight 회피
-    const formBody = new URLSearchParams();
-    formBody.append("saengmyeon", JSON.stringify(payload));
+      const formBody = new URLSearchParams();
+      formBody.append("saengmyeon", JSON.stringify(payload));
 
-    const res = await fetch(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: formBody.toString()
-    });
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: formBody.toString()
+      });
 
-    // 정상적으로 응답이 왔는지 확인
-    const result = await res.json();
-    submitBtn.disabled = false;
+      const result = await res.json();
+      submitBtn.disabled = false;
 
-    if (result && (result.result === "success" || result.success)) {
-      alert("저장되었습니다.");
-    } else {
-      alert("저장 중 오류: " + (result.error || result.message || JSON.stringify(result)));
+      if (result && (result.result === "success" || result.success)) {
+        alert("저장되었습니다.");
+      } else {
+        alert("저장 중 오류: " + (result.error || result.message || JSON.stringify(result)));
+      }
+    } catch (err) {
+      submitBtn.disabled = false;
+      alert("서버 오류: " + (err.message || err));
     }
-  } catch (err) {
-    submitBtn.disabled = false;
-    alert("서버 오류: " + (err.message || err));
-  }
-});
+  });
 
-  // 초기 중복 체크
   if (dateInput.value) checkDuplicate(dateInput.value);
 
 });
 </script>
+
 </body>
 </html>
