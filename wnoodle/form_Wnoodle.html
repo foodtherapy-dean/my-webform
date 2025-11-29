@@ -80,7 +80,7 @@
 
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyJLLPxmTPoTaaIKk_QKwMyFHaNR0yDAuCXEK13SQQyd8SYg0vzlj73bFVqYdP9VaviWQ/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbx8WaY4KSIyUpKL7GQQ4j7UNo3FMUn8IC6j0kyQgmLTiMGpXJnEmlBOeJvvxIBI3_GO1Q/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!lotCount || lotCount <= 0) {
       roundsDiv.style.display = "none";
+      lotInput.value = 0; // LOT값 초기화
       return;
     }
 
@@ -154,7 +155,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
-      // 초기값 세팅
       let initNo = 60;
       let initValue = 1;
 
@@ -179,12 +179,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       resEl.textContent = `주정 ${initValue} kg`;
 
-      // 클릭 핸들러
       btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
       btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
 
     updateTotalKg();
+    lotInput.value = lotCount; // LOT 입력창 동기화
     roundsDiv.style.display = "block";
   }
 
@@ -199,8 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
       delete roundData[idx];
 
       // 차수 이후 데이터 한 칸씩 앞으로 이동
-      const keys = Object.keys(roundData).map(Number).sort((a,b)=>a-b);
-      for (let i = idx + 1; i <= keys[keys.length-1]+1; i++) {
+      const keys = Object.keys(roundData).map(Number).sort((a, b) => a - b);
+      for (let i = idx + 1; i <= keys[keys.length - 1] + 1; i++) {
         if (roundData[i]) {
           roundData[i - 1] = roundData[i];
           delete roundData[i];
@@ -208,7 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // UI 다시 렌더
-      createRounds(Object.keys(roundData).length, Object.values(roundData));
+      const newLotCount = Object.keys(roundData).length;
+      createRounds(newLotCount, Object.values(roundData));
       return;
     }
 
@@ -224,6 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTotalKg();
   }
 
+  // =========================
+  // updateTotalKg: 총합 갱신 + LOT 동기화
+  // =========================
   function updateTotalKg() {
     let total = 0;
     Object.values(roundData).forEach(r => {
@@ -231,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isNaN(nv)) total += nv;
     });
     totalKgInput.value = total;
+    lotInput.value = Object.keys(roundData).length; // LOT 입력창 동기화
   }
 
   lotInput.addEventListener("change", () => {
@@ -285,14 +290,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const valueArr = data.value || [];
       const maxLen = Math.max(noArr.length, valueArr.length);
 
-      // filled 배열 생성
       const filled = [];
       for (let i = 0; i < maxLen; i++) {
         let parsedNo = 60;
         let parsedVal = 1;
 
-        const rawNo = (noArr[i] === undefined || noArr[i] === null || noArr[i]==="") ? "" : String(noArr[i]).trim();
-        const rawVal = (valueArr[i] === undefined || valueArr[i] === null || valueArr[i]==="") ? "" : String(valueArr[i]).trim();
+        const rawNo = (noArr[i] === undefined || noArr[i] === null || noArr[i] === "") ? "" : String(noArr[i]).trim();
+        const rawVal = (valueArr[i] === undefined || valueArr[i] === null || valueArr[i] === "") ? "" : String(valueArr[i]).trim();
 
         if (rawNo !== "") parsedNo = Number(rawNo);
         if (rawVal !== "") parsedVal = Number(rawVal);
@@ -397,6 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
 
 
 
