@@ -78,6 +78,7 @@
   </div>
 </div>
 
+
 <script>
 const scriptUrl = "https://script.google.com/macros/s/AKfycbwsVkpUZDzTgBPDgmzpv9r2g2Ub-LCt-jPI7bBHKFYOaaWK6Hd4Tsk7WBl5giIgY6fOxg/exec";
 
@@ -153,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn2 = row.querySelector(".btn[data-type='2포']");
       const resEl = row.querySelector(".result");
 
+      // 초기값 세팅
       let initNo = 60;
       let initValue = 1;
 
@@ -164,7 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rawNo !== "") initNo = Number(rawNo);
         if (rawVal !== "") initValue = Number(rawVal);
 
-        // 빈 값 추론
         if (rawNo === "" && rawVal !== "") initNo = (Number(rawVal) === 1 ? 60 : 40);
         if (rawVal === "" && rawNo !== "") initValue = (Number(rawNo) === 60 ? 1 : 0.7);
       }
@@ -178,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       resEl.textContent = `주정 ${initValue} kg`;
 
+      // 클릭 핸들러
       btn3.addEventListener("click", () => handleSelect(i, 60, 1, row));
       btn2.addEventListener("click", () => handleSelect(i, 40, 0.7, row));
     }
@@ -186,7 +188,31 @@ document.addEventListener("DOMContentLoaded", () => {
     roundsDiv.style.display = "block";
   }
 
+  // =========================
+  // handleSelect: 선택/삭제 처리
+  // =========================
   function handleSelect(idx, no, value, row) {
+    const current = roundData[idx];
+
+    // 이미 선택된 버튼 클릭 → 삭제
+    if (current && current.no === no) {
+      delete roundData[idx];
+
+      // 차수 이후 데이터 한 칸씩 앞으로 이동
+      const keys = Object.keys(roundData).map(Number).sort((a,b)=>a-b);
+      for (let i = idx + 1; i <= keys[keys.length-1]+1; i++) {
+        if (roundData[i]) {
+          roundData[i - 1] = roundData[i];
+          delete roundData[i];
+        }
+      }
+
+      // UI 다시 렌더
+      createRounds(Object.keys(roundData).length, Object.values(roundData));
+      return;
+    }
+
+    // 일반 선택
     row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
     const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
     if (btn) btn.classList.add("selected");
@@ -212,6 +238,9 @@ document.addEventListener("DOMContentLoaded", () => {
     createRounds(cnt, null);
   });
 
+  // =========================
+  // 중복 체크
+  // =========================
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
@@ -236,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // restoreDuplicateData (빈칸 포함)
+  // restoreDuplicateData
   // =========================
   async function restoreDuplicateData(date) {
     loadingMsg.style.display = "block";
@@ -256,10 +285,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const valueArr = data.value || [];
       const maxLen = Math.max(noArr.length, valueArr.length);
 
-      // 빈칸 포함해서 filled 생성
+      // filled 배열 생성
       const filled = [];
       for (let i = 0; i < maxLen; i++) {
-        let parsedNo = 60;   // 기본값
+        let parsedNo = 60;
         let parsedVal = 1;
 
         const rawNo = (noArr[i] === undefined || noArr[i] === null || noArr[i]==="") ? "" : String(noArr[i]).trim();
@@ -268,7 +297,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (rawNo !== "") parsedNo = Number(rawNo);
         if (rawVal !== "") parsedVal = Number(rawVal);
 
-        // 추론
         if (rawNo === "" && rawVal !== "") parsedNo = (Number(rawVal) === 1 ? 60 : 40);
         if (rawVal === "" && rawNo !== "") parsedVal = (Number(rawNo) === 60 ? 1 : 0.7);
 
@@ -308,6 +336,9 @@ document.addEventListener("DOMContentLoaded", () => {
     checkDuplicate(dateInput.value);
   });
 
+  // =========================
+  // submit / save
+  // =========================
   submitBtn.addEventListener("click", async () => {
     if (!dateInput.value) return alert("날짜를 선택하세요.");
     if (!productInput.value) return alert("생산제품을 선택하세요.");
@@ -363,8 +394,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (dateInput.value) checkDuplicate(dateInput.value);
+
 });
 </script>
+
 
 
 </body>
