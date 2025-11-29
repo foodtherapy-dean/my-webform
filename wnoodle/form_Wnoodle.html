@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    for (let i = 1; i <= lotCount; i++) {
+    for (let i = 1; i <= actualCount; i++) {
       const row = document.createElement("div");
       row.className = "row";
       row.dataset.round = i;
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     updateTotalKg();
-    lotInput.value = lotCount;
+    lotInput.value = actualCount;
     roundsDiv.style.display = "block";
   }
 
