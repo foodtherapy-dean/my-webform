@@ -116,54 +116,58 @@ document.addEventListener("DOMContentLoaded", () => {
   function createRounds(lotCount, existing=null) {
     roundsDiv.innerHTML = "";
     roundData = {};
-    if (!lotCount || lotCount <= 0) { roundsDiv.style.display = "none"; return; }
+    if (!lotCount || lotCount <= 0) { 
+        roundsDiv.style.display = "none"; 
+        return; 
+    }
 
-    for (let i=1;i<=lotCount;i++){
-      const row = document.createElement("div");
-      row.className = "row";
-      row.dataset.round = i;
-      row.innerHTML = `
-        <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
-        <button class="btn" type="button" data-type="3포">3포</button>
-        <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" id="result${i}"></div>
-      `;
-      roundsDiv.appendChild(row);
+    for (let i=1; i<=lotCount; i++){
+        const row = document.createElement("div");
+        row.className = "row";
+        row.dataset.round = i;
+        row.innerHTML = `
+            <div style="flex:0 0 48px;font-weight:700;">${i}차</div>
+            <button class="btn" type="button" data-type="3포">3포</button>
+            <button class="btn" type="button" data-type="2포">2포</button>
+            <div class="result" id="result${i}"></div>
+        `;
+        roundsDiv.appendChild(row);
 
-      const btn3 = row.querySelector(".btn[data-type='3포']");
-      const btn2 = row.querySelector(".btn[data-type='2포']");
-      const resEl = row.querySelector(".result");
+        const btn3 = row.querySelector(".btn[data-type='3포']");
+        const btn2 = row.querySelector(".btn[data-type='2포']");
+        const resEl = row.querySelector(".result");
 
-      let initNo = 60, initValue = 1;
-      if (existing && existing[i]) {
-        initNo = Number(existing[i].no);
-        initValue = Number(existing[i].value);
-      }
-      roundData[i] = { no: initNo, value: initValue };
+        // 기존 데이터가 있으면 사용, 없으면 기본값
+        let initNo = 60, initValue = 1;
+        if (existing && existing[i-1]) {   // 배열 인덱스 0부터
+            initNo = Number(existing[i-1].no);
+            initValue = Number(existing[i-1].value);
+        }
+        roundData[i] = { no: initNo, value: initValue };
 
-      if (initNo === 60) btn3.classList.add("selected");
-      else btn2.classList.add("selected");
+        if (initNo === 60) btn3.classList.add("selected");
+        else btn2.classList.add("selected");
 
-      resEl.textContent = `주정 ${initValue} kg`;
+        resEl.textContent = `주정 ${initValue} kg`;
 
-      [btn3, btn2].forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          const idx = parseInt(row.dataset.round);
-          row.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
-          btn.classList.add("selected");
+        [btn3, btn2].forEach(btn=>{
+            btn.addEventListener("click", ()=>{
+                const idx = parseInt(row.dataset.round);
+                row.querySelectorAll(".btn").forEach(b=>b.classList.remove("selected"));
+                btn.classList.add("selected");
 
-          const type = btn.dataset.type;
-          const value = type==="3포"?1:0.7;
-          const no = type==="3포"?60:40;
-          roundData[idx] = {no,value};
-          resEl.textContent = `주정 ${value} kg`;
+                const type = btn.dataset.type;
+                const value = type==="3포"?1:0.7;
+                const no = type==="3포"?60:40;
+                roundData[idx] = {no,value};
+                resEl.textContent = `주정 ${value} kg`;
 
-          // 총중량 계산
-          let total = 0;
-          Object.values(roundData).forEach(r => { total += r.no; });
-          totalKgInput.value = total;
+                // 총중량 계산
+                let total = 0;
+                Object.values(roundData).forEach(r => { total += r.no; });
+                totalKgInput.value = total;
+            });
         });
-      });
     }
 
     // 초기 총중량 계산
@@ -171,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.values(roundData).forEach(r => { total += r.no; });
     totalKgInput.value = total;
     roundsDiv.style.display = "block";
-  }
+}
 
   lotInput.addEventListener("change", ()=>{
     const cnt = parseInt(lotInput.value) || 0;
