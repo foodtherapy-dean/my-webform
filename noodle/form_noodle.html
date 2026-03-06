@@ -116,4 +116,186 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
-  const scriptUrl = "
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbzJPu7bbz6kcUEwWXBef4-f_ZT5mKSj5Pu8ku7nZj0ql_u2tBdilIdmkFd_aLYaRy6rVw/exec";
+  let loadedData = {};
+
+  const dateInput = document.getElementById("date");
+  const groupSelect = document.getElementById("group");
+  const bulkSection = document.getElementById("bulkSection");
+  const singleSection = document.getElementById("singleSection");
+  const bulkToggleBtn = document.getElementById("bulkToggleBtn");
+  const loadingMsg = document.getElementById("loadingMsg");
+  const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const suggestionText = document.getElementById("suggestionText");
+
+  dateInput.valueAsDate = new Date();
+
+  function fillOptions(hEl, mEl) {
+    hEl.innerHTML = '<option value="">시</option>';
+    for (let h = 1; h <= 24; h++) hEl.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
+    mEl.innerHTML = '<option value="">분</option>';
+    for (let m = 0; m < 60; m++) mEl.innerHTML += `<option value="${m.toString().padStart(2,"0")}">${m.toString().padStart(2,"0")}</option>`;
+  }
+  fillOptions(document.getElementById("hour"), document.getElementById("minute"));
+  fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
+
+  async function updateCompletionStatus() {
+    const dateVal = dateInput.value;
+    if (!dateVal) return;
+    try {
+      const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+      const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
+      const data = res.ok ? await res.json() : {};
+      const completed = data.options || [];
+
+      Array.from(groupSelect.options).forEach(opt => {
+        if (!opt.value) return;
+        const baseValue = opt.value.replace("(완료)", "").trim();
+        opt.textContent = completed.includes(baseValue) ? `${baseValue}(완료)` : baseValue;
+        opt.value = baseValue;
+      });
+    } catch (e) { console.error("상태 업데이트 실패", e); }
+  }
+
+  async function checkDuplicate(group, isInternal = false) {
+    const date = dateInput.value;
+    if (!date || !group) return;
+    loadingMsg.style.display = "block";
+    try {
+      const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({date, group})));
+      const result = await res.json();
+      loadingMsg.style.display = "none";
+      loadedData[group] = { fetched: true, data: result.data || null };
+
+      if (!isInternal && result.exists) {
+        duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다.`;
+        duplicateMsg.style.display = "block";
+        if(result.data) {
+          if(group === "생산제품") {
+            document.getElementById("product").value = result.data.product || "";
+            document.getElementById("singleCount").value = result.data.count || "";
+          } else {
+            document.getElementById("hour").value = result.data.hour || "";
+            document.getElementById("minute").value = result.data.minute || "";
+            document.getElementById("temp").value = result.data.temp || "";
+            document.getElementById("humidity").value = result.data.humi || "";
+          }
+        }
+      }
+      updateUIByGroup();
+    } catch (e) { loadingMsg.style.display = "none"; }
+  }
+
+  function addTime(h, m, addH) {
+    let nh = (parseInt(h) + addH) % 24;
+    return `${nh.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
+  }
+
+  function updateUIByGroup() {
+    const g = groupSelect.value;
+    document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
+    document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
+    document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
+    suggestionText.textContent = "";
+
+    if (!g) return;
+    const sysOn = loadedData["시스템ON"]?.data;
+    const step1 = loadedData["1차점검"]?.data;
+    if (g === "1차점검" && sysOn) suggestionText.textContent = "추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
+    if (g === "2차점검" && step1) suggestionText.textContent = "추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
+    if (g === "시스템OFF" && sysOn) suggestionText.textContent = "추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
+  }
+
+  bulkToggleBtn.addEventListener("click", () => {
+    const isBulk = bulkSection.style.display === "none";
+    bulkSection.style.display = isBulk ? "block" : "none";
+    singleSection.style.display = isBulk ? "none" : "block";
+    bulkToggleBtn.textContent = isBulk ? "⬅️ 개별 입력 모드로 전환" : "🚀 일괄 자동 입력 모드 열기";
+  });
+
+  groupSelect.addEventListener("change", () => {
+    duplicateMsg.style.display = "none";
+    checkDuplicate(groupSelect.value);
+  });
+
+  dateInput.addEventListener("change", () => {
+    loadedData = {};
+    updateCompletionStatus();
+  });
+
+  document.getElementById("duplicateConfirmBtn").addEventListener("click", () => duplicateMsg.style.display = "none");
+
+  const bH = document.getElementById("bulkHour");
+  const bM = document.getElementById("bulkMinute");
+  [bH, bM].forEach(el => el.addEventListener("change", () => {
+    if(bH.value && bM.value) {
+      document.getElementById("bulkPreview").innerHTML = `
+        <strong>자동 등록 일정:</strong><br>
+        • 시스템ON: ${bH.value}:${bM.value}<br>
+        • 1차점검: ${addTime(bH.value, bM.value, 1)}<br>
+        • 2차점검: ${addTime(bH.value, bM.value, 16)}<br>
+        • 시스템OFF: ${addTime(bH.value, bM.value, 17)}
+      `;
+    }
+  }));
+
+  async function sendData(payload, reload = true) {
+    try {
+      await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+      });
+      if(reload) { alert("저장되었습니다."); location.reload(); }
+    } catch (e) { alert("오류 발생"); }
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", () => {
+    const g = groupSelect.value;
+    if(!g) return alert("단계를 선택하세요.");
+    const entry = {
+      hour: document.getElementById("hour").value,
+      minute: document.getElementById("minute").value,
+      temp: document.getElementById("temp").value,
+      humi: document.getElementById("humidity").value,
+      product: document.getElementById("product").value,
+      count: document.getElementById("singleCount").value
+    };
+    sendData({ date: dateInput.value, group: g, entries: [entry] });
+  });
+
+  // [수정된] 일괄 등록 로직: 랜덤 온습도 적용
+  document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
+    const h = bH.value; const m = bM.value;
+    const prod = document.getElementById("bulkProduct").value;
+    const cnt = document.getElementById("bulkCount").value;
+    if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
+
+    // 랜덤 소수 생성 함수
+    const getRandom = (min, max) => (Math.random() * (max - min) + min).toFixed(1);
+
+    const steps = [
+      { g: "생산제품", d: { product: prod, count: cnt } },
+      { g: "시스템ON", d: { hour: h, minute: m } },
+      { g: "1차점검", d: { hour: addTime(h,m,1).split(':')[0], minute: m, temp: getRandom(32, 39), humi: getRandom(58, 68) } },
+      { g: "2차점검", d: { hour: addTime(h,m,16).split(':')[0], minute: m, temp: getRandom(35, 41), humi: getRandom(46, 57) } },
+      { g: "시스템OFF", d: { hour: addTime(h,m,17).split(':')[0], minute: m } }
+    ];
+
+    if(!confirm("전체 데이터를 일괄 등록하시겠습니까?\n(1차/2차 온습도는 랜덤하게 입력됩니다)")) return;
+    
+    document.getElementById("bulkSubmitBtn").disabled = true;
+    document.getElementById("bulkSubmitBtn").innerText = "⏳ 전송 중...";
+
+    for(const s of steps) await sendData({ date: dateInput.value, group: s.g, entries: [s.d] }, false);
+    
+    alert("일괄 등록 완료!");
+    location.reload();
+  });
+
+  updateCompletionStatus();
+});
+</script>
+</body>
+</html>
