@@ -11,7 +11,6 @@
   .app-body { flex:1 1 auto; overflow-y:auto; padding:20px; box-sizing:border-box; background:#f9f9f9; }
   .app-footer { flex:0 0 auto; }
   
-  /* 버튼 및 공통 스타일 */
   button { cursor:pointer; border-radius:6px; border:none; }
   #submitBtn { width:100%; font-size:1.5rem; padding:20px 0; background:#4CAF50; color:#fff; }
   #bulkToggleBtn { background: #2e7d32; color: white; padding: 12px; font-size: 1rem; margin-bottom: 15px; width: 100%; font-weight: bold; }
@@ -46,10 +45,10 @@
       <button id="duplicateConfirmBtn" style="background:#900; color:#fff; padding:4px 10px; margin-left:10px;">확인</button>
     </div>
 
-    <button id="bulkToggleBtn">자동 입력 모드</button>
+    <button id="bulkToggleBtn">🚀 일괄 자동 입력 모드 열기</button>
 
     <div id="bulkSection" class="section-card" style="display:none; border: 2px solid #e91e63;">
-      <h3 style="margin-top:0; color:#e91e63;">공정 세부 등록</h3>
+      <h3 style="margin-top:0; color:#e91e63;">전체 공정 자동 등록</h3>
       <div class="inline-row">
         <div>
           <label>제품명</label>
@@ -72,12 +71,12 @@
       <div id="bulkPreview" class="hint" style="background:#f0f0f0; padding:12px; margin-top:15px; border-radius:4px; line-height:1.6; border-left:4px solid #e91e63;">
         시간을 선택하면 추천 일정이 계산됩니다.
       </div>
-      <button id="bulkSubmitBtn">전송 및 전체 자동 등록</button>
+      <button id="bulkSubmitBtn">⚡ 전송 및 전체 자동 등록</button>
     </div>
 
     <div id="singleSection">
       <div class="section-card">
-        <label for="group">단계별 공정선택</label>
+        <label for="group">단계별 개별 선택</label>
         <select id="group">
           <option value="">선택하세요</option>
           <option value="생산제품">생산제품</option>
@@ -118,10 +117,8 @@
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
   const scriptUrl = "https://script.google.com/macros/s/AKfycbzJPu7bbz6kcUEwWXBef4-f_ZT5mKSj5Pu8ku7nZj0ql_u2tBdilIdmkFd_aLYaRy6rVw/exec";
-  const orderMap = ["시스템ON","1차점검","2차점검","시스템OFF"];
   let loadedData = {};
 
-  // 요소 참조
   const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
   const bulkSection = document.getElementById("bulkSection");
@@ -132,19 +129,21 @@ window.addEventListener("DOMContentLoaded", async function () {
   const duplicateText = document.getElementById("duplicateText");
   const suggestionText = document.getElementById("suggestionText");
 
-  // 초기 설정
   dateInput.valueAsDate = new Date();
 
+  // 시간 옵션 채우기 (분 단위를 1분 단위로 수정)
   function fillOptions(hEl, mEl) {
     hEl.innerHTML = '<option value="">시</option>';
     for (let h = 1; h <= 24; h++) hEl.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
+    
     mEl.innerHTML = '<option value="">분</option>';
-    for (let m = 0; m < 60; m+=10) mEl.innerHTML += `<option value="${m.toString().padStart(2,"0")}">${m.toString().padStart(2,"0")}</option>`;
+    // m+=10 에서 m++ 로 수정하여 1분 단위로 표시
+    for (let m = 0; m < 60; m++) mEl.innerHTML += `<option value="${m.toString().padStart(2,"0")}">${m.toString().padStart(2,"0")}</option>`;
   }
   fillOptions(document.getElementById("hour"), document.getElementById("minute"));
   fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
-  // [기능 1] 옵션 완료 표시 업데이트
+  // 상단 (완료) 표시 업데이트 기능
   async function updateCompletionStatus() {
     const dateVal = dateInput.value;
     if (!dateVal) return;
@@ -163,7 +162,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (e) { console.error("상태 업데이트 실패", e); }
   }
 
-  // [기능 2] 중복 확인 로직
+  // 중복 확인 기능
   async function checkDuplicate(group, isInternal = false) {
     const date = dateInput.value;
     if (!date || !group) return;
@@ -179,7 +178,6 @@ window.addEventListener("DOMContentLoaded", async function () {
       if (!isInternal && result.exists) {
         duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다.`;
         duplicateMsg.style.display = "block";
-        // 기존 데이터 채워주기
         if(result.data) {
           if(group === "생산제품") {
             document.getElementById("product").value = result.data.product || "";
@@ -196,7 +194,6 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (e) { loadingMsg.style.display = "none"; }
   }
 
-  // [기능 3] 시간 계산 및 UI 제어
   function addTime(h, m, addH) {
     let nh = (parseInt(h) + addH) % 24;
     return `${nh.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
@@ -204,31 +201,20 @@ window.addEventListener("DOMContentLoaded", async function () {
 
   function updateUIByGroup() {
     const g = groupSelect.value;
-    const timeRow = document.getElementById("timeRow");
-    const thRow = document.getElementById("thRow");
-    const productRow = document.getElementById("productRow");
-
-    timeRow.style.display = thRow.style.display = productRow.style.display = "none";
+    document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
+    document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
+    document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
     suggestionText.textContent = "";
 
     if (!g) return;
 
-    if (g === "생산제품") {
-      productRow.style.display = "flex";
-    } else {
-      timeRow.style.display = "flex";
-      if (g.includes("점검")) thRow.style.display = "flex";
-      
-      // 추천 시간 계산
-      const sysOn = loadedData["시스템ON"]?.data;
-      const step1 = loadedData["1차점검"]?.data;
-      if (g === "1차점검" && sysOn) suggestionText.textContent = "추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
-      if (g === "2차점검" && step1) suggestionText.textContent = "추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
-      if (g === "시스템OFF" && sysOn) suggestionText.textContent = "추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
-    }
+    const sysOn = loadedData["시스템ON"]?.data;
+    const step1 = loadedData["1차점검"]?.data;
+    if (g === "1차점검" && sysOn) suggestionText.textContent = "추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
+    if (g === "2차점검" && step1) suggestionText.textContent = "추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
+    if (g === "시스템OFF" && sysOn) suggestionText.textContent = "추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
   }
 
-  // 이벤트 리스너들
   bulkToggleBtn.addEventListener("click", () => {
     const isBulk = bulkSection.style.display === "none";
     bulkSection.style.display = isBulk ? "block" : "none";
@@ -263,11 +249,21 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
   }));
 
-  // 제출 로직 (개별)
-  document.getElementById("submitBtn").addEventListener("click", async () => {
+  // 전송 처리
+  async function sendData(payload, reload = true) {
+    try {
+      await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+      });
+      if(reload) { alert("저장되었습니다."); location.reload(); }
+    } catch (e) { alert("오류 발생"); }
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", () => {
     const g = groupSelect.value;
     if(!g) return alert("단계를 선택하세요.");
-    
     const entry = {
       hour: document.getElementById("hour").value,
       minute: document.getElementById("minute").value,
@@ -276,12 +272,9 @@ window.addEventListener("DOMContentLoaded", async function () {
       product: document.getElementById("product").value,
       count: document.getElementById("singleCount").value
     };
-    
-    const payload = { date: dateInput.value, group: g, entries: [entry] };
-    sendData(payload);
+    sendData({ date: dateInput.value, group: g, entries: [entry] });
   });
 
-  // 제출 로직 (일괄)
   document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
     const h = bH.value; const m = bM.value;
     const prod = document.getElementById("bulkProduct").value;
@@ -297,26 +290,11 @@ window.addEventListener("DOMContentLoaded", async function () {
     ];
 
     if(!confirm("전체 데이터를 등록하시겠습니까?")) return;
-    
-    for(const s of steps) {
-      await sendData({ date: dateInput.value, group: s.g, entries: [s.d] }, false);
-    }
+    for(const s of steps) await sendData({ date: dateInput.value, group: s.g, entries: [s.d] }, false);
     alert("일괄 등록 완료!");
     location.reload();
   });
 
-  async function sendData(payload, reload = true) {
-    try {
-      await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
-      });
-      if(reload) { alert("저장되었습니다."); location.reload(); }
-    } catch (e) { alert("오류 발생"); }
-  }
-
-  // 초기 로드 시 실행
   updateCompletionStatus();
 });
 </script>
