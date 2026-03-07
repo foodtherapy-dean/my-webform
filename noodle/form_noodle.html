@@ -93,8 +93,8 @@
         <div id="suggestionText" style="color:blue; font-size:0.9rem; margin:8px 0; font-weight:bold;"></div>
 
         <div class="inline-row" id="thRow" style="display:none;">
-          <div><label>온도(℃)</label><input type="number" id="temp" step="0.1" /></div>
-          <div><label>습도(%)</label><input type="number" id="humidity" step="0.1" /></div>
+          <div><label>온도(℃)</label><input type="number" id="temp" step="1" /></div>
+          <div><label>습도(%)</label><input type="number" id="humidity" step="1" /></div>
         </div>
 
         <div class="inline-row" id="productRow" style="display:none;">
@@ -192,6 +192,23 @@ window.addEventListener("DOMContentLoaded", async function () {
     return `${nh.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
   }
 
+  // 일괄 입력을 위한 랜덤 분 가감 함수
+  function getRandTime(h, m, offsetH, rangeMin = -10, rangeMax = 10) {
+    let totalMinutes = parseInt(h) * 60 + parseInt(m) + (offsetH * 60);
+    let randOffset = Math.floor(Math.random() * (rangeMax - rangeMin + 1)) + rangeMin;
+    totalMinutes += randOffset;
+    
+    let nh = Math.floor(totalMinutes / 60) % 24;
+    let nm = totalMinutes % 60;
+    if (nm < 0) { nm += 60; nh = (nh - 1 + 24) % 24; }
+    
+    return {
+      h: nh.toString().padStart(2, "0"),
+      m: nm.toString().padStart(2, "0"),
+      full: `${nh.toString().padStart(2, "0")}:${nm.toString().padStart(2, "0")}`
+    };
+  }
+
   function updateUIByGroup() {
     const g = groupSelect.value;
     document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
@@ -231,11 +248,11 @@ window.addEventListener("DOMContentLoaded", async function () {
   [bH, bM].forEach(el => el.addEventListener("change", () => {
     if(bH.value && bM.value) {
       document.getElementById("bulkPreview").innerHTML = `
-        <strong>자동 등록 일정:</strong><br>
+        <strong>자동 등록 예시 (시간 랜덤 가감됨):</strong><br>
         • 시스템ON: ${bH.value}:${bM.value}<br>
-        • 1차점검: ${addTime(bH.value, bM.value, 1)}<br>
-        • 2차점검: ${addTime(bH.value, bM.value, 16)}<br>
-        • 시스템OFF: ${addTime(bH.value, bM.value, 17)}
+        • 1차점검: ON 기준 ±10분<br>
+        • 2차점검: 1차 기준 ±10분<br>
+        • 시스템OFF: 2차 기준 +1~10분
       `;
     }
   }));
@@ -265,25 +282,30 @@ window.addEventListener("DOMContentLoaded", async function () {
     sendData({ date: dateInput.value, group: g, entries: [entry] });
   });
 
-  // [수정된] 일괄 등록 로직: 랜덤 온습도 적용
+  // [보강] 일괄 등록 로직: 연쇄적 랜덤 시간 및 정수 온습도 적용
   document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
     const h = bH.value; const m = bM.value;
     const prod = document.getElementById("bulkProduct").value;
     const cnt = document.getElementById("bulkCount").value;
     if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
 
-    // 랜덤 소수 생성 함수
-    const getRandom = (min, max) => (Math.random() * (max - min) + min).toFixed(1);
+    // 랜덤 정수 생성 함수
+    const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // 연쇄적 시간 계산
+    const time1 = getRandTime(h, m, 1);             // ON 대비 1시간 후 ±10분
+    const time2 = getRandTime(time1.h, time1.m, 15); // 1차 대비 15시간 후 ±10분
+    const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10); // 2차 대비 1시간 후 +1~10분
 
     const steps = [
       { g: "생산제품", d: { product: prod, count: cnt } },
       { g: "시스템ON", d: { hour: h, minute: m } },
-      { g: "1차점검", d: { hour: addTime(h,m,1).split(':')[0], minute: m, temp: getRandom(32, 39), humi: getRandom(58, 68) } },
-      { g: "2차점검", d: { hour: addTime(h,m,16).split(':')[0], minute: m, temp: getRandom(35, 41), humi: getRandom(46, 57) } },
-      { g: "시스템OFF", d: { hour: addTime(h,m,17).split(':')[0], minute: m } }
+      { g: "1차점검", d: { hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) } },
+      { g: "2차점검", d: { hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) } },
+      { g: "시스템OFF", d: { hour: timeOff.h, minute: timeOff.m } }
     ];
 
-    if(!confirm("전체 데이터를 일괄 등록하시겠습니까?\n(1차/2차 온습도는 랜덤하게 입력됩니다)")) return;
+    if(!confirm("전체 데이터를 일괄 등록하시겠습니까?\n(시간 및 온습도가 자동 가감/생성됩니다)")) return;
     
     document.getElementById("bulkSubmitBtn").disabled = true;
     document.getElementById("bulkSubmitBtn").innerText = "⏳ 전송 중...";
