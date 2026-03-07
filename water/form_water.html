@@ -223,3 +223,23 @@ saveBtn.addEventListener("click", async () => {
   const states = {};
   let allSelected = true;
   checkItems.forEach(item => {
+    const active = document.querySelector(`.ox-btn[data-key='${item}'].active`);
+    states[item] = active ? active.dataset.value : "";
+    if(option === "정기점검" && !active) allSelected = false;
+  });
+  
+  if(option === "정기점검" && !allSelected) return alert("모든 항목을 선택해야 합니다.");
+
+  saveBtn.disabled = true;
+  const payload = { date, option, value, checklist: states };
+  try {
+    const r = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
+    alert(await r.text());
+    location.reload();
+  } catch (e) { alert("저장 실패"); saveBtn.disabled = false; }
+});
+
+checkDuplicate();
+</script>
+</body>
+</html>
