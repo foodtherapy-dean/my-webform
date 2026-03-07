@@ -23,7 +23,7 @@
   .item-title { font-weight:bold; margin-bottom:8px; font-size: 15px; color: #444; }
   .ox-buttons { display:flex; gap:8px; justify-content:center; }
   .ox-btn { flex:1; padding:10px; border-radius:6px; border:1px solid #ccc; background:#f2f2f2; text-align:center; font-weight:bold; cursor:pointer; }
-  .ox-btn.active { background:#0078d7; color:white; border-color:#0078d7; }
+  .ox-btn.active { background:#0078d7 !important; color:white !important; border-color:#0078d7 !important; }
 
   #dupBox { display:none; margin-top:10px; padding:12px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; text-align: center; font-weight: bold; }
   #dupBox button { margin-top:8px; background:#0078d7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
@@ -49,7 +49,7 @@
     </select>
 
     <div id="dupBox">
-      <span id="dupMsgText">⚠️ 데이터가 이미 존재합니다.</span><br>
+      <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
       <button type="button" id="loadBtn">데이터 불러와서 확인/수정</button>
     </div>
 
@@ -86,7 +86,7 @@ const bulkBtn = document.getElementById("bulkBtn");
 
 dateInput.valueAsDate = new Date();
 
-// UI 생성
+// 1. 점검 항목 UI 생성
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -99,7 +99,7 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-// 버튼 클릭 시 활성화
+// 2. O/X 버튼 수동 클릭 이벤트
 document.querySelectorAll(".ox-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.key;
@@ -108,7 +108,7 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
   });
 });
 
-// 데이터 불러오기 함수 (중복 사용을 위해 분리)
+// 3. 데이터 로드 및 화면 반영 함수 (핵심)
 async function loadExistingData() {
   const date = dateInput.value;
   const option = optionSelect.value;
@@ -117,24 +117,27 @@ async function loadExistingData() {
     const data = await res.json();
     
     dupBox.style.display = "none";
+    document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active")); // 초기화
+
     if(option === "검침") {
       valueInput.value = data.data?.value || "";
-      valueBox.style.display = "block"; 
+      valueBox.style.display = "block";
+      checklistDiv.style.display = "none";
     } else {
       const states = data.states || data.data?.states || {};
-      document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
       Object.keys(states).forEach(k => {
         const val = states[k];
         const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
         if (btn) btn.classList.add("active");
       });
-      checklistDiv.style.display = "block";
+      valueBox.style.display = "none";
+      checklistDiv.style.display = "block"; // 체크리스트 다시 보여주기
     }
     return data;
-  } catch(e) { alert("데이터 로드 실패"); }
+  } catch(e) { console.error(e); }
 }
 
-// 중복 체크 함수
+// 4. 날짜/옵션 변경 시 중복 체크 로직
 async function checkDuplicate() {
   const date = dateInput.value;
   const option = optionSelect.value;
@@ -145,10 +148,9 @@ async function checkDuplicate() {
     const result = await res.json();
     
     if (result.exists) {
-      dupBox.style.display = "block";
+      dupBox.style.display = "block"; // 노란색 안내창 띄움
       valueBox.style.display = "none";
-      checklistDiv.style.display = "none";
-      return true;
+      checklistDiv.style.display = "none"; // 기존 입력창은 일단 숨김
     } else {
       dupBox.style.display = "none";
       if (option === "검침") {
@@ -159,37 +161,38 @@ async function checkDuplicate() {
         checklistDiv.style.display = "block";
         document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
       }
-      return false;
     }
-  } catch (e) { return false; }
+  } catch (e) { console.error(e); }
 }
 
 optionSelect.addEventListener("change", checkDuplicate);
 dateInput.addEventListener("change", checkDuplicate);
 loadBtn.addEventListener("click", loadExistingData);
 
-// [수정된] 일괄 등록 로직: 피드백 기능 강화
+// 5. [강화된] 일괄 등록 로직
 bulkBtn.addEventListener("click", async () => {
   const date = dateInput.value;
   if (!date) return alert("날짜를 선택하세요.");
 
   bulkBtn.disabled = true;
-  bulkBtn.innerText = "⏳ 확인 중...";
+  bulkBtn.innerText = "⏳ 데이터 확인 중...";
   
+  // 서버에 실제 중복 데이터가 있는지 확인
   const res = await fetch(`${BASE_URL}?checkWater=${JSON.stringify({date, option: "정기점검"})}`);
   const result = await res.json();
 
   if (result.exists) {
-    if (confirm(`⚠️ ${date}에 정기점검 데이터가 이미 존재합니다.\n기존 데이터를 불러와서 확인하시겠습니까?`)) {
+    if (confirm(`⚠️ ${date}에 이미 정기점검 데이터가 있습니다.\n기존 데이터를 불러와서 확인하시겠습니까?`)) {
       optionSelect.value = "정기점검";
-      await loadExistingData();
+      await loadExistingData(); // 데이터를 불러와서 버튼 활성화 및 체크
     }
     bulkBtn.disabled = false;
     bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
     return;
   }
 
-  if (!confirm(`${date} 모든 항목을 'O'로 등록하시겠습니까?`)) {
+  // 데이터가 없을 경우 일괄 등록 진행
+  if (!confirm(`${date} 정기점검 모든 항목을 'O'로 신규 등록하시겠습니까?`)) {
     bulkBtn.disabled = false;
     bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
     return;
@@ -213,7 +216,7 @@ bulkBtn.addEventListener("click", async () => {
   }
 });
 
-// 개별 저장
+// 6. 개별 저장
 saveBtn.addEventListener("click", async () => {
   const date = dateInput.value;
   const option = optionSelect.value;
@@ -231,14 +234,16 @@ saveBtn.addEventListener("click", async () => {
   if(option === "정기점검" && !allSelected) return alert("모든 항목을 선택해야 합니다.");
 
   saveBtn.disabled = true;
+  saveBtn.innerText = "저장 중...";
   const payload = { date, option, value, checklist: states };
   try {
     const r = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
     alert(await r.text());
     location.reload();
-  } catch (e) { alert("저장 실패"); saveBtn.disabled = false; }
+  } catch (e) { alert("저장 실패"); saveBtn.disabled = false; saveBtn.innerText = "저장하기"; }
 });
 
+// 초기 중복체크 실행
 checkDuplicate();
 </script>
 </body>
