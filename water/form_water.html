@@ -112,53 +112,48 @@ async function loadWaterData() {
   const option = optionSelect.value;
   if (!date) return;
 
-  loadBtn.innerText = "⏳ 데이터 매칭 중...";
+  loadBtn.innerText = "⏳ 데이터를 매칭 중...";
   
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
     const result = await res.json();
     
-    // 1. 기존 UI 초기화
+    // 1. UI 초기화
     dupBox.style.display = "none";
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-    valueInput.value = "";
+    if (valueInput) valueInput.value = "";
 
     if (result.exists) {
       if (option === "검침") {
         valueBox.style.display = "block";
         checklistDiv.style.display = "none";
-        // GAS의 getWaterData에서 보낸 valueIdx 값 매핑
         valueInput.value = result.value || (result.data ? result.data.value : "");
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
         
-        // 2. 버튼 활성화 (핵심 로직)
+        // 2. 버튼 활성화 (가장 강력한 매핑 방식)
         const states = result.states || {};
         
-        // 중요: 서버의 각 항목(k)과 값(v)을 화면의 버튼과 대조
-        Object.keys(states).forEach(k => {
-          const val = String(states[k]).trim().toUpperCase(); // "O" 또는 "X"
-          
-          // 공백을 제거한 텍스트로 버튼을 찾음 (매칭 성공률 극대화)
-          const cleanK = k.replace(/\s+/g, '');
-          const buttons = document.querySelectorAll(`.ox-btn`);
-          
-          buttons.forEach(btn => {
-            const btnKey = btn.getAttribute("data-key") || btn.innerText;
-            if (btnKey.replace(/\s+/g, '') === cleanK && btn.getAttribute("data-value") === val) {
-              btn.classList.add("active");
+        // 화면의 모든 점검 항목(item)을 돌면서 서버 데이터와 대조
+        const items = document.querySelectorAll(".item");
+        items.forEach(itemDiv => {
+          const titleText = itemDiv.querySelector(".item-title").innerText.replace(/^\d+\.\s*/, "").trim(); // "1. 항목명"에서 숫자 제거
+          const serverValue = states[titleText]; // 서버에서 보낸 O 또는 X
+
+          if (serverValue) {
+            const targetBtn = itemDiv.querySelector(`.ox-btn[data-value="${serverValue.toUpperCase()}"]`);
+            if (targetBtn) {
+              targetBtn.classList.add("active");
             }
-          });
+          }
         });
       }
-      console.log("로드 완료:", result);
-    } else {
-      alert("데이터를 가져왔으나 일치하는 항목이 없습니다.");
+      console.log("매칭 완료:", result);
     }
   } catch (e) {
     console.error("Error:", e);
-    alert("데이터 로드 중 오류가 발생했습니다. (F12 콘솔 확인)");
+    alert("로드 실패: " + e.message);
   } finally {
     loadBtn.innerText = "데이터 불러오기(수정)";
   }
