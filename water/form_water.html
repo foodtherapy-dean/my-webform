@@ -4,163 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>지하수관리</title>
-        <!-- 홈화면 바로가기용 아이콘 지정 -->
-<link rel="icon" type="image/png" sizes="192x192" href="Water.png">
-<link rel="apple-touch-icon" href="Water.png">
-<meta name="theme-color" content="#4CAF50">
-<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
-<link rel="manifest" href="manifest.json"> 
 <style>
-  body { 
-    font-family: "Noto Sans KR", sans-serif; 
-    margin:0; 
-    display:flex; 
-    flex-direction:column; 
-    height:100vh; 
-    background:#f4f7fb;
-  }
+  body { font-family: "Noto Sans KR", sans-serif; margin:0; display:flex; flex-direction:column; height:100vh; background:#f4f7fb; }
+  header { background:#0078d7; color:white; font-weight:bold; font-size:28px; position:fixed; width:100%; top:0; z-index:10; padding:16px 0; display:flex; justify-content:center; align-items:center; }
+  main { flex:1; overflow-y:auto; padding:90px 15px 100px; }
+  
+  #bulkBtn { width: 100%; background: #e91e63; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
+  #bulkBtn:disabled { background: #ccc; }
 
-  header {
-    background:#0078d7;
-    color:white;
-    font-weight:bold;
-    font-size:28px; /* 타이틀 글씨 크기 증가 */
-    position:fixed;
-    width:100%;
-    top:0;
-    z-index:10;
-    padding:16px 0; /* 좌우 패딩 제거, 세로 패딩만 */
-    display:flex;
-    justify-content:center;
-    align-items:center;
-  }
+  label { font-weight:600; margin-top:15px; display:block; font-size:16px; color: #333; }
+  input, select { width:100%; padding:12px; font-size:18px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; margin-top:5px; }
 
-  main {
-    flex:1; 
-    overflow-y:auto; 
-    padding:100px 15px 100px; /* 상단 헤더와 하단 버튼 여유 공간 */
-  }
+  .checklist { display:none; margin-top:20px; }
+  .item { background:#fff; border-radius:10px; padding:12px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+  .item-title { font-weight:bold; margin-bottom:8px; font-size: 15px; }
+  .ox-buttons { display:flex; gap:8px; }
+  .ox-btn { flex:1; padding:10px; border-radius:6px; border:1px solid #ccc; background:#f2f2f2; text-align:center; font-weight:bold; cursor:pointer; }
+  
+  /* 활성화된 버튼 스타일 - 가장 중요 */
+  .ox-btn.active { background-color: #0078d7 !important; color: white !important; border-color: #0078d7 !important; }
 
-  label {
-    font-weight:600; 
-    margin-top:10px; 
-    display:block; 
-    text-align:left;
-    font-size:16px; /* 라벨 크기 약간 증가 */
-  }
+  #dupBox { display:none; margin-top:10px; padding:12px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; text-align: center; }
+  #dupBox button { margin-top:8px; background:#0078d7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
 
-  input, select {
-    width:100%; 
-    padding:10px; 
-    font-size:18px; /* 날짜/숫자 입력창 글씨 크기 증가 */
-    border:1px solid #ccc;
-    border-radius:8px; 
-    box-sizing:border-box; 
-    margin-top:5px; 
-    text-align:left;
-  }
-
-  select {
-    padding-left:10px; 
-    font-size:18px; /* 옵션 선택 글씨 크기 증가 */
-  }
-
-  #valueBox { 
-    margin-top:15px; 
-    display:none; 
-  }
-
-  .checklist { 
-    display:none; 
-    margin-top:20px; 
-  }
-
-  .item { 
-    background:#fff; 
-    border-radius:10px; 
-    padding:10px; 
-    margin-bottom:10px; 
-    box-shadow:0 1px 3px rgba(0,0,0,0.1); 
-  }
-
-  .item-title { 
-    font-weight:bold; 
-    margin-bottom:6px; 
-  }
-
-  .ox-buttons { 
-    display:flex; 
-    gap:8px; 
-    justify-content:center; 
-    margin-top:6px; 
-  }
-
-  .ox-btn { 
-    flex:1; 
-    padding:8px; 
-    border-radius:6px; 
-    border:1px solid #ccc; 
-    background:#f2f2f2; 
-    text-align:center; 
-    font-weight:bold; 
-    cursor:pointer; 
-  }
-
-  .ox-btn.active { 
-    background:#0078d7; 
-    color:white; 
-    border-color:#0078d7; 
-  }
-
-  #dupBox { 
-    display:none; 
-    margin-top:10px; 
-    padding:10px; 
-    background:#fff3cd; 
-    border:1px solid #ffeeba; 
-    border-radius:8px; 
-  }
-
-  #dupBox button { 
-    margin-top:8px; 
-    background:#0078d7; 
-    color:white; 
-    border:none; 
-    padding:6px 12px; 
-    border-radius:6px; 
-    cursor:pointer; 
-  }
-
-  footer {
-    position:fixed; 
-    bottom:0; 
-    width:100%; 
-    background:white; 
-    padding:12px 16px;
-    box-shadow:0 -2px 8px rgba(0,0,0,0.1); 
-    display:flex; 
-    justify-content:center; 
-    z-index:10;
-  }
-
-  button#saveBtn {
-    width:100%; 
-    background:#0078d7; 
-    color:white; 
-    border:none;
-    padding:16px; 
-    font-size:20px; 
-    border-radius:10px; 
-    font-weight:bold; 
-    cursor:pointer;
-  }
+  footer { position:fixed; bottom:0; width:100%; background:#0078d7; z-index:10; text-align:center; }
+  button#saveBtn { width: 100%; background: transparent; color: white; border: none; font-size: 26px; font-weight: bold; padding: 16px 0; cursor: pointer; }
 </style>
 </head>
 <body>
 <header>지하수 관리</header>
+
 <main>
+  <button type="button" id="bulkBtn">🚀 정기점검 일괄 [O] 등록</button>
+
   <form id="waterForm">
-    <label>날짜</label>
+    <label>점검 날짜</label>
     <input type="date" id="date" required />
 
     <label>점검 구분</label>
@@ -170,47 +48,21 @@
     </select>
 
     <div id="dupBox">
-      <span>⚠️ 기존 데이터가 있습니다.</span><br>
-      <button type="button" id="loadBtn">확인</button>
+      <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
+      <button type="button" id="loadBtn">데이터 불러오기(수정)</button>
     </div>
 
-    <div id="valueBox">
-      <label>수치 입력</label>
-      <input type="number" id="value" step="0.01" placeholder="예: 12.4" />
+    <div id="valueBox" style="display:none;">
+      <label>검침 수치 입력</label>
+      <input type="number" id="value" step="0.01" />
     </div>
 
     <div class="checklist" id="checklist"></div>
   </form>
 </main>
-<footer>
-  <button id="saveBtn" type="button">저장하기</button>
-</footer>
 
-<style>
-  footer {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #0078d7;
-  padding: 0; /* 좌우 패딩 제거 */
-  text-align: center;
-  z-index: 10;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+<footer><button id="saveBtn" type="button">저장하기</button></footer>
 
-button#saveBtn {
-  width: 100%;
-  background: transparent;
-  color: white;
-  border: none;
-  font-size: 26px;
-  font-weight: bold;
-  padding: 14px 0; /* 버튼 높이만 조절 */
-  cursor: pointer;
-}
-</style>
 <script>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbxokiBsGMFDNm8dl_wtuZ_EoQ-vthvuEfZK_--ZB2XaLIgxvCv0-CziNpE4r0kzIKhigw/exec";
 const checkItems = [
@@ -227,14 +79,11 @@ const checklistDiv = document.getElementById("checklist");
 const dupBox = document.getElementById("dupBox");
 const loadBtn = document.getElementById("loadBtn");
 const saveBtn = document.getElementById("saveBtn");
+const bulkBtn = document.getElementById("bulkBtn");
 
-// URL 파라미터 날짜 적용
-const params = new URLSearchParams(location.search);
-const paramDate = params.get("date");
-if (paramDate) dateInput.value = paramDate;
-else dateInput.valueAsDate = new Date();
+dateInput.valueAsDate = new Date();
 
-// O/X 버튼 UI 생성
+// UI 생성
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -247,109 +96,132 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-function initOxButtons() {
-  document.querySelectorAll(".ox-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.key;
-      document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
+// 버튼 클릭 동작
+document.querySelectorAll(".ox-btn").forEach(btn => {
+  btn.addEventListener("click", function() {
+    const key = this.dataset.key;
+    document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
   });
-}
-initOxButtons();
-
-// 옵션 선택 시 UI 전환
-function updateUIForOption() {
-  valueBox.style.display = "none";
-  checklistDiv.style.display = "none";
-  checkDuplicate();
-}
-optionSelect.addEventListener("change", updateUIForOption);
-dateInput.addEventListener("change", checkDuplicate);
-
-// 중복 체크
-function checkDuplicate() {
-  const date = dateInput.value;
-  const option = optionSelect.value;
-  if (!date || !option) return;
-
-  fetch(`${BASE_URL}?checkWater=${JSON.stringify({date,option})}`)
-    .then(res => res.json())
-    .then(res => {
-      if (res.exists) {
-        dupBox.style.display = "block";
-        valueInput.disabled = true;
-        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-      } else {
-        dupBox.style.display = "none";
-        if (option === "검침") valueBox.style.display = "block";
-        else checklistDiv.style.display = "block";
-        valueInput.disabled = false;
-      }
-    })
-    .catch(() => {
-      dupBox.style.display = "none";
-      valueInput.disabled = false;
-    });
-}
-
-// 기존 데이터 로드
-loadBtn.addEventListener("click", () => {
-  const date = dateInput.value;
-  const option = optionSelect.value;
-  if (!date || !option) return;
-
-  fetch(`${BASE_URL}?getWater=${JSON.stringify({date,option})}`)
-    .then(res => res.json())
-    .then(data => {
-      dupBox.style.display = "none";
-      if(option === "검침") {
-        valueInput.value = data.data?.value || "";
-        valueBox.style.display = "block"; 
-        valueInput.disabled = false;
-        checklistDiv.style.display = "none";
-      } else {
-        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-        const states = data.states || data.data?.states || {};
-        Object.keys(states).forEach(k => {
-          const val = states[k];
-          const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${val}']`);
-          if (btn) btn.classList.add("active");
-        });
-        checklistDiv.style.display = "block";
-        valueBox.style.display = "none";
-      }
-    });
 });
 
-// 저장
-saveBtn.addEventListener("click", () => {
+// [핵심] 서버 데이터 불러오기 함수
+async function loadWaterData() {
   const date = dateInput.value;
   const option = optionSelect.value;
-  const value = valueInput.value;
-  if (!date || !option) return alert("날짜와 점검구분을 입력하세요.");
+  try {
+    const res = await fetch(`${BASE_URL}?getWater=${JSON.stringify({date, option})}`);
+    const result = await res.json();
+    
+    if (result.exists) {
+      dupBox.style.display = "none";
+      if (option === "검침") {
+        valueInput.value = result.data?.value || "";
+        valueBox.style.display = "block";
+        checklistDiv.style.display = "none";
+      } else {
+        valueBox.style.display = "none";
+        checklistDiv.style.display = "block";
+        // 버튼 활성화 처리
+        const states = result.states || {};
+        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
+        Object.keys(states).forEach(k => {
+          const btn = document.querySelector(`.ox-btn[data-key='${k}'][data-value='${states[k]}']`);
+          if (btn) btn.classList.add("active");
+        });
+      }
+    }
+  } catch (e) { alert("데이터 로드 중 오류가 발생했습니다."); }
+}
 
-  if (option === "검침" && (!value || value === "")) return alert("수치 입력은 필수입니다.");
+// 중복 체크 및 UI 전환
+async function checkDuplicate() {
+  const date = dateInput.value;
+  const option = optionSelect.value;
+  if (!date || !option) return;
 
+  try {
+    const res = await fetch(`${BASE_URL}?checkWater=${JSON.stringify({date, option})}`);
+    const result = await res.json();
+    
+    if (result.exists) {
+      dupBox.style.display = "block";
+      valueBox.style.display = "none";
+      checklistDiv.style.display = "none";
+    } else {
+      dupBox.style.display = "none";
+      if (option === "검침") {
+        valueBox.style.display = "block";
+        checklistDiv.style.display = "none";
+      } else {
+        valueBox.style.display = "none";
+        checklistDiv.style.display = "block";
+        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
+      }
+    }
+  } catch (e) { console.error(e); }
+}
+
+dateInput.addEventListener("change", checkDuplicate);
+optionSelect.addEventListener("change", checkDuplicate);
+loadBtn.addEventListener("click", loadWaterData);
+
+// 일괄 등록 버튼
+bulkBtn.addEventListener("click", async () => {
+  const date = dateInput.value;
+  if (!date) return alert("날짜를 먼저 선택하세요.");
+
+  bulkBtn.disabled = true;
+  bulkBtn.innerText = "⏳ 중복 확인 중...";
+
+  const res = await fetch(`${BASE_URL}?checkWater=${JSON.stringify({date, option: "정기점검"})}`);
+  const result = await res.json();
+
+  if (result.exists) {
+    if (confirm(`⚠️ ${date}에 이미 정기점검 데이터가 존재합니다.\n기존 데이터를 불러와서 확인하시겠습니까?`)) {
+      optionSelect.value = "정기점검";
+      await loadWaterData(); // 화면에 즉시 피드백
+    }
+    bulkBtn.disabled = false;
+    bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
+    return;
+  }
+
+  if (confirm(`${date} 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) {
+    const states = {};
+    checkItems.forEach(item => { states[item] = "O"; });
+    const payload = { date, option: "정기점검", value: "", checklist: states };
+    
+    try {
+      const postRes = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
+      alert(await postRes.text());
+      location.reload();
+    } catch (e) { alert("오류 발생"); bulkBtn.disabled = false; bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록"; }
+  } else {
+    bulkBtn.disabled = false;
+    bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
+  }
+});
+
+// 개별 저장
+saveBtn.addEventListener("click", async () => {
   const states = {};
-  let allSelected = true;
   checkItems.forEach(item => {
     const active = document.querySelector(`.ox-btn[data-key='${item}'].active`);
     states[item] = active ? active.dataset.value : "";
-    if(option === "정기점검" && !active) allSelected = false;
   });
-  if(option === "정기점검" && !allSelected) return alert("정기점검은 모든 항목의 O/X 버튼을 선택해야 합니다.");
 
-  const payload = { date, option, value, checklist: states };
+  const payload = { date: dateInput.value, option: optionSelect.value, value: valueInput.value, checklist: states };
+  saveBtn.disabled = true;
+  saveBtn.innerText = "저장 중...";
+
   fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) })
     .then(r => r.text())
     .then(msg => { alert(msg); location.reload(); })
-    .catch(err => alert("❌ 오류: " + err));
+    .catch(() => { alert("저장 실패"); saveBtn.disabled = false; saveBtn.innerText = "저장하기"; });
 });
 
-// 초기 UI 적용
-updateUIForOption();
+checkDuplicate();
 </script>
-
 </body>
 </html>
