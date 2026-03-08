@@ -160,14 +160,20 @@ async function checkDuplicate() {
   if (!date || !option) return;
 
   try {
-    const res = await fetch(`${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
+    // 날짜 형식을 안전하게 전달하기 위해 encodeURIComponent 사용
+    const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`;
+    const res = await fetch(url);
     const result = await res.json();
     
-    if (result.exists) {
-      dupBox.style.display = "block";
+    console.log("중복 체크 결과:", result); // 브라우저 F12 콘솔에서 확인 가능
+
+    if (result.exists === true) {
+      // 데이터가 존재함 -> 노란 박스(불러오기 버튼 포함) 노출
+      dupBox.style.display = "block"; 
       valueBox.style.display = "none";
       checklistDiv.style.display = "none";
     } else {
+      // 데이터가 없음 -> 입력창 바로 노출
       dupBox.style.display = "none";
       if (option === "검침") {
         valueBox.style.display = "block";
@@ -175,11 +181,16 @@ async function checkDuplicate() {
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
-        // 신규 작성 시 기존 선택 초기화
+        // 기존 선택 초기화
         document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
       }
     }
-  } catch (e) { console.error(e); }
+  } catch (e) { 
+    console.error("통신 오류:", e);
+    // 통신 오류 시에도 사용자가 입력은 할 수 있도록 처리
+    dupBox.style.display = "none";
+    checklistDiv.style.display = (option === "정기점검" ? "block" : "none");
+  }
 }
 
 // 5. 이벤트 리스너 등록
