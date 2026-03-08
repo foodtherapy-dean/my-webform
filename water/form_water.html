@@ -64,7 +64,7 @@
 <footer><button id="saveBtn" type="button">저장하기</button></footer>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbokiBsGMFDNm8dl_wtuZ_EoQ-vthvuEfZK_--ZB2XaLIgxvCv0-CziNpE4r0kzIKhigw/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbxokiBsGMFDNm8dl_wtuZ_EoQ-vthvuEfZK_--ZB2XaLIgxvCv0-CziNpE4r0kzIKhigw/exec";
 const checkItems = [
   "쓰레기 등 불필요한 물건 방치여부","청소상태 양호여부","잠금장치 상태","오염원 양호여부",
   "저수조 균열여부","저수조내 침전물 상태","저수조내 부유물 상태","배관 누수 상태",
@@ -110,41 +110,78 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
 async function loadWaterData() {
   const date = dateInput.value;
   const option = optionSelect.value;
+  if (!date) return;
+
   loadBtn.innerText = "⏳ 불러오는 중...";
   
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
     const result = await res.json();
     
+    // UI 초기화
+    dupBox.style.display = "none";
+    document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
+    valueInput.value = "";
+
     if (result.exists) {
-      dupBox.style.display = "none";
       if (option === "검침") {
-        valueInput.value = result.data?.value || "";
+        valueBox.style.display = "block";
+        checklistDiv.style.display = "none";
+        valueInput.value = result.value || "";
+      } else {
+        valueBox.style.display = "none";
+        checklistDiv.style.display = "block";
+        
+        const states = result.states || {};
+        checkItems.forEach(item => {
+          const val = states[item]; // 서버에서 준 O/X 값
+          if (val) {
+            const btn = document.querySelector(`.ox-btn[data-raw="${item}"][data-value="${val}"]`);
+            if (btn) btn.classList.add("active");
+          }
+        });
+      }
+    } else {
+      alert("데이터를 찾을 수 없습니다.");
+      // 데이터가 없으면 새 입력폼 활성화
+      if(option === "검침") { valueBox.style.display = "block"; }
+      else { checklistDiv.style.display = "block"; }
+    }
+  } catch (e) {
+    console.error(e);
+    alert("서버 통신 오류가 발생했습니다.");
+  } finally {
+    loadBtn.innerText = "데이터 불러오기(수정)";
+  }
+}
+
+// 점검 구분 변경 시 호출되는 함수 보완
+async function checkDuplicate() {
+  const date = dateInput.value;
+  const option = optionSelect.value;
+  if (!date || !option) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
+    const result = await res.json();
+    
+    if (result.exists) {
+      dupBox.style.display = "block";
+      valueBox.style.display = "none";
+      checklistDiv.style.display = "none";
+    } else {
+      dupBox.style.display = "none";
+      // 데이터가 없으면 즉시 입력폼 활성화
+      if (option === "검침") {
         valueBox.style.display = "block";
         checklistDiv.style.display = "none";
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
-        
-        // 기존 버튼 초기화
-        document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-        
-        // 서버에서 온 데이터(states) 매핑
-        const states = result.states || {};
-        Object.keys(states).forEach(k => {
-          const val = String(states[k]).trim().toUpperCase(); // O 또는 X
-          // 공백을 제거하고 매칭 시도 (가장 확실한 방법)
-          const cleanKey = k.replace(/\s+/g, '');
-          const btn = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
-          if (btn) btn.classList.add("active");
-        });
       }
     }
-  } catch (e) { 
+  } catch (e) {
     console.error(e);
-    alert("데이터 로드 중 오류가 발생했습니다."); 
-  } finally {
-    loadBtn.innerText = "데이터 불러오기(수정)";
   }
 }
 
