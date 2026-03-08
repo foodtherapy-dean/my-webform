@@ -83,11 +83,10 @@ const bulkBtn = document.getElementById("bulkBtn");
 
 dateInput.valueAsDate = new Date();
 
-// UI 생성 - 공백 제거된 key를 별도로 저장하여 매칭 신뢰도 향상
+// 1. UI 생성
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
-  // data-raw 속성에 원본 키 보관, data-key에는 공백 제거 키 보관
   div.innerHTML = `
     <div class="item-title">${idx+1}. ${item}</div>
     <div class="ox-buttons">
@@ -97,7 +96,7 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-// 버튼 클릭 동작
+// 2. 버튼 클릭 이벤트
 document.querySelectorAll(".ox-btn").forEach(btn => {
   btn.addEventListener("click", function() {
     const key = this.dataset.key;
@@ -106,91 +105,55 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
   });
 });
 
-// [수정됨] 데이터 불러오기 함수 - 매핑 로직 강화
+// 3. [핵심] 데이터 불러오기 및 버튼 활성화 함수
 async function loadWaterData() {
   const date = dateInput.value;
   const option = optionSelect.value;
   if (!date) return;
 
-  loadBtn.innerText = "⏳ 데이터 매칭 중...";
+  loadBtn.innerText = "⏳ 불러오는 중...";
   
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
     const result = await res.json();
     
-    // 1. 모든 버튼 초기화 (기존 파란색 제거)
+    // UI 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
 
     if (result.exists) {
       if (option === "검침") {
         valueBox.style.display = "block";
         checklistDiv.style.display = "none";
-        valueInput.value = result.value || "";
+        valueInput.value = result.value || (result.data ? result.data.value : "");
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
         
-        // 2. [순서 기반 매핑] GAS에서 보낸 states의 값들을 배열로 추출
-        const stateValues = Object.values(result.states || {}); 
-
-        // 3. 화면의 모든 아이템(.item)을 순서대로 순회
-        const itemDivs = document.querySelectorAll("#checklist .item");
+        const states = result.states || {};
         
-        itemDivs.forEach((itemDiv, index) => {
-          const serverVal = String(stateValues[index] || "").trim().toUpperCase(); // "O" 또는 "X"
-          
-          if (serverVal === "O" || serverVal === "X") {
-            // 해당 순서의 아이템 안에서 O 또는 X 버튼을 정확히 찾아 active 추가
-            const targetBtn = itemDiv.querySelector(`.ox-btn[data-value="${serverVal}"]`);
-            if (targetBtn) {
-              targetBtn.classList.add("active");
-            }
+        // 텍스트 기반 매핑 (가장 정확함)
+        checkItems.forEach(item => {
+          const val = String(states[item] || "").trim().toUpperCase();
+          if (val === "O" || val === "X") {
+            const cleanKey = item.replace(/\s+/g, '');
+            const targetBtn = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
+            if (targetBtn) targetBtn.classList.add("active");
           }
         });
       }
       dupBox.style.display = "none";
     } else {
-      alert("저장된 데이터를 찾을 수 없습니다.");
+      alert("해당 날짜에 저장된 데이터가 없습니다.");
     }
   } catch (e) {
-    console.error("오류 발생:", e);
-    alert("데이터를 불러오는 중 오류가 발생했습니다.");
+    console.error("오류:", e);
+    alert("데이터를 가져오는 중 오류가 발생했습니다.");
   } finally {
     loadBtn.innerText = "데이터 불러오기(수정)";
   }
 }
 
-// 점검 구분 변경 시 호출되는 함수 보완
-async function checkDuplicate() {
-  const date = dateInput.value;
-  const option = optionSelect.value;
-  if (!date || !option) return;
-
-  try {
-    const res = await fetch(`${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
-    const result = await res.json();
-    
-    if (result.exists) {
-      dupBox.style.display = "block";
-      valueBox.style.display = "none";
-      checklistDiv.style.display = "none";
-    } else {
-      dupBox.style.display = "none";
-      // 데이터가 없으면 즉시 입력폼 활성화
-      if (option === "검침") {
-        valueBox.style.display = "block";
-        checklistDiv.style.display = "none";
-      } else {
-        valueBox.style.display = "none";
-        checklistDiv.style.display = "block";
-      }
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-// 중복 체크 및 UI 전환
+// 4. 중복 확인 함수 (중복 선언 제거 및 하나로 통합)
 async function checkDuplicate() {
   const date = dateInput.value;
   const option = optionSelect.value;
@@ -212,60 +175,55 @@ async function checkDuplicate() {
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
+        // 신규 작성 시 기존 선택 초기화
         document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
       }
     }
   } catch (e) { console.error(e); }
 }
 
+// 5. 이벤트 리스너 등록
 dateInput.addEventListener("change", checkDuplicate);
 optionSelect.addEventListener("change", checkDuplicate);
 loadBtn.addEventListener("click", loadWaterData);
 
-// 일괄 등록 버튼
+// 6. 일괄 등록
 bulkBtn.addEventListener("click", async () => {
   const date = dateInput.value;
   if (!date) return alert("날짜를 먼저 선택하세요.");
-
   bulkBtn.disabled = true;
-  bulkBtn.innerText = "⏳ 중복 확인 중...";
+  bulkBtn.innerText = "⏳ 확인 중...";
 
   try {
     const res = await fetch(`${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`);
     const result = await res.json();
 
     if (result.exists) {
-      if (confirm(`⚠️ ${date}에 이미 정기점검 데이터가 존재합니다.\n기존 데이터를 불러와서 확인하시겠습니까?`)) {
+      if (confirm(`⚠️ 이미 데이터가 존재합니다. 불러오시겠습니까?`)) {
         optionSelect.value = "정기점검";
         await loadWaterData(); 
       }
-      bulkBtn.disabled = false;
-      bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
-      return;
+    } else {
+      if (confirm(`${date} 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) {
+        const states = {};
+        checkItems.forEach(item => { states[item] = "O"; });
+        const payload = { date, option: "정기점검", value: "", checklist: states };
+        const postRes = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
+        alert(await postRes.text());
+        location.reload();
+      }
     }
-
-    if (confirm(`${date} 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) {
-      const states = {};
-      checkItems.forEach(item => { states[item] = "O"; });
-      const payload = { date, option: "정기점검", value: "", checklist: states };
-      
-      const postRes = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
-      alert(await postRes.text());
-      location.reload();
-    }
-  } catch (e) {
-    alert("처리 중 오류가 발생했습니다.");
-  } finally {
+  } catch (e) { alert("처리 중 오류 발생"); }
+  finally {
     bulkBtn.disabled = false;
     bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
   }
 });
 
-// 개별 저장
+// 7. 개별 저장
 saveBtn.addEventListener("click", async () => {
   const states = {};
   let hasSelection = false;
-  
   checkItems.forEach(item => {
     const cleanKey = item.replace(/\s+/g, '');
     const active = document.querySelector(`.ox-btn[data-key='${cleanKey}'].active`);
@@ -294,6 +252,7 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
+// 초기 실행
 checkDuplicate();
 </script>
 </body>
