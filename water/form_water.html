@@ -112,18 +112,18 @@ async function loadWaterData() {
   const option = optionSelect.value;
   if (!date) return;
 
-  loadBtn.innerText = "⏳ 데이터를 매칭 중...";
+  loadBtn.innerText = "⏳ 데이터 매칭 중...";
   
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
     const result = await res.json();
     
-    // 1. UI 초기화
-    dupBox.style.display = "none";
+    // 1. 모든 버튼 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-    if (valueInput) valueInput.value = "";
 
     if (result.exists) {
+      dupBox.style.display = "none";
+
       if (option === "검침") {
         valueBox.style.display = "block";
         checklistDiv.style.display = "none";
@@ -132,15 +132,16 @@ async function loadWaterData() {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
         
-        // 2. 버튼 활성화 (가장 강력한 매핑 방식)
+        // 2. [핵심] 순서대로 버튼 활성화
+        // GAS에서 보낸 states 객체의 값들을 배열로 변환
         const states = result.states || {};
-        
-        // 화면의 모든 점검 항목(item)을 돌면서 서버 데이터와 대조
-        const items = document.querySelectorAll(".item");
-        items.forEach(itemDiv => {
-          const titleText = itemDiv.querySelector(".item-title").innerText.replace(/^\d+\.\s*/, "").trim(); // "1. 항목명"에서 숫자 제거
-          const serverValue = states[titleText]; // 서버에서 보낸 O 또는 X
+        const stateValues = Object.values(states); // ["O", "X", "O" ...] 순서대로 추출
 
+        // 화면에 있는 모든 점검 항목(item) 그룹을 가져옴
+        const items = document.querySelectorAll(".item");
+        
+        items.forEach((itemDiv, index) => {
+          const serverValue = stateValues[index]; // 시트의 열 순서와 HTML 항목 순서가 일치해야 함
           if (serverValue) {
             const targetBtn = itemDiv.querySelector(`.ox-btn[data-value="${serverValue.toUpperCase()}"]`);
             if (targetBtn) {
@@ -149,11 +150,11 @@ async function loadWaterData() {
           }
         });
       }
-      console.log("매칭 완료:", result);
+      console.log("매칭 완료. 데이터 구조:", result);
     }
   } catch (e) {
-    console.error("Error:", e);
-    alert("로드 실패: " + e.message);
+    console.error("로드 오류:", e);
+    alert("데이터 로드 중 오류가 발생했습니다.");
   } finally {
     loadBtn.innerText = "데이터 불러오기(수정)";
   }
