@@ -141,23 +141,37 @@ window.addEventListener("DOMContentLoaded", async function () {
   fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
   async function updateCompletionStatus() {
-    const dateVal = dateInput.value;
-    if (!dateVal) return;
-    try {
-      const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
-      const res = await fetch(`${scriptUrl}?getNoodle=${query}`);
-      const data = res.ok ? await res.json() : {};
-      const completed = data.options || [];
+  const dateVal = dateInput.value;
+  if (!dateVal) return;
+  
+  loadingMsg.style.display = "block";
+  try {
+    // 해당 날짜의 모든 공정 데이터를 한 번에 가져오는 API 호출 (없다면 새로 만듦)
+    const query = encodeURIComponent(JSON.stringify({ date: dateVal }));
+    const res = await fetch(`${scriptUrl}?getNoodleFull=${query}`);
+    const result = await res.json(); // 예: { completed: ["시스템ON"], data: { "시스템ON": {hour: "08", minute: "30"}, ... } }
+    
+    // 1. 완료 상태 업데이트
+    const completed = result.completed || [];
+    Array.from(groupSelect.options).forEach(opt => {
+      if (!opt.value) return;
+      const baseValue = opt.value.replace("(완료)", "").trim();
+      opt.textContent = completed.includes(baseValue) ? `${baseValue}(완료)` : baseValue;
+      opt.value = baseValue;
+    });
 
-      Array.from(groupSelect.options).forEach(opt => {
-        if (!opt.value) return;
-        const baseValue = opt.value.replace("(완료)", "").trim();
-        opt.textContent = completed.includes(baseValue) ? `${baseValue}(완료)` : baseValue;
-        opt.value = baseValue;
-      });
-    } catch (e) { console.error("상태 업데이트 실패", e); }
+    // 2. [중요] 추천 시간 계산을 위해 전역 변수 loadedData에 데이터 저장
+    loadedData = result.allData || {}; 
+    
+    // 3. UI 갱신 (추천 시간 표시 등)
+    updateUIByGroup();
+
+  } catch (e) { 
+    console.error("데이터 로드 실패", e); 
+  } finally {
+    loadingMsg.style.display = "none";
   }
-
+}
   async function checkDuplicate(group, isInternal = false) {
     const date = dateInput.value;
     if (!date || !group) return;
