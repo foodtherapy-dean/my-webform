@@ -94,7 +94,9 @@
 
         <div class="inline-row" id="thRow" style="display:none;">
           <div><label>온도(℃)</label><input type="number" id="temp" step="1" /></div>
+          <div style="font-size: 11px; color: #888; margin-top: 2px;">🌡️ 적정온도: 32~55</div>
           <div><label>습도(%)</label><input type="number" id="humidity" step="1" /></div>
+          <div style="font-size: 11px; color: #888; margin-top: 2px;">💧 적정습도: 39~78</div>
         </div>
 
         <div class="inline-row" id="productRow" style="display:none;">
@@ -118,7 +120,7 @@
   window.addEventListener("DOMContentLoaded", async function () {
     const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
     let loadedData = {}; 
-    let currentCompletedList = []; // 중복 체크를 위한 전역 목록
+    let currentCompletedList = []; 
 
     const dateInput = document.getElementById("date");
     const groupSelect = document.getElementById("group");
@@ -129,6 +131,7 @@
     const duplicateMsg = document.getElementById("duplicateMsg");
     const duplicateText = document.getElementById("duplicateText");
     const suggestionText = document.getElementById("suggestionText");
+    const singleInputForm = document.getElementById("singleInputForm"); // 입력폼 컨테이너 (필요시 ID 추가)
 
     dateInput.valueAsDate = new Date();
 
@@ -141,7 +144,6 @@
     fillOptions(document.getElementById("hour"), document.getElementById("minute"));
     fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
-    // 1. 상태 업데이트 및 목록 저장
     async function updateCompletionStatus() {
       const dateVal = dateInput.value;
       if (!dateVal) return;
@@ -169,42 +171,64 @@
       } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
     }
 
-    // 2. 개별 항목 중복 체크 및 데이터 로드
+    // [개선] 중복 체크 시 일단 입력폼을 숨기고 중복 안내창만 띄움
     async function checkDuplicate(group) {
       const date = dateInput.value;
       if (!date || !group) return;
+      
+      // 일단 입력 UI들을 숨김 처리 (확인 전까지)
+      setSingleFormVisibility(false);
+      duplicateMsg.style.display = "none";
       loadingMsg.style.display = "block";
+
       try {
         const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
         const result = await res.json();
-        duplicateMsg.style.display = "none";
+        
         if (result.exists) {
-          duplicateText.textContent = `⚠️ [${group}] 데이터가 존재합니다. 수정하시겠습니까?`;
+          duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다. 수정하시겠습니까?`;
           duplicateMsg.style.display = "block";
+          
+          // 데이터는 미리 채워둠
           const d = result.data;
           if (group === "생산제품") {
             document.getElementById("product").value = d.product || "";
             document.getElementById("singleCount").value = d.count || "";
           } else {
-            document.getElementById("hour").value = d.hour || d.hour.padStart(2,"0");
-            document.getElementById("minute").value = d.minute || d.minute.padStart(2,"0");
+            document.getElementById("hour").value = d.hour || "";
+            document.getElementById("minute").value = d.minute || "";
             document.getElementById("temp").value = d.temp || "";
             document.getElementById("humidity").value = d.humi || "";
           }
         } else {
-            resetFields();
+          // 중복이 없으면 즉시 입력창 활성화
+          resetFields();
+          setSingleFormVisibility(true);
+          updateUIByGroup();
         }
-      } catch (e) {} finally { loadingMsg.style.display = "none"; updateUIByGroup(); }
+      } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
     }
 
-    // 3. 개별 전송 버튼 (중복 여부 상관없이 현재 폼의 데이터를 전송)
+    // 중복 확인 버튼 클릭 시 입력폼 활성화
+    document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
+      duplicateMsg.style.display = "none";
+      setSingleFormVisibility(true); // 입력 필드 표시
+      updateUIByGroup(); // 항목별 필요한 필드만 선별 노출
+    });
+
+    function setSingleFormVisibility(show) {
+      const displayStyle = show ? "flex" : "none";
+      // 개별 전송 버튼과 공통 입력 영역 제어
+      document.getElementById("submitBtn").style.display = displayStyle;
+      // 각 입력 Row들은 updateUIByGroup에서 상세 제어하므로 여기서는 큰 틀만 관리 가능
+    }
+
     document.getElementById("submitBtn").addEventListener("click", async () => {
       const g = groupSelect.value;
       if (!g) return alert("단계를 선택하세요.");
       
       const btn = document.getElementById("submitBtn");
-      btn.disabled = true;
-      btn.innerText = "⏳ 전송 중...";
+      btn.disabled = true; btn.innerText = "⏳ 전송 중...";
 
       try {
         const entry = {
@@ -216,23 +240,17 @@
           count: document.getElementById("singleCount").value
         };
         const payload = { date: dateInput.value, group: g, entries: [entry] };
-        const response = await fetch(scriptUrl, {
+        await fetch(scriptUrl, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
         });
-        if (response.ok) { 
-            alert(`✅ [${g}] 저장 완료`); 
-            updateCompletionStatus(); // 새로고침 대신 상태 업데이트
-            duplicateMsg.style.display = "none";
-        }
-      } catch (e) { alert("저장 실패"); } finally { 
-          btn.disabled = false; 
-          btn.innerText = "📥 개별 항목 서버 전송"; 
-      }
+        alert(`✅ [${g}] 저장 완료`);
+        updateCompletionStatus();
+      } catch (e) { alert("저장 실패"); } finally { btn.disabled = false; btn.innerText = "📥 개별 항목 서버 전송"; }
     });
 
-    // 4. 일괄 등록 (중복 경고 로직 추가)
+    // 일괄 등록 (중복 체크 포함)
     document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
       const h = document.getElementById("bulkHour").value;
       const m = document.getElementById("bulkMinute").value;
@@ -240,19 +258,15 @@
       const cnt = document.getElementById("bulkCount").value;
       if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
 
-      // 이미 등록된 항목이 있는지 확인
       const checkGroups = ["생산제품", "시스템ON", "1차점검", "2차점검", "시스템OFF"];
       const alreadyDone = checkGroups.filter(g => currentCompletedList.includes(g));
-      
       let confirmMsg = "🚀 일괄 등록을 진행하시겠습니까?";
-      if (alreadyDone.length > 0) {
-          confirmMsg = `⚠️ 주의: [${alreadyDone.join(", ")}] 데이터가 이미 존재합니다.\n기존 데이터를 덮어쓰고 새로 등록하시겠습니까?`;
-      }
+      if (alreadyDone.length > 0) confirmMsg = `⚠️ [${alreadyDone.join(", ")}] 데이터가 이미 존재합니다. 덮어쓰시겠습니까?`;
 
       if(!confirm(confirmMsg)) return;
 
       const btn = document.getElementById("bulkSubmitBtn");
-      btn.disabled = true; btn.innerText = "⚡ 초고속 병렬 전송 중...";
+      btn.disabled = true; btn.innerText = "⚡ 전송 중...";
 
       try {
         const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -276,13 +290,11 @@
             body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
           });
         }));
-
         alert("🚀 일괄 등록 완료!");
         updateCompletionStatus();
       } catch (e) { alert("오류 발생"); } finally { btn.disabled = false; btn.innerText = "⚡ 전송 및 전체 자동 등록"; }
     });
 
-    // 기타 보조 함수 (동일)
     function resetFields() {
       ["hour", "minute", "temp", "humidity", "product", "singleCount"].forEach(id => {
         const el = document.getElementById(id);
@@ -307,11 +319,16 @@
 
     function updateUIByGroup() {
       const g = groupSelect.value;
-      document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
+      if(!g) {
+          setSingleFormVisibility(false);
+          return;
+      }
+      
+      document.getElementById("timeRow").style.display = (g !== "생산제품") ? "flex" : "none";
       document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
       document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
+      
       suggestionText.textContent = "";
-      if (!g) return;
       const sysOn = loadedData["시스템ON"];
       const step1 = loadedData["1차점검"];
       if (g === "1차점검" && sysOn) suggestionText.textContent = "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
@@ -321,7 +338,6 @@
 
     groupSelect.addEventListener("change", () => checkDuplicate(groupSelect.value));
     dateInput.addEventListener("change", updateCompletionStatus);
-    document.getElementById("duplicateConfirmBtn").addEventListener("click", () => duplicateMsg.style.display = "none");
     
     bulkToggleBtn.addEventListener("click", () => {
       const isBulk = bulkSection.style.display === "none";
