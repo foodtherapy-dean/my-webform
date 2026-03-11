@@ -116,7 +116,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbz_FA3GRUtuYQJ35897qpSQm3T81rqq72uytvsCmOShR7bzl53Ol0WWPGULiyZcEkTvvw/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
   let loadedData = {};
 
   const dateInput = document.getElementById("date");
@@ -269,52 +269,87 @@ window.addEventListener("DOMContentLoaded", async function () {
   }
 
   document.getElementById("submitBtn").addEventListener("click", () => {
-    const g = groupSelect.value;
-    if(!g) return alert("단계를 선택하세요.");
-    const entry = {
-      hour: document.getElementById("hour").value,
-      minute: document.getElementById("minute").value,
-      temp: document.getElementById("temp").value,
-      humi: document.getElementById("humidity").value,
-      product: document.getElementById("product").value,
-      count: document.getElementById("singleCount").value
+  const g = groupSelect.value;
+  if(!g) return alert("단계를 선택하세요.");
+  
+  const entry = {
+    hour: document.getElementById("hour").value,
+    minute: document.getElementById("minute").value,
+    temp: document.getElementById("temp").value,
+    humi: document.getElementById("humidity").value,
+    product: document.getElementById("product").value,
+    count: document.getElementById("singleCount").value
+  };
+
+  // entries 배열에 하나만 담아서 보냄 (서버의 forEach가 1번 돌아감)
+  sendData({ 
+    date: dateInput.value, 
+    group: g, 
+    entries: [entry] 
+  });
+});
+
+  // [보강/최적화] 일괄 등록 로직: 단일 네트워크 요청으로 처리 속도 향상
+document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
+  const h = bH.value; 
+  const m = bM.value;
+  const prod = document.getElementById("bulkProduct").value;
+  const cnt = document.getElementById("bulkCount").value;
+  
+  if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
+
+  // 랜덤 정수 생성 함수
+  const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  // 연쇄적 시간 계산
+  const time1 = getRandTime(h, m, 1);             // ON 대비 1시간 후 ±10분
+  const time2 = getRandTime(time1.h, time1.m, 15); // 1차 대비 15시간 후 ±10분
+  const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10); // 2차 대비 1시간 후 +1~10분
+
+  // 1. 모든 단계를 하나의 배열(allEntries)로 구성
+  const allEntries = [
+    { g: "생산제품", d: { product: prod, count: cnt } },
+    { g: "시스템ON", d: { hour: h, minute: m } },
+    { g: "1차점검", d: { hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) } },
+    { g: "2차점검", d: { hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) } },
+    { g: "시스템OFF", d: { hour: timeOff.h, minute: timeOff.m } }
+  ];
+
+  if(!confirm("전체 데이터를 일괄 등록하시겠습니까?\n(시간 및 온습도가 자동 가감/생성됩니다)")) return;
+  
+  // UI 상태 변경
+  const btn = document.getElementById("bulkSubmitBtn");
+  btn.disabled = true;
+  btn.innerText = "⏳ 서버 전송 중 (초고속)...";
+
+  try {
+    // 2. 루프 없이 단 한 번의 fetch 요청 전송
+    const payload = { 
+      date: dateInput.value, 
+      allEntries: allEntries 
     };
-    sendData({ date: dateInput.value, group: g, entries: [entry] });
-  });
 
-  // [보강] 일괄 등록 로직: 연쇄적 랜덤 시간 및 정수 온습도 적용
-  document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
-    const h = bH.value; const m = bM.value;
-    const prod = document.getElementById("bulkProduct").value;
-    const cnt = document.getElementById("bulkCount").value;
-    if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
+    const response = await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+    });
 
-    // 랜덤 정수 생성 함수
-    const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    if (response.ok) {
+      alert("🚀 모든 공정이 성공적으로 일괄 등록되었습니다!");
+      location.reload();
+    } else {
+      throw new Error("서버 응답 오류");
+    }
 
-    // 연쇄적 시간 계산
-    const time1 = getRandTime(h, m, 1);             // ON 대비 1시간 후 ±10분
-    const time2 = getRandTime(time1.h, time1.m, 15); // 1차 대비 15시간 후 ±10분
-    const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10); // 2차 대비 1시간 후 +1~10분
-
-    const steps = [
-      { g: "생산제품", d: { product: prod, count: cnt } },
-      { g: "시스템ON", d: { hour: h, minute: m } },
-      { g: "1차점검", d: { hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) } },
-      { g: "2차점검", d: { hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) } },
-      { g: "시스템OFF", d: { hour: timeOff.h, minute: timeOff.m } }
-    ];
-
-    if(!confirm("전체 데이터를 일괄 등록하시겠습니까?\n(시간 및 온습도가 자동 가감/생성됩니다)")) return;
-    
-    document.getElementById("bulkSubmitBtn").disabled = true;
-    document.getElementById("bulkSubmitBtn").innerText = "⏳ 전송 중...";
-
-    for(const s of steps) await sendData({ date: dateInput.value, group: s.g, entries: [s.d] }, false);
-    
-    alert("일괄 등록 완료!");
-    location.reload();
-  });
+  } catch (e) {
+    console.error("일괄 전송 오류:", e);
+    alert("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "⚡ 전송 및 전체 자동 등록";
+  }
+});
 
   updateCompletionStatus();
 });
