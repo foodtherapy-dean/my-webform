@@ -37,29 +37,32 @@
   #bulkSubmitBtn { background: #e91e63; color: white; width: 100%; padding: 15px; font-size: 1.2rem; margin-top: 10px; }
 
   .section-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-  .inline-row { display:flex; gap:15px; margin-top:10px; }
+  .inline-row { display:flex; gap:10px; margin-top:10px; }
   .inline-row > * { flex:1; }
   
   label { display:block; margin-bottom:6px; font-weight: bold; color: #555; }
-  
-  /* [수정] 온습도 가이드 스타일을 시간 라벨과 동일하게 설정 */
   .guide-text { font-weight: bold; color: #555; font-size: 0.9rem; margin-top: 6px; display: block; }
-  
   input, select { width:100%; padding:12px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; box-sizing: border-box; }
   
-  /* 중복 안내창 디자인 개선 */
+  /* 중복 안내창 디자인 */
   #duplicateMsg { display:none; background:#fff0f0; color:#900; padding:15px; margin:10px 0; border:1.5px solid #900; border-radius:8px; font-weight:bold; }
-  
-  /* [추가] 삭제 버튼 스타일 */
-  #deleteDateBtn { 
-    background: #f44336; 
-    color: white; 
-    padding: 10px; 
-    border-radius: 6px; 
-    font-size: 0.95rem; 
-    font-weight: bold; 
-    display: none; /* 초기 숨김 */
+
+  /* [수정] 안내창 내부 버튼 크기 및 텍스트 스타일 통일 */
+  #duplicateConfirmBtn, #deleteDateBtn { 
+    height: 55px;      /* 높이를 넉넉하게 통일 */
+    font-size: 1.1rem; /* 글자 크기 통일 */
+    font-weight: bold;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 0;
   }
+
+  /* 각각의 고유 색상 설정 */
+  #duplicateConfirmBtn { background: #900; color: #fff; }
+  #deleteDateBtn { background: #f44336; color: white; display: none; }
 
   #loadingMsg { display:none; background:#ffe599; color:#333; padding:8px; margin-bottom:10px; border-radius:6px; font-weight:bold; text-align:center; }
   .hint { font-size: 0.85rem; color: #666; margin-top: 4px; }
