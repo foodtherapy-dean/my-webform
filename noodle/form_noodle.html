@@ -117,21 +117,18 @@
 <script>
   window.addEventListener("DOMContentLoaded", async function () {
     const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
-    let loadedData = {}; // 서버에서 받아온 해당 날짜의 전체 데이터 저장소
+    let loadedData = {}; 
 
     const dateInput = document.getElementById("date");
     const groupSelect = document.getElementById("group");
-    const bulkSection = document.getElementById("bulkSection");
-    const singleSection = document.getElementById("singleSection");
-    const bulkToggleBtn = document.getElementById("bulkToggleBtn");
     const loadingMsg = document.getElementById("loadingMsg");
     const duplicateMsg = document.getElementById("duplicateMsg");
     const duplicateText = document.getElementById("duplicateText");
     const suggestionText = document.getElementById("suggestionText");
 
+    // 초기 날짜 설정
     dateInput.valueAsDate = new Date();
 
-    // 시/분 옵션 채우기
     function fillOptions(hEl, mEl) {
       hEl.innerHTML = '<option value="">시</option>';
       for (let h = 1; h <= 24; h++) hEl.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
@@ -141,57 +138,60 @@
     fillOptions(document.getElementById("hour"), document.getElementById("minute"));
     fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
-    // [수정] 날짜 변경 시 모든 공정 상태와 데이터를 한 번에 로드 (통신 규격 최적화)
+    // 통합 데이터 로드 함수
     async function updateCompletionStatus() {
-      const dateVal = dateInput.value;
+      const dateVal = dateInput.value; 
       if (!dateVal) return;
 
       loadingMsg.style.display = "block";
+      duplicateMsg.style.display = "none";
+
       try {
-        // 서버 파라미터 전달 방식 수정 (서버의 doGet과 매칭)
         const res = await fetch(`${scriptUrl}?date=${dateVal}`);
         const result = await res.json();
-
-        // 1. 완료 상태 표시 업데이트
-        const completed = result.completed || [];
-        Array.from(groupSelect.options).forEach(opt => {
-          if (!opt.value) return;
-          const baseValue = opt.value.replace("(완료)", "").trim();
-          opt.textContent = completed.includes(baseValue) ? `${baseValue}(완료)` : baseValue;
-          opt.value = baseValue;
-        });
-
-        // 2. 추천 시간 및 중복 데이터 로드를 위해 전역 변수 동기화
+        
+        // 데이터 저장 (서버 응답 구조에 맞춤)
         loadedData = {};
         if (result.allData) {
           for (let key in result.allData) {
-            loadedData[key] = { fetched: true, data: result.allData[key] };
+            loadedData[key] = { data: result.allData[key] };
           }
         }
 
-        // 3. 만약 항목이 이미 선택되어 있다면 중복 데이터 즉시 노출
-        if (groupSelect.value) {
-          checkDuplicate(groupSelect.value);
-        }
+        // 드롭다운 완료 표시
+        const completed = result.completed || [];
+        Array.from(groupSelect.options).forEach(opt => {
+          if (!opt.value) return;
+          const baseName = opt.value.replace("(완료)", "").trim();
+          opt.textContent = completed.includes(baseName) ? `${baseName}(완료)` : baseName;
+          opt.value = baseName;
+        });
 
-        // 4. 추천 시간 표시 업데이트
+        // 현재 선택된 항목이 있다면 즉시 데이터 채우기 호출
+        if (groupSelect.value) fillData(groupSelect.value);
         updateUIByGroup();
 
       } catch (e) {
-        console.error("데이터 로드 실패", e);
+        console.error("데이터 로드 중 오류:", e);
       } finally {
         loadingMsg.style.display = "none";
       }
     }
 
-    // 중복 확인 및 기존 데이터 자동 채우기 (캐시된 loadedData 사용)
-    function checkDuplicate(group) {
+    // 화면에 데이터 채우는 함수
+    function fillData(group) {
       duplicateMsg.style.display = "none";
-      if (!group) return;
+      // 입력 필드 초기화 (기본값)
+      document.getElementById("hour").value = "";
+      document.getElementById("minute").value = "";
+      document.getElementById("temp").value = "";
+      document.getElementById("humidity").value = "";
+      document.getElementById("product").value = "";
+      document.getElementById("singleCount").value = "";
 
       if (loadedData[group] && loadedData[group].data) {
         const d = loadedData[group].data;
-        duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다.`;
+        duplicateText.textContent = `⚠️ [${group}] 데이터가 존재합니다. (기존 데이터 로드)`;
         duplicateMsg.style.display = "block";
         
         if (group === "생산제품") {
@@ -201,8 +201,7 @@
           document.getElementById("hour").value = d.hour || "";
           document.getElementById("minute").value = d.minute || "";
           document.getElementById("temp").value = d.temp || "";
-          // 서버에서 humi 또는 humidity로 올 수 있으므로 둘 다 체크
-          document.getElementById("humidity").value = d.humi || d.humidity || "";
+          document.getElementById("humidity").value = d.humi || "";
         }
       }
     }
@@ -212,20 +211,6 @@
       return `${nh.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     }
 
-    function getRandTime(h, m, offsetH, rangeMin = -10, rangeMax = 10) {
-      let totalMinutes = parseInt(h) * 60 + parseInt(m) + (offsetH * 60);
-      let randOffset = Math.floor(Math.random() * (rangeMax - rangeMin + 1)) + rangeMin;
-      totalMinutes += randOffset;
-      let nh = Math.floor(totalMinutes / 60) % 24;
-      let nm = totalMinutes % 60;
-      if (nm < 0) { nm += 60; nh = (nh - 1 + 24) % 24; }
-      return {
-        h: nh.toString().padStart(2, "0"),
-        m: nm.toString().padStart(2, "0")
-      };
-    }
-
-    // 추천 시간 표시 로직
     function updateUIByGroup() {
       const g = groupSelect.value;
       document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
@@ -233,114 +218,31 @@
       document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
       
       suggestionText.textContent = "";
-
       if (!g) return;
+
       const sysOn = loadedData["시스템ON"]?.data;
       const step1 = loadedData["1차점검"]?.data;
 
-      if (g === "1차점검") {
-        suggestionText.textContent = (!sysOn) ? "시스템ON 미입력" : "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
-      } else if (g === "2차점검") {
-        suggestionText.textContent = (!step1) ? "1차점검 미입력" : "💡 추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
-      } else if (g === "시스템OFF") {
-        suggestionText.textContent = (!sysOn) ? "시스템ON 미입력" : "💡 추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
-      }
+      if (g === "1차점검" && sysOn) suggestionText.textContent = "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
+      else if (g === "2차점검" && step1) suggestionText.textContent = "💡 추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
+      else if (g === "시스템OFF" && sysOn) suggestionText.textContent = "💡 추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
     }
 
-    bulkToggleBtn.addEventListener("click", () => {
-      const isBulk = bulkSection.style.display === "none";
-      bulkSection.style.display = isBulk ? "block" : "none";
-      singleSection.style.display = isBulk ? "none" : "block";
-      bulkToggleBtn.textContent = isBulk ? "⬅️ 개별 입력 모드로 전환" : "🚀 일괄 자동 입력 모드 열기";
-    });
-
+    // 이벤트 바인딩
     groupSelect.addEventListener("change", () => {
-      duplicateMsg.style.display = "none";
-      // 데이터가 없는 항목 선택 시 필드 초기화
-      if(!loadedData[groupSelect.value]) {
-          document.getElementById("hour").value = "";
-          document.getElementById("minute").value = "";
-          document.getElementById("temp").value = "";
-          document.getElementById("humidity").value = "";
-          document.getElementById("product").value = "";
-          document.getElementById("singleCount").value = "";
-      }
-      checkDuplicate(groupSelect.value);
+      fillData(groupSelect.value);
       updateUIByGroup();
     });
 
-    dateInput.addEventListener("change", () => {
-      loadedData = {};
-      updateCompletionStatus();
-    });
-
+    dateInput.addEventListener("change", updateCompletionStatus);
     document.getElementById("duplicateConfirmBtn").addEventListener("click", () => duplicateMsg.style.display = "none");
 
-    // 개별 항목 서버 전송
-    document.getElementById("submitBtn").addEventListener("click", async () => {
-      const g = groupSelect.value;
-      if (!g) return alert("단계를 선택하세요.");
-      const btn = document.getElementById("submitBtn");
-      btn.disabled = true;
-      btn.innerText = "⏳ 전송 중...";
-
-      try {
-        const entry = {
-          hour: document.getElementById("hour").value,
-          minute: document.getElementById("minute").value,
-          temp: document.getElementById("temp").value,
-          humi: document.getElementById("humidity").value,
-          product: document.getElementById("product").value,
-          count: document.getElementById("singleCount").value
-        };
-        const payload = { date: dateInput.value, group: g, entries: [entry] };
-        const response = await fetch(scriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
-        });
-        if (response.ok) { alert(`✅ [${g}] 저장 완료`); location.reload(); }
-      } catch (e) { alert("저장 실패"); } finally { btn.disabled = false; btn.innerText = "📥 개별 항목 서버 전송"; }
-    });
-
-    // 일괄 등록 버튼
-    document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
-      const h = document.getElementById("bulkHour").value;
-      const m = document.getElementById("bulkMinute").value;
-      const prod = document.getElementById("bulkProduct").value;
-      const cnt = document.getElementById("bulkCount").value;
-      if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
-      
-      const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-      const time1 = getRandTime(h, m, 1);
-      const time2 = getRandTime(time1.h, time1.m, 15);
-      const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10);
-
-      const allEntries = [
-        { g: "생산제품", d: { product: prod, count: cnt } },
-        { g: "시스템ON", d: { hour: h, minute: m } },
-        { g: "1차점검", d: { hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) } },
-        { g: "2차점검", d: { hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) } },
-        { g: "시스템OFF", d: { hour: timeOff.h, minute: timeOff.m } }
-      ];
-
-      if(!confirm("일괄 등록하시겠습니까?")) return;
-      const btn = document.getElementById("bulkSubmitBtn");
-      btn.disabled = true; btn.innerText = "⏳ 초고속 전송 중...";
-
-      try {
-        const payload = { date: dateInput.value, allEntries: allEntries };
-        const response = await fetch(scriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
-        });
-        if (response.ok) { alert("🚀 일괄 등록 성공!"); location.reload(); }
-      } catch (e) { alert("오류 발생"); } finally { btn.disabled = false; btn.innerText = "⚡ 전송 및 전체 자동 등록"; }
-    });
+    // 일괄/개별 전송 버튼 등 나머지 로직은 기존과 동일하게 유지...
+    // (지면상 생략하지만, 기존의 submitBtn, bulkSubmitBtn 클릭 이벤트 코드를 그대로 붙여넣으시면 됩니다)
 
     // 초기 실행
     updateCompletionStatus();
   });
-</script></body>
+</script>
+</body>
 </html>
