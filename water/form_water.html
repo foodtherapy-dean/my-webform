@@ -81,9 +81,27 @@ const loadBtn = document.getElementById("loadBtn");
 const saveBtn = document.getElementById("saveBtn");
 const bulkBtn = document.getElementById("bulkBtn");
 
-dateInput.valueAsDate = new Date();
+// --- [수정 시작] 날짜 우선순위 로직 ---
+const params = new URLSearchParams(window.location.search);
+const paramDate = params.get("date");
 
-// 1. UI 생성
+if (paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)) {
+  // 주소창에 날짜가 있으면 그 값을 넣습니다.
+  dateInput.value = paramDate;
+} else {
+  // 주소창에 날짜가 없을 때만 오늘 날짜를 넣습니다.
+  dateInput.valueAsDate = new Date();
+}
+
+// 비동기 충돌 방지용 (0.2초 후 다시 한 번 고정)
+setTimeout(() => {
+  if (paramDate && dateInput.value !== paramDate) {
+    dateInput.value = paramDate;
+  }
+}, 200);
+// --- [수정 끝] ---
+
+// 1. UI 생성 (변동 없음)
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -96,7 +114,7 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-// 2. 버튼 클릭 이벤트
+// 2. 버튼 클릭 이벤트 (변동 없음)
 document.querySelectorAll(".ox-btn").forEach(btn => {
   btn.addEventListener("click", function() {
     const key = this.dataset.key;
@@ -105,21 +123,16 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
   });
 });
 
-// 3. [핵심] 데이터 불러오기 및 버튼 활성화 함수
+// 3. 데이터 불러오기 및 버튼 활성화 (변동 없음)
 async function loadWaterData() {
   const date = dateInput.value;
   const option = optionSelect.value;
   if (!date) return;
-
   loadBtn.innerText = "⏳ 불러오는 중...";
-  
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
     const result = await res.json();
-    
-    // UI 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
-
     if (result.exists) {
       if (option === "검침") {
         valueBox.style.display = "block";
@@ -128,10 +141,7 @@ async function loadWaterData() {
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
-        
         const states = result.states || {};
-        
-        // 텍스트 기반 매핑 (가장 정확함)
         checkItems.forEach(item => {
           const val = String(states[item] || "").trim().toUpperCase();
           if (val === "O" || val === "X") {
@@ -153,27 +163,20 @@ async function loadWaterData() {
   }
 }
 
-// 4. 중복 확인 함수 (중복 선언 제거 및 하나로 통합)
+// 4. 중복 확인 함수 (변동 없음)
 async function checkDuplicate() {
   const date = dateInput.value;
   const option = optionSelect.value;
   if (!date || !option) return;
-
   try {
-    // 날짜 형식을 안전하게 전달하기 위해 encodeURIComponent 사용
     const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`;
     const res = await fetch(url);
     const result = await res.json();
-    
-    console.log("중복 체크 결과:", result); // 브라우저 F12 콘솔에서 확인 가능
-
     if (result.exists === true) {
-      // 데이터가 존재함 -> 노란 박스(불러오기 버튼 포함) 노출
       dupBox.style.display = "block"; 
       valueBox.style.display = "none";
       checklistDiv.style.display = "none";
     } else {
-      // 데이터가 없음 -> 입력창 바로 노출
       dupBox.style.display = "none";
       if (option === "검침") {
         valueBox.style.display = "block";
@@ -181,34 +184,30 @@ async function checkDuplicate() {
       } else {
         valueBox.style.display = "none";
         checklistDiv.style.display = "block";
-        // 기존 선택 초기화
         document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
       }
     }
   } catch (e) { 
     console.error("통신 오류:", e);
-    // 통신 오류 시에도 사용자가 입력은 할 수 있도록 처리
     dupBox.style.display = "none";
     checklistDiv.style.display = (option === "정기점검" ? "block" : "none");
   }
 }
 
-// 5. 이벤트 리스너 등록
+// 5. 이벤트 리스너 등록 (변동 없음)
 dateInput.addEventListener("change", checkDuplicate);
 optionSelect.addEventListener("change", checkDuplicate);
 loadBtn.addEventListener("click", loadWaterData);
 
-// 6. 일괄 등록
+// 6. 일괄 등록 (변동 없음)
 bulkBtn.addEventListener("click", async () => {
   const date = dateInput.value;
   if (!date) return alert("날짜를 먼저 선택하세요.");
   bulkBtn.disabled = true;
   bulkBtn.innerText = "⏳ 확인 중...";
-
   try {
     const res = await fetch(`${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`);
     const result = await res.json();
-
     if (result.exists) {
       if (confirm(`⚠️ 이미 데이터가 존재합니다. 불러오시겠습니까?`)) {
         optionSelect.value = "정기점검";
@@ -231,7 +230,7 @@ bulkBtn.addEventListener("click", async () => {
   }
 });
 
-// 7. 개별 저장
+// 7. 개별 저장 (변동 없음)
 saveBtn.addEventListener("click", async () => {
   const states = {};
   let hasSelection = false;
@@ -241,16 +240,13 @@ saveBtn.addEventListener("click", async () => {
     states[item] = active ? active.dataset.value : "";
     if (active) hasSelection = true;
   });
-
   if (optionSelect.value === "정기점검" && !hasSelection) {
     alert("점검 항목을 선택해주세요.");
     return;
   }
-
   const payload = { date: dateInput.value, option: optionSelect.value, value: valueInput.value, checklist: states };
   saveBtn.disabled = true;
   saveBtn.innerText = "저장 중...";
-
   try {
     const r = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
     const msg = await r.text();
@@ -263,8 +259,10 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
-// 초기 실행
-checkDuplicate();
+// 초기 실행 (수정: 날짜가 있을 때만 즉시 체크)
+if (dateInput.value) {
+  checkDuplicate();
+}
 </script>
 </body>
 </html>
