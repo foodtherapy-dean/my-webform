@@ -117,7 +117,7 @@
 <script>
   window.addEventListener("DOMContentLoaded", async function () {
     const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
-    let loadedData = {}; // 서버에서 불러온 상세 데이터를 저장 (추천 시간용)
+    let loadedData = {}; 
 
     const dateInput = document.getElementById("date");
     const groupSelect = document.getElementById("group");
@@ -140,82 +140,46 @@
     fillOptions(document.getElementById("hour"), document.getElementById("minute"));
     fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
-    // 1. [GAS 전용] 날짜별 완료 목록 가져오기 (완료 표시용)
-    // [속도 개선 버전] 병렬 요청 적용
-async function updateCompletionStatus() {
-  const dateVal = dateInput.value;
-  if (!dateVal) return;
+    // 1. 데이터 로딩 (병렬 처리로 속도 개선)
+    async function updateCompletionStatus() {
+      const dateVal = dateInput.value;
+      if (!dateVal) return;
+      loadingMsg.style.display = "block";
+      try {
+        const [resList, resSysOn, resStep1] = await Promise.all([
+          fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal }))),
+          fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "시스템ON" }))),
+          fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "1차점검" })))
+        ]);
+        const [listData, sysOnData, step1Data] = await Promise.all([resList.json(), resSysOn.json(), resStep1.json()]);
 
-  loadingMsg.style.display = "block";
-  try {
-    // 여러 요청을 동시에 발사 (병렬 처리)
-    const [resList, resSysOn, resStep1] = await Promise.all([
-      fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal }))),
-      fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "시스템ON" }))),
-      fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "1차점검" })))
-    ]);
+        const completedList = listData.options || [];
+        Array.from(groupSelect.options).forEach(opt => {
+          if (!opt.value) return;
+          const baseName = opt.value.replace("(완료)", "").trim();
+          opt.textContent = completedList.includes(baseName) ? `${baseName}(완료)` : baseName;
+          opt.value = baseName;
+        });
 
-    const [listData, sysOnData, step1Data] = await Promise.all([
-      resList.json(),
-      resSysOn.json(),
-      resStep1.json()
-    ]);
-
-    // 1. 완료 목록 표시
-    const completedList = listData.options || [];
-    Array.from(groupSelect.options).forEach(opt => {
-      if (!opt.value) return;
-      const baseName = opt.value.replace("(완료)", "").trim();
-      opt.textContent = completedList.includes(baseName) ? `${baseName}(완료)` : baseName;
-      opt.value = baseName;
-    });
-
-    // 2. 추천 시간용 데이터 저장
-    loadedData = {};
-    if (sysOnData.exists) loadedData["시스템ON"] = sysOnData.data;
-    if (step1Data.exists) loadedData["1차점검"] = step1Data.data;
-
-    // 3. UI 갱신
-    updateUIByGroup();
-
-  } catch (e) {
-    console.error("데이터 로드 실패", e);
-  } finally {
-    loadingMsg.style.display = "none";
-  }
-}
-    // 2. 추천 시간 계산을 위해 필수 데이터만 서버에 개별 요청
-    async function fetchEssentialData(date) {
-      const essentials = ["시스템ON", "1차점검"];
-      loadedData = {}; 
-
-      for (const group of essentials) {
-        try {
-          const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
-          const result = await res.json();
-          if (result.exists) {
-            loadedData[group] = result.data;
-          }
-        } catch (e) {}
-      }
-      updateUIByGroup(); // 추천 시간 UI 갱신
+        loadedData = {};
+        if (sysOnData.exists) loadedData["시스템ON"] = sysOnData.data;
+        if (step1Data.exists) loadedData["1차점검"] = step1Data.data;
+        updateUIByGroup();
+      } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
     }
 
-    // 3. 항목 선택 시 상세 데이터 가져오기 (중복 체크 및 값 채우기)
+    // 2. 개별 중복 체크
     async function checkDuplicate(group) {
       const date = dateInput.value;
       if (!date || !group) return;
-
       loadingMsg.style.display = "block";
       try {
         const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
         const result = await res.json();
-        
         duplicateMsg.style.display = "none";
         if (result.exists) {
-          duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다.`;
+          duplicateText.textContent = `⚠️ [${group}] 데이터가 존재합니다.`;
           duplicateMsg.style.display = "block";
-          
           const d = result.data;
           if (group === "생산제품") {
             document.getElementById("product").value = d.product || "";
@@ -226,20 +190,63 @@ async function updateCompletionStatus() {
             document.getElementById("temp").value = d.temp || "";
             document.getElementById("humidity").value = d.humi || "";
           }
-        } else {
-          resetFields(); // 데이터 없으면 비우기
         }
-      } catch (e) {
-      } finally {
-        loadingMsg.style.display = "none";
-        updateUIByGroup();
-      }
+      } catch (e) {} finally { loadingMsg.style.display = "none"; updateUIByGroup(); }
     }
 
-    function resetFields() {
-      ["hour", "minute", "temp", "humidity", "product", "singleCount"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
+    // 3. [핵심 수정] 일괄 등록 함수 (기존 GAS 규격에 맞춰 하나씩 순차 전송)
+    document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
+      const h = document.getElementById("bulkHour").value;
+      const m = document.getElementById("bulkMinute").value;
+      const prod = document.getElementById("bulkProduct").value;
+      const cnt = document.getElementById("bulkCount").value;
+      if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
+      
+      const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const time1 = getRandTime(h, m, 1);
+      const time2 = getRandTime(time1.h, time1.m, 15);
+      const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10);
+
+      const allEntries = [
+        { group: "생산제품", entries: [{ product: prod, count: cnt }] },
+        { group: "시스템ON", entries: [{ hour: h, minute: m }] },
+        { group: "1차점검", entries: [{ hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) }] },
+        { group: "2차점검", entries: [{ hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) }] },
+        { group: "시스템OFF", entries: [{ hour: timeOff.h, minute: timeOff.m }] }
+      ];
+
+      if(!confirm("5개 항목을 일괄 등록하시겠습니까?")) return;
+      const btn = document.getElementById("bulkSubmitBtn");
+      btn.disabled = true; btn.innerText = "⏳ 전송 중 (개별 항목 순차 처리)...";
+
+      try {
+        // GAS 서버가 한 번에 여러 개 처리를 못할 수 있으므로 for문으로 하나씩 전송
+        for (const item of allEntries) {
+          const payload = { date: dateInput.value, group: item.group, entries: item.entries };
+          await fetch(scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+          });
+        }
+        alert("🚀 일괄 등록이 완료되었습니다!");
+        location.reload();
+      } catch (e) {
+        alert("일괄 등록 중 오류가 발생했습니다.");
+      } finally {
+        btn.disabled = false; btn.innerText = "⚡ 전송 및 전체 자동 등록";
+      }
+    });
+
+    // 보조 함수들
+    function getRandTime(h, m, offsetH, rangeMin = -10, rangeMax = 10) {
+      let totalMinutes = parseInt(h) * 60 + parseInt(m) + (offsetH * 60);
+      let randOffset = Math.floor(Math.random() * (rangeMax - rangeMin + 1)) + rangeMin;
+      totalMinutes += randOffset;
+      let nh = Math.floor(totalMinutes / 60) % 24;
+      let nm = totalMinutes % 60;
+      if (nm < 0) { nm += 60; nh = (nh - 1 + 24) % 24; }
+      return { h: nh.toString().padStart(2, "0"), m: nm.toString().padStart(2, "0") };
     }
 
     function addTime(h, m, addH) {
@@ -252,23 +259,18 @@ async function updateCompletionStatus() {
       document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
       document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
       document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
-      
       suggestionText.textContent = "";
       if (!g) return;
-
       const sysOn = loadedData["시스템ON"];
       const step1 = loadedData["1차점검"];
-
       if (g === "1차점검" && sysOn) suggestionText.textContent = "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
       else if (g === "2차점검" && step1) suggestionText.textContent = "💡 추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
       else if (g === "시스템OFF" && sysOn) suggestionText.textContent = "💡 추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
     }
 
-    // 이벤트 리스너
+    // 이벤트 연결
     groupSelect.addEventListener("change", () => checkDuplicate(groupSelect.value));
     dateInput.addEventListener("change", updateCompletionStatus);
-    document.getElementById("duplicateConfirmBtn").addEventListener("click", () => duplicateMsg.style.display = "none");
-
     bulkToggleBtn.addEventListener("click", () => {
       const isBulk = bulkSection.style.display === "none";
       bulkSection.style.display = isBulk ? "block" : "none";
@@ -276,7 +278,6 @@ async function updateCompletionStatus() {
       bulkToggleBtn.textContent = isBulk ? "⬅️ 개별 입력 모드로 전환" : "🚀 일괄 자동 입력 모드 열기";
     });
 
-    // 초기 로드
     updateCompletionStatus();
   });
 </script>
