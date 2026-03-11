@@ -168,7 +168,7 @@
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
   // --- [1] 변수 선언 (한 번만 선언합니다) ---
-  // const dateInput = document.getElementById("date");
+  const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
   const bulkSection = document.getElementById("bulkSection");
   const singleSection = document.getElementById("singleSection");
@@ -293,15 +293,16 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
 
     function resetAllStates() {
-      duplicateMsg.style.display = "none";
-      deleteDateBtn.style.display = "none";
-      confirmBtn.style.display = "none";
-      submitBtn.style.display = "none";
-      groupSelect.value = "";
-      confirmDone = false;
-      setInputsDisplay("none");
-      resetFields();
-    }
+  duplicateMsg.style.display = "none";
+  deleteDateBtn.style.display = "none";
+  confirmBtn.style.display = "none";
+  submitBtn.style.display = "none";
+  // groupSelect.value = ""; // 필요하다면 이 줄은 유지해도 되지만, 
+  confirmDone = false;
+  setInputsDisplay("none");
+  resetFields(); 
+  // 절대 dateInput.value = ""; 같은 코드가 들어가지 않도록 주의하세요!
+}
 
     confirmBtn.addEventListener("click", () => {
       duplicateMsg.style.display = "none";
