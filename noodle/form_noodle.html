@@ -117,7 +117,7 @@
 <script>
   window.addEventListener("DOMContentLoaded", async function () {
     const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
-    let loadedData = {}; // 서버에서 받아온 데이터를 담을 전역 변수
+    let loadedData = {}; // 서버에서 불러온 상세 데이터를 저장 (추천 시간용)
 
     const dateInput = document.getElementById("date");
     const groupSelect = document.getElementById("group");
@@ -129,10 +129,8 @@
     const duplicateText = document.getElementById("duplicateText");
     const suggestionText = document.getElementById("suggestionText");
 
-    // 초기 날짜 설정
     dateInput.valueAsDate = new Date();
 
-    // 시/분 옵션 채우기 함수
     function fillOptions(hEl, mEl) {
       hEl.innerHTML = '<option value="">시</option>';
       for (let h = 1; h <= 24; h++) hEl.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
@@ -142,83 +140,92 @@
     fillOptions(document.getElementById("hour"), document.getElementById("minute"));
     fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
-    // [핵심] 서버에서 데이터를 가져와 화면을 갱신하는 통합 함수
-    async function updateAllStatus() {
+    // 1. [GAS 전용] 날짜별 완료 목록 가져오기 (완료 표시용)
+    async function updateCompletionStatus() {
       const dateVal = dateInput.value;
       if (!dateVal) return;
 
       loadingMsg.style.display = "block";
       try {
-        // 서버에 날짜만 파라미터로 전달 (가장 확실한 방식)
-        const res = await fetch(`${scriptUrl}?date=${dateVal}`);
+        // 기존 GAS의 getNoodle 호출
+        const res = await fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal })));
         const result = await res.json();
-        
-        // 1. 데이터 저장 (서버 응답의 allData를 전역 변수에 저장)
-        loadedData = result.allData || {};
+        const completedList = result.options || [];
 
-        // 2. 완료 표시 업데이트
-        const completed = result.completed || [];
+        // 드롭다운 (완료) 텍스트 업데이트
         Array.from(groupSelect.options).forEach(opt => {
           if (!opt.value) return;
-          const baseValue = opt.value.replace("(완료)", "").trim();
-          opt.textContent = completed.includes(baseValue) ? `${baseValue}(완료)` : baseValue;
-          opt.value = baseValue;
+          const baseName = opt.value.replace("(완료)", "").trim();
+          opt.textContent = completedList.includes(baseName) ? `${baseName}(완료)` : baseName;
+          opt.value = baseName;
         });
 
-        // 3. 중복 데이터 확인 및 추천 시간 갱신
-        handleGroupChange();
+        // 추천 시간을 위해 주요 공정(시스템ON, 1차점검) 데이터는 미리 가져오기
+        await fetchEssentialData(dateVal);
 
       } catch (e) {
-        console.error("데이터 로드 실패:", e);
+        console.error("목록 로드 실패", e);
       } finally {
         loadingMsg.style.display = "none";
       }
     }
 
-    // 그룹(항목) 변경 시 호출되는 데이터 처리 함수
-    function handleGroupChange() {
-      const g = groupSelect.value;
-      duplicateMsg.style.display = "none";
-      suggestionText.textContent = "";
+    // 2. 추천 시간 계산을 위해 필수 데이터만 서버에 개별 요청
+    async function fetchEssentialData(date) {
+      const essentials = ["시스템ON", "1차점검"];
+      loadedData = {}; 
 
-      // 입력 필드 초기화
-      resetFields();
+      for (const group of essentials) {
+        try {
+          const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
+          const result = await res.json();
+          if (result.exists) {
+            loadedData[group] = result.data;
+          }
+        } catch (e) {}
+      }
+      updateUIByGroup(); // 추천 시간 UI 갱신
+    }
 
-      // UI 레이아웃 조절
-      document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
-      document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
-      document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
+    // 3. 항목 선택 시 상세 데이터 가져오기 (중복 체크 및 값 채우기)
+    async function checkDuplicate(group) {
+      const date = dateInput.value;
+      if (!date || !group) return;
 
-      if (!g) return;
-
-      // 1. 기존 데이터 채우기 (중복 데이터가 있을 경우)
-      if (loadedData[g]) {
-        const d = loadedData[g];
-        duplicateText.textContent = `⚠️ [${g}] 데이터가 이미 존재합니다.`;
-        duplicateMsg.style.display = "block";
+      loadingMsg.style.display = "block";
+      try {
+        const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
+        const result = await res.json();
         
-        if (g === "생산제품") {
-          document.getElementById("product").value = d.product || "";
-          document.getElementById("singleCount").value = d.count || "";
+        duplicateMsg.style.display = "none";
+        if (result.exists) {
+          duplicateText.textContent = `⚠️ [${group}] 데이터가 이미 존재합니다.`;
+          duplicateMsg.style.display = "block";
+          
+          const d = result.data;
+          if (group === "생산제품") {
+            document.getElementById("product").value = d.product || "";
+            document.getElementById("singleCount").value = d.count || "";
+          } else {
+            document.getElementById("hour").value = d.hour || "";
+            document.getElementById("minute").value = d.minute || "";
+            document.getElementById("temp").value = d.temp || "";
+            document.getElementById("humidity").value = d.humi || "";
+          }
         } else {
-          document.getElementById("hour").value = d.hour || "";
-          document.getElementById("minute").value = d.minute || "";
-          document.getElementById("temp").value = d.temp || "";
-          document.getElementById("humidity").value = d.humi || d.humidity || "";
+          resetFields(); // 데이터 없으면 비우기
         }
+      } catch (e) {
+      } finally {
+        loadingMsg.style.display = "none";
+        updateUIByGroup();
       }
+    }
 
-      // 2. 추천 시간 계산
-      const sysOn = loadedData["시스템ON"];
-      const step1 = loadedData["1차점검"];
-
-      if (g === "1차점검") {
-        suggestionText.textContent = !sysOn ? "시스템ON 미입력" : "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
-      } else if (g === "2차점검") {
-        suggestionText.textContent = !step1 ? "1차점검 미입력" : "💡 추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
-      } else if (g === "시스템OFF") {
-        suggestionText.textContent = !sysOn ? "시스템ON 미입력" : "💡 추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
-      }
+    function resetFields() {
+      ["hour", "minute", "temp", "humidity", "product", "singleCount"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
     }
 
     function addTime(h, m, addH) {
@@ -226,16 +233,26 @@
       return `${nh.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     }
 
-    function resetFields() {
-      ["hour", "minute", "temp", "humidity", "product", "singleCount"].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.value = "";
-      });
+    function updateUIByGroup() {
+      const g = groupSelect.value;
+      document.getElementById("timeRow").style.display = (g && g !== "생산제품") ? "flex" : "none";
+      document.getElementById("thRow").style.display = (g === "1차점검" || g === "2차점검") ? "flex" : "none";
+      document.getElementById("productRow").style.display = (g === "생산제품") ? "flex" : "none";
+      
+      suggestionText.textContent = "";
+      if (!g) return;
+
+      const sysOn = loadedData["시스템ON"];
+      const step1 = loadedData["1차점검"];
+
+      if (g === "1차점검" && sysOn) suggestionText.textContent = "💡 추천(ON+1h): " + addTime(sysOn.hour, sysOn.minute, 1);
+      else if (g === "2차점검" && step1) suggestionText.textContent = "💡 추천(1차+15h): " + addTime(step1.hour, step1.minute, 15);
+      else if (g === "시스템OFF" && sysOn) suggestionText.textContent = "💡 추천(ON+17h): " + addTime(sysOn.hour, sysOn.minute, 17);
     }
 
-    // --- 이벤트 리스너 설정 ---
-    groupSelect.addEventListener("change", handleGroupChange);
-    dateInput.addEventListener("change", updateAllStatus);
+    // 이벤트 리스너
+    groupSelect.addEventListener("change", () => checkDuplicate(groupSelect.value));
+    dateInput.addEventListener("change", updateCompletionStatus);
     document.getElementById("duplicateConfirmBtn").addEventListener("click", () => duplicateMsg.style.display = "none");
 
     bulkToggleBtn.addEventListener("click", () => {
@@ -245,8 +262,8 @@
       bulkToggleBtn.textContent = isBulk ? "⬅️ 개별 입력 모드로 전환" : "🚀 일괄 자동 입력 모드 열기";
     });
 
-    // 초기 실행 (페이지 로드 시 데이터 로드)
-    updateAllStatus();
+    // 초기 로드
+    updateCompletionStatus();
   });
 </script>
 </body>
