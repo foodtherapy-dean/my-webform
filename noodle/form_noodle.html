@@ -167,56 +167,57 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
-  // --- [1] URL 파라미터 날짜 우선 적용 로직 ---
+  // --- [1] 변수 선언 (한 번만 선언합니다) ---
+  const dateInput = document.getElementById("date");
+  const groupSelect = document.getElementById("group");
+  const bulkSection = document.getElementById("bulkSection");
+  const singleSection = document.getElementById("singleSection");
+  const bulkToggleBtn = document.getElementById("bulkToggleBtn");
+  const loadingMsg = document.getElementById("loadingMsg");
+  const duplicateMsg = document.getElementById("duplicateMsg");
+  const duplicateText = document.getElementById("duplicateText");
+  const deleteDateBtn = document.getElementById("deleteDateBtn");
+  const confirmBtn = document.getElementById("duplicateConfirmBtn");
+  const suggestionText = document.getElementById("suggestionText");
+  const submitBtn = document.getElementById("submitBtn");
+
+  const scriptUrl = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
+  
+  let loadedData = {}; 
+  let currentCompletedList = []; 
+  let confirmDone = false; 
+
+  // --- [2] URL 파라미터 날짜 적용 로직 ---
   const params = new URLSearchParams(window.location.search);
   const paramDate = params.get("date");
-  const dateInput = document.getElementById("date");
 
-  // 날짜 설정 함수 정의 (중복 방지를 위해)
   const setTargetDate = (dateValue) => {
     if (dateInput && dateValue) {
       dateInput.value = dateValue;
-      // 값이 들어갔는지 확인하고 이벤트를 발생시켜 조회 로직을 깨움
       dateInput.dispatchEvent(new Event('input', { bubbles: true }));
       dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   };
 
   if (paramDate) {
-    // 파라미터가 있으면 즉시 입력
     setTargetDate(paramDate);
   } else {
-    // 없으면 오늘 날짜 입력
-    const today = new Date().toISOString().split('T')[0];
-    setTargetDate(today);
+    // 파라미터가 없을 때만 오늘 날짜를 넣습니다.
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${y}-${m}-${d}`;
   }
 
-  // --- [2] 혹시 모를 코드 충돌 방지 (0.2초 후 재확인) ---
+  // --- [3] 코드 충돌 방지 (0.2초 후 재확인) ---
   setTimeout(() => {
     if (paramDate && dateInput && dateInput.value !== paramDate) {
       dateInput.value = paramDate;
     }
   }, 200);
-    const scriptUrl = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
-    
-    let loadedData = {}; 
-    let currentCompletedList = []; 
-    let confirmDone = false; 
 
-    const dateInput = document.getElementById("date");
-    const groupSelect = document.getElementById("group");
-    const bulkSection = document.getElementById("bulkSection");
-    const singleSection = document.getElementById("singleSection");
-    const bulkToggleBtn = document.getElementById("bulkToggleBtn");
-    const loadingMsg = document.getElementById("loadingMsg");
-    const duplicateMsg = document.getElementById("duplicateMsg");
-    const duplicateText = document.getElementById("duplicateText");
-    const deleteDateBtn = document.getElementById("deleteDateBtn");
-    const confirmBtn = document.getElementById("duplicateConfirmBtn");
-    const suggestionText = document.getElementById("suggestionText");
-    const submitBtn = document.getElementById("submitBtn");
-
-    dateInput.valueAsDate = new Date();
+    // dateInput.valueAsDate = new Date();
 
     function fillOptions(hEl, mEl) {
       hEl.innerHTML = '<option value="">시</option>';
