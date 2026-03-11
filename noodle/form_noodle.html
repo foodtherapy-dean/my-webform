@@ -264,13 +264,65 @@
         }
       } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
     }
-
+    // 스크립트 상단 변수 선언부에 추가
+     let confirmDone = false;
     // [확인/수정] 버튼 클릭 시
     document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
-      duplicateMsg.style.display = "none";
-      activateInputForm();
-    });
+  duplicateMsg.style.display = "none";
+  confirmDone = true; // 유저가 확인을 눌렀음을 기억함
+  activateInputForm();
+});
+// [수정] 중복 체크 함수 로직 보강
+async function checkDuplicate(group) {
+  const date = dateInput.value;
+  if (!date || !group) return;
+  
+  // 만약 방금 '확인/수정'을 눌렀던 그룹과 동일하다면 창을 띄우지 않고 바로 폼 활성화
+  if (confirmDone) {
+    activateInputForm();
+    return; 
+  }
 
+  submitBtn.style.display = "none";
+  setInputsDisplay("none");
+  loadingMsg.style.display = "block";
+
+  try {
+    const res = await fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date, group })));
+    const result = await res.json();
+    
+    if (result.exists) {
+      duplicateText.textContent = `⚠️ [${group}] 데이터가 존재합니다. 수정하시겠습니까?`;
+      duplicateMsg.style.display = "block";
+      deleteDateBtn.style.display = "block";
+      
+      const d = result.data;
+      if (group === "생산제품") {
+        document.getElementById("product").value = d.product || "";
+        document.getElementById("singleCount").value = d.count || "";
+      } else {
+        document.getElementById("hour").value = d.hour || "";
+        document.getElementById("minute").value = d.minute || "";
+        document.getElementById("temp").value = d.temp || "";
+        document.getElementById("humidity").value = d.humi || "";
+      }
+    } else {
+      resetFields();
+      activateInputForm();
+    }
+  } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
+}
+
+// [수정] 그룹이나 날짜가 바뀌면 다시 중복 체크를 할 수 있게 상태 초기화
+groupSelect.addEventListener("change", () => {
+  confirmDone = false; // 항목을 새로 선택하면 다시 체크할 수 있게 초기화
+  checkDuplicate(groupSelect.value);
+});
+
+dateInput.addEventListener("change", () => {
+  confirmDone = false;
+  updateCompletionStatus();
+});
     // [전체 삭제] 버튼 클릭 시 로직 추가
     deleteDateBtn.addEventListener("click", async () => {
       const targetDate = dateInput.value;
