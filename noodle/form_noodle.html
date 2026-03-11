@@ -6,7 +6,6 @@
 <title>건면공정 모니터</title>
 <style>
   body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
-  /* 버튼이 하단에 고정되므로 body에 하단 여백 추가 */
   body { padding-bottom: 100px; background:#f9f9f9; }
   .app-container { display:flex; flex-direction:column; }
   .app-header { background:#4CAF50; color:#fff; text-align:center; padding:16px; font-size:1.6rem; }
@@ -14,7 +13,6 @@
   
   button { cursor:pointer; border-radius:6px; border:none; }
   
-  /* 개별 전송 버튼 하단 고정 및 중앙 정렬 */
   #submitBtn { 
     position: fixed;
     bottom: 20px;
@@ -23,7 +21,7 @@
     width: calc(100% - 40px);
     max-width: 500px;
     height: 60px;
-    display: none; /* 초기 숨김 */
+    display: none; 
     justify-content: center;
     align-items: center;
     background:#4CAF50; 
@@ -43,12 +41,26 @@
   .inline-row > * { flex:1; }
   
   label { display:block; margin-bottom:6px; font-weight: bold; color: #555; }
-  /* 시간/분 라벨 스타일 저장 (온습도 가이드에 적용) */
+  
+  /* [수정] 온습도 가이드 스타일을 시간 라벨과 동일하게 설정 */
   .guide-text { font-weight: bold; color: #555; font-size: 0.9rem; margin-top: 6px; display: block; }
   
   input, select { width:100%; padding:12px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; box-sizing: border-box; }
   
-  #duplicateMsg { display:none; background:#ffcccc; color:#900; padding:12px; margin:10px 0; border:1px solid #900; border-radius:6px; font-weight:bold; }
+  /* 중복 안내창 디자인 개선 */
+  #duplicateMsg { display:none; background:#fff0f0; color:#900; padding:15px; margin:10px 0; border:1.5px solid #900; border-radius:8px; font-weight:bold; }
+  
+  /* [추가] 삭제 버튼 스타일 */
+  #deleteDateBtn { 
+    background: #f44336; 
+    color: white; 
+    padding: 10px; 
+    border-radius: 6px; 
+    font-size: 0.95rem; 
+    font-weight: bold; 
+    display: none; /* 초기 숨김 */
+  }
+
   #loadingMsg { display:none; background:#ffe599; color:#333; padding:8px; margin-bottom:10px; border-radius:6px; font-weight:bold; text-align:center; }
   .hint { font-size: 0.85rem; color: #666; margin-top: 4px; }
 </style>
@@ -65,9 +77,13 @@
     </div>
 
     <div id="loadingMsg">데이터 조회 중...</div>
+
     <div id="duplicateMsg">
       <span id="duplicateText"></span>
-      <button id="duplicateConfirmBtn" style="background:#900; color:#fff; padding:8px 15px; margin-left:10px; border-radius:4px;">확인</button>
+      <div class="inline-row" style="margin-top:12px;">
+        <button id="duplicateConfirmBtn" style="background:#900; color:#fff;">확인/수정</button>
+        <button id="deleteDateBtn">🗑️ 해당일 전체삭제</button>
+      </div>
     </div>
 
     <button id="bulkToggleBtn">🚀 일괄 자동 입력 모드 열기</button>
@@ -148,7 +164,7 @@
 
 <script>
   window.addEventListener("DOMContentLoaded", async function () {
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbx6Cts4QP8iximKfLgUAlzNP1ybUUfVcY7L1-VxhA8PwTOFO06ia04xj63XQGdCUuLFRg/exec";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
     let loadedData = {}; 
     let currentCompletedList = []; 
 
@@ -160,6 +176,7 @@
     const loadingMsg = document.getElementById("loadingMsg");
     const duplicateMsg = document.getElementById("duplicateMsg");
     const duplicateText = document.getElementById("duplicateText");
+    const deleteDateBtn = document.getElementById("deleteDateBtn");
     const suggestionText = document.getElementById("suggestionText");
     const submitBtn = document.getElementById("submitBtn");
 
@@ -178,6 +195,11 @@
       const dateVal = dateInput.value;
       if (!dateVal) return;
       loadingMsg.style.display = "block";
+      
+      // 날짜 변경 시 안내창과 버튼 초기화
+      duplicateMsg.style.display = "none";
+      deleteDateBtn.style.display = "none";
+
       try {
         const [resList, resSysOn, resStep1] = await Promise.all([
           fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal }))),
@@ -187,6 +209,14 @@
         const [listData, sysOnData, step1Data] = await Promise.all([resList.json(), resSysOn.json(), resStep1.json()]);
 
         currentCompletedList = listData.options || [];
+        
+        // 해당 날짜에 데이터가 하나라도 있으면 전체 삭제 버튼 활성화
+        if (currentCompletedList.length > 0) {
+          duplicateText.textContent = `⚠️ 해당 날짜에 [${currentCompletedList.length}건]의 데이터가 이미 존재합니다.`;
+          duplicateMsg.style.display = "block";
+          deleteDateBtn.style.display = "block";
+        }
+
         Array.from(groupSelect.options).forEach(opt => {
           if (!opt.value) return;
           const baseName = opt.value.replace("(완료)", "").trim();
@@ -205,10 +235,8 @@
       const date = dateInput.value;
       if (!date || !group) return;
       
-      // 전송 버튼 및 입력폼 초기 숨김 (중복 확인 전)
       submitBtn.style.display = "none";
       setInputsDisplay("none");
-      duplicateMsg.style.display = "none";
       loadingMsg.style.display = "block";
 
       try {
@@ -218,6 +246,7 @@
         if (result.exists) {
           duplicateText.textContent = `⚠️ [${group}] 데이터가 존재합니다. 수정하시겠습니까?`;
           duplicateMsg.style.display = "block";
+          deleteDateBtn.style.display = "block"; // 전체삭제 버튼도 상시 대기
           
           const d = result.data;
           if (group === "생산제품") {
@@ -236,18 +265,46 @@
       } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
     }
 
-    // [확인] 버튼 클릭 시 실행되는 함수
+    // [확인/수정] 버튼 클릭 시
     document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
       duplicateMsg.style.display = "none";
       activateInputForm();
     });
 
+    // [전체 삭제] 버튼 클릭 시 로직 추가
+    deleteDateBtn.addEventListener("click", async () => {
+      const targetDate = dateInput.value;
+      if (!confirm(`❗ 주의: ${targetDate}의 모든 데이터를 시트에서 완전히 삭제하시겠습니까?\n이 작업은 취소할 수 없습니다.`)) return;
+
+      deleteDateBtn.disabled = true;
+      deleteDateBtn.innerText = "⏳ 삭제 중...";
+
+      try {
+        const payload = { action: "deleteDate", date: targetDate };
+        const res = await fetch(scriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+        });
+        
+        alert("🗑️ 삭제 완료되었습니다.");
+        location.reload(); // 깔끔한 초기화를 위해 새로고침
+      } catch (e) {
+        alert("삭제 중 오류가 발생했습니다.");
+      } finally {
+        deleteDateBtn.disabled = false;
+        deleteDateBtn.innerText = "🗑️ 해당일 전체삭제";
+      }
+    });
+
     function activateInputForm() {
-      submitBtn.style.display = "flex"; // 하단 버튼 표시
-      updateUIByGroup(); // 선택된 단계에 맞는 입력 필드 표시
+      // 일괄 모드가 아닐 때만 하단 버튼 표시
+      if (bulkSection.style.display === "none") {
+        submitBtn.style.display = "flex";
+      }
+      updateUIByGroup();
     }
 
-    // 섹션 표시 제어 보조 함수
     function setInputsDisplay(style) {
       document.getElementById("timeRow").style.display = style;
       document.getElementById("thRow").style.display = style;
@@ -284,6 +341,7 @@
       }
     });
 
+    // 일괄 등록 버튼 클릭 시
     document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
       const h = document.getElementById("bulkHour").value;
       const m = document.getElementById("bulkMinute").value;
@@ -373,22 +431,15 @@
     groupSelect.addEventListener("change", () => checkDuplicate(groupSelect.value));
     dateInput.addEventListener("change", updateCompletionStatus);
     
-    // [수정] 일괄/개별 모드 전환 시 하단 버튼 제어 추가
     bulkToggleBtn.addEventListener("click", () => {
       const isBulk = bulkSection.style.display === "none";
-      
-      // 섹션 전환
       bulkSection.style.display = isBulk ? "block" : "none";
       singleSection.style.display = isBulk ? "none" : "block";
-      
-      // 버튼 텍스트 변경
       bulkToggleBtn.textContent = isBulk ? "⬅️ 개별 입력 모드로 전환" : "🚀 일괄 자동 입력 모드 열기";
 
-      // [핵심] 일괄 모드일 때는 하단 개별 전송 버튼을 무조건 숨김
       if (isBulk) {
         submitBtn.style.display = "none";
       } else {
-        // 개별 모드로 돌아올 때, 이미 단계(group)가 선택되어 있다면 버튼을 다시 보여줌
         if (groupSelect.value) {
           submitBtn.style.display = "flex";
         }
