@@ -195,48 +195,65 @@
     }
 
     // 3. [핵심 수정] 일괄 등록 함수 (기존 GAS 규격에 맞춰 하나씩 순차 전송)
-    document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
-      const h = document.getElementById("bulkHour").value;
-      const m = document.getElementById("bulkMinute").value;
-      const prod = document.getElementById("bulkProduct").value;
-      const cnt = document.getElementById("bulkCount").value;
-      if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
-      
-      const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-      const time1 = getRandTime(h, m, 1);
-      const time2 = getRandTime(time1.h, time1.m, 15);
-      const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10);
+    // [속도 개선] 일괄 등록 버튼 로직
+document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
+  const h = document.getElementById("bulkHour").value;
+  const m = document.getElementById("bulkMinute").value;
+  const prod = document.getElementById("bulkProduct").value;
+  const cnt = document.getElementById("bulkCount").value;
+  
+  if(!h || !m || !cnt) return alert("시간과 수량을 입력하세요.");
+  
+  const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const time1 = getRandTime(h, m, 1);
+  const time2 = getRandTime(time1.h, time1.m, 15);
+  const timeOff = getRandTime(time2.h, time2.m, 1, 1, 10);
 
-      const allEntries = [
-        { group: "생산제품", entries: [{ product: prod, count: cnt }] },
-        { group: "시스템ON", entries: [{ hour: h, minute: m }] },
-        { group: "1차점검", entries: [{ hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) }] },
-        { group: "2차점검", entries: [{ hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) }] },
-        { group: "시스템OFF", entries: [{ hour: timeOff.h, minute: timeOff.m }] }
-      ];
+  // 전송할 5개 공정 데이터 배열화
+  const allEntries = [
+    { group: "생산제품", entries: [{ product: prod, count: cnt }] },
+    { group: "시스템ON", entries: [{ hour: h, minute: m }] },
+    { group: "1차점검", entries: [{ hour: time1.h, minute: time1.m, temp: getRandInt(32, 39), humi: getRandInt(58, 68) }] },
+    { group: "2차점검", entries: [{ hour: time2.h, minute: time2.m, temp: getRandInt(35, 41), humi: getRandInt(46, 57) }] },
+    { group: "시스템OFF", entries: [{ hour: timeOff.h, minute: timeOff.m }] }
+  ];
 
-      if(!confirm("5개 항목을 일괄 등록하시겠습니까?")) return;
-      const btn = document.getElementById("bulkSubmitBtn");
-      btn.disabled = true; btn.innerText = "⏳ 전송 중 (개별 항목 순차 처리)...";
+  if(!confirm("초고속 일괄 등록을 시작하시겠습니까?")) return;
+  
+  const btn = document.getElementById("bulkSubmitBtn");
+  btn.disabled = true; 
+  btn.innerText = "⚡ 초고속 병렬 전송 중...";
 
-      try {
-        // GAS 서버가 한 번에 여러 개 처리를 못할 수 있으므로 for문으로 하나씩 전송
-        for (const item of allEntries) {
-          const payload = { date: dateInput.value, group: item.group, entries: item.entries };
-          await fetch(scriptUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
-          });
-        }
-        alert("🚀 일괄 등록이 완료되었습니다!");
-        location.reload();
-      } catch (e) {
-        alert("일괄 등록 중 오류가 발생했습니다.");
-      } finally {
-        btn.disabled = false; btn.innerText = "⚡ 전송 및 전체 자동 등록";
-      }
+  try {
+    // [핵심] 5개의 fetch 요청을 동시에 서버로 발사!
+    const promises = allEntries.map(item => {
+      const payload = { date: dateInput.value, group: item.group, entries: item.entries };
+      return fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+      });
     });
+
+    // 모든 전송이 완료될 때까지 대기
+    await Promise.all(promises);
+    
+    alert("🚀 모든 항목이 순식간에 등록되었습니다!");
+    
+    // 페이지 전체 새로고침 대신 상태만 업데이트하여 체감 속도 극대화
+    updateCompletionStatus(); 
+    bulkSection.style.display = "none";
+    singleSection.style.display = "block";
+    bulkToggleBtn.textContent = "🚀 일괄 자동 입력 모드 열기";
+    
+  } catch (e) {
+    alert("전송 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.");
+    console.error(e);
+  } finally {
+    btn.disabled = false; 
+    btn.innerText = "⚡ 전송 및 전체 자동 등록";
+  }
+});
 
     // 보조 함수들
     function getRandTime(h, m, offsetH, rangeMin = -10, rangeMax = 10) {
