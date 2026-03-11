@@ -268,10 +268,12 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (e) { alert("오류 발생"); }
   }
 
-  document.getElementById("submitBtn").addEventListener("click", () => {
+ // 개별 항목 서버 전송 로직 (서버 통합 로직 대응)
+document.getElementById("submitBtn").addEventListener("click", async () => {
   const g = groupSelect.value;
-  if(!g) return alert("단계를 선택하세요.");
-  
+  if (!g) return alert("단계를 선택하세요.");
+
+  // 1. 현재 입력된 데이터 수집
   const entry = {
     hour: document.getElementById("hour").value,
     minute: document.getElementById("minute").value,
@@ -281,12 +283,39 @@ window.addEventListener("DOMContentLoaded", async function () {
     count: document.getElementById("singleCount").value
   };
 
-  // entries 배열에 하나만 담아서 보냄 (서버의 forEach가 1번 돌아감)
-  sendData({ 
-    date: dateInput.value, 
-    group: g, 
-    entries: [entry] 
-  });
+  // 2. UI 상태 변경 (중복 클릭 방지)
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.innerText = "⏳ 전송 중...";
+
+  try {
+    // 3. 서버가 기대하는 'entries' 배열 구조로 포장
+    const payload = { 
+      date: dateInput.value, 
+      group: g, 
+      entries: [entry] 
+    };
+
+    const response = await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
+    });
+
+    if (response.ok) {
+      alert(`✅ [${g}] 항목이 저장되었습니다.`);
+      location.reload(); // 저장 후 새로고침하여 상태 업데이트
+    } else {
+      throw new Error("서버 응답 실패");
+    }
+
+  } catch (e) {
+    console.error("개별 전송 오류:", e);
+    alert("저장에 실패했습니다. 네트워크 상태를 확인해주세요.");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "📥 개별 항목 서버 전송";
+  }
 });
 
   // [보강/최적화] 일괄 등록 로직: 단일 네트워크 요청으로 처리 속도 향상
