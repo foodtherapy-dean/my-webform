@@ -141,35 +141,49 @@
     fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
     // 1. [GAS 전용] 날짜별 완료 목록 가져오기 (완료 표시용)
-    async function updateCompletionStatus() {
-      const dateVal = dateInput.value;
-      if (!dateVal) return;
+    // [속도 개선 버전] 병렬 요청 적용
+async function updateCompletionStatus() {
+  const dateVal = dateInput.value;
+  if (!dateVal) return;
 
-      loadingMsg.style.display = "block";
-      try {
-        // 기존 GAS의 getNoodle 호출
-        const res = await fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal })));
-        const result = await res.json();
-        const completedList = result.options || [];
+  loadingMsg.style.display = "block";
+  try {
+    // 여러 요청을 동시에 발사 (병렬 처리)
+    const [resList, resSysOn, resStep1] = await Promise.all([
+      fetch(`${scriptUrl}?getNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal }))),
+      fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "시스템ON" }))),
+      fetch(`${scriptUrl}?checkNoodle=` + encodeURIComponent(JSON.stringify({ date: dateVal, group: "1차점검" })))
+    ]);
 
-        // 드롭다운 (완료) 텍스트 업데이트
-        Array.from(groupSelect.options).forEach(opt => {
-          if (!opt.value) return;
-          const baseName = opt.value.replace("(완료)", "").trim();
-          opt.textContent = completedList.includes(baseName) ? `${baseName}(완료)` : baseName;
-          opt.value = baseName;
-        });
+    const [listData, sysOnData, step1Data] = await Promise.all([
+      resList.json(),
+      resSysOn.json(),
+      resStep1.json()
+    ]);
 
-        // 추천 시간을 위해 주요 공정(시스템ON, 1차점검) 데이터는 미리 가져오기
-        await fetchEssentialData(dateVal);
+    // 1. 완료 목록 표시
+    const completedList = listData.options || [];
+    Array.from(groupSelect.options).forEach(opt => {
+      if (!opt.value) return;
+      const baseName = opt.value.replace("(완료)", "").trim();
+      opt.textContent = completedList.includes(baseName) ? `${baseName}(완료)` : baseName;
+      opt.value = baseName;
+    });
 
-      } catch (e) {
-        console.error("목록 로드 실패", e);
-      } finally {
-        loadingMsg.style.display = "none";
-      }
-    }
+    // 2. 추천 시간용 데이터 저장
+    loadedData = {};
+    if (sysOnData.exists) loadedData["시스템ON"] = sysOnData.data;
+    if (step1Data.exists) loadedData["1차점검"] = step1Data.data;
 
+    // 3. UI 갱신
+    updateUIByGroup();
+
+  } catch (e) {
+    console.error("데이터 로드 실패", e);
+  } finally {
+    loadingMsg.style.display = "none";
+  }
+}
     // 2. 추천 시간 계산을 위해 필수 데이터만 서버에 개별 요청
     async function fetchEssentialData(date) {
       const essentials = ["시스템ON", "1차점검"];
