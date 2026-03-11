@@ -166,7 +166,24 @@
 <button id="submitBtn">📥 개별 항목 서버 전송</button>
 
 <script>
-  window.addEventListener("DOMContentLoaded", async function () {
+window.addEventListener("DOMContentLoaded", async function () {
+  // 1. URL 파라미터에서 날짜 추출
+  const params = new URLSearchParams(location.search);
+  const paramDate = params.get("date");
+  const dateInput = document.getElementById("date");
+
+  // 2. 날짜 입력창에 값 세팅
+  if (dateInput) {
+    if (paramDate) {
+      dateInput.value = paramDate; // 전달받은 날짜 입력
+    } else {
+      // 파라미터가 없으면 오늘 날짜 입력 (한국 시간 기준)
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(now - offset).toISOString().split('T')[0];
+      dateInput.value = localISOTime;
+    }
+  }
     const scriptUrl = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
     
     let loadedData = {}; 
