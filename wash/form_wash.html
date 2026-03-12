@@ -94,37 +94,22 @@ window.addEventListener("DOMContentLoaded", async function () {
   const duplicateText = document.getElementById("duplicateText");
   const loadingMsg = document.getElementById("loadingMsg");
 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxBafYeOi7gSzxkZ66x8fprARYeDQFbAR6kny_Yo3KHfQm_LAeOY9VlojVS1FrQneLC-A/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbz42WnfVH15HFHx_nrrn4f8QcNJxCVkyxMRQH6uoUzxohx3aAFK_KTkJ0p_C16YpWh12A/exec";
   
   let oxValues = {};
 
   const itemsMap = {
-    "작업전": [
-      "개인위생 - 복장구분 보관여부", "개인위생 - 건강/장신구/위생복 착용여부",
-      "개인위생 - 위생설비 이상/위생처리", "방충방서 - 밀폐상태/방충시설",
-      "설비 - 파손,고장 설비유무", "보관 - 보관소 정리정돈 상태"
-    ],
-    "작업중": [
-      "공정관리 - 구역분리 및 오염관리", "공정관리 - 완제품 포장상태",
-      "공정관리 - 반제품 적재기준", "공정관리 - 포장라인 위해요소 여부"
-    ],
-    "작업후": [
-      "방충방서 - 생산부산물 별도구획 보관 및 반출", "청소소독 - 작업장/설비/위생시설",
-      "설비 - 파손/고장 설비 유무", "점검 - CCP점검 상태/개선조치 여부",
-      "보관 - 원부재료 오염방지 보관여부"
-    ],
-    "수시점검": [
-      "입고검수 - 원부재료 입고검수 준수여부"
-    ]
+    "작업전": ["개인위생 - 복장구분 보관여부", "개인위생 - 건강/장신구/위생복 착용여부", "개인위생 - 위생설비 이상/위생처리", "방충방서 - 밀폐상태/방충시설", "설비 - 파손,고장 설비유무", "보관 - 보관소 정리정돈 상태"],
+    "작업중": ["공정관리 - 구역분리 및 오염관리", "공정관리 - 완제품 포장상태", "공정관리 - 반제품 적재기준", "공정관리 - 포장라인 위해요소 여부"],
+    "작업후": ["방충방서 - 생산부산물 별도구획 보관 및 반출", "청소소독 - 작업장/설비/위생시설", "설비 - 파손/고장 설비 유무", "점검 - CCP점검 상태/개선조치 여부", "보관 - 원부재료 오염방지 보관여부"],
+    "수시점검": ["입고검수 - 원부재료 입고검수 준수여부"]
   };
 
-  // 초기 날짜 세팅
-  const params = new URLSearchParams(location.search);
-  const paramDate = params.get("date");
+  const paramDate = new URLSearchParams(location.search).get("date");
   if (paramDate) dateInput.value = paramDate;
   else dateInput.valueAsDate = new Date();
 
-  // [기능 1] 날짜별 데이터 존재 여부 및 옵션 상태 로드
+  // [개선] 날짜별 상태 로드 최적화
   async function loadOptionStatus() {
     if (!dateInput.value) return;
     try {
@@ -133,7 +118,6 @@ window.addEventListener("DOMContentLoaded", async function () {
       const res = await fetch(`${GAS_URL}?checkAllWash=${query}`);
       const result = await res.json();
 
-      // 옵션 셀렉트 박스 업데이트
       optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
       let hasAnyData = false;
 
@@ -142,27 +126,20 @@ window.addEventListener("DOMContentLoaded", async function () {
         opt.value = name;
         if (result[name]) {
           opt.textContent = `${name} (완료)`;
-          hasAnyData = true; // 하나라도 데이터가 있으면 true
+          hasAnyData = true;
         } else {
           opt.textContent = name;
         }
         optionSelect.appendChild(opt);
       });
 
-      // [핵심] 상단 일괄 삭제/등록 UI 제어
-      if (hasAnyData) {
-        bulkDeleteSection.style.display = "block"; // 삭제 창 보이기
-        bulkOkBtn.style.display = "none";         // 일괄 등록 숨기기
-      } else {
-        bulkDeleteSection.style.display = "none";  // 삭제 창 숨기기
-        bulkOkBtn.style.display = "block";        // 일괄 등록 보이기
-      }
+      bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
+      bulkOkBtn.style.display = hasAnyData ? "none" : "block";
 
       return result;
     } catch (err) { console.error(err); }
   }
 
-  // [이벤트] 날짜 변경 시
   dateInput.addEventListener("change", async () => {
     optionSelect.value = "";
     oxContainer.innerHTML = "";
@@ -170,7 +147,6 @@ window.addEventListener("DOMContentLoaded", async function () {
     await loadOptionStatus();
   });
 
-  // [이벤트] 개별 옵션 선택 시
   optionSelect.addEventListener("change", async (e) => {
     const opt = e.target.value;
     oxContainer.innerHTML = "";
@@ -209,7 +185,6 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (err) { loadingMsg.style.display = "none"; }
   });
 
-  // [이벤트] O/X 클릭
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("ox")) {
       const btn = e.target;
@@ -219,34 +194,37 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
   });
 
-  // [이벤트] 🚀 상단 일괄 등록
+  // ⭐ [초고속 개선] 일괄 등록: 한 번의 통신으로 묶어 보내기
   bulkOkBtn.addEventListener("click", async () => {
-    if (!confirm(`${dateInput.value} 날짜의 모든 항목을 'O'로 등록하시겠습니까?`)) return;
+    if (!confirm(`${dateInput.value} 날짜의 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) return;
 
     bulkOkBtn.disabled = true;
-    bulkOkBtn.innerText = "⏳ 등록 중...";
+    bulkOkBtn.innerText = "⏳ 초고속 등록 중...";
 
     try {
       const allOptions = Object.keys(itemsMap);
-      for (const opt of allOptions) {
-        const states = itemsMap[opt].map(() => "O");
-        const data = { date: dateInput.value, option: opt, states: states };
-        const fd = new FormData();
-        fd.append("inspect", JSON.stringify(data));
-        await fetch(GAS_URL, { method: "POST", body: fd });
-      }
-      alert("일괄 등록 완료!");
+      const batchData = allOptions.map(opt => ({
+        date: dateInput.value,
+        option: opt,
+        states: itemsMap[opt].map(() => "O")
+      }));
+
+      const fd = new FormData();
+      fd.append("bulkInspect", JSON.stringify(batchData)); 
+      
+      const response = await fetch(GAS_URL, { method: "POST", body: fd });
+      alert(await response.text());
       location.reload();
     } catch (err) {
       alert("오류: " + err.message);
       bulkOkBtn.disabled = false;
+      bulkOkBtn.innerText = "🚀 전 공정 일괄 [O] 등록";
     }
   });
 
-  // [이벤트] 📅 상단 일괄 삭제
   bulkDeleteBtn.addEventListener("click", async () => {
     const dt = dateInput.value;
-    if (!confirm(`⚠️ [${dt}] 날짜의 모든 위생 점검 데이터를 삭제하시겠습니까?\n이 작업은 취소할 수 없습니다.`)) return;
+    if (!confirm(`⚠️ [${dt}] 날짜의 모든 위생 점검 데이터를 삭제하시겠습니까?`)) return;
 
     bulkDeleteBtn.disabled = true;
     bulkDeleteBtn.innerText = "⏳ 전체 삭제 중...";
@@ -264,7 +242,6 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
   });
 
-  // [이벤트] 개별 저장
   document.getElementById("inspectForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const opt = optionSelect.value;
@@ -284,12 +261,10 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (err) { alert("저장 오류: " + err.message); }
   });
 
-  // 수정하기 버튼 클릭 시 메시지 숨김
   document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
     duplicateMsg.style.display = "none";
   });
 
-  // 초기 실행
   await loadOptionStatus();
 });
 </script>
