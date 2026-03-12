@@ -111,34 +111,42 @@ window.addEventListener("DOMContentLoaded", async function () {
 
   // [개선] 날짜별 상태 로드 최적화
   async function loadOptionStatus() {
-    if (!dateInput.value) return;
-    try {
-      const allOptions = Object.keys(itemsMap);
-      const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
-      const res = await fetch(`${GAS_URL}?checkAllWash=${query}`);
-      const result = await res.json();
+  if (!dateInput.value) return;
+  
+  // 로딩 시작 시 사용자에게 시각적 피드백 제공
+  optionSelect.innerHTML = `<option value="">데이터 확인 중...</option>`;
+  
+  try {
+    const allOptions = Object.keys(itemsMap);
+    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
+    
+    // 캐시 방지를 위해 타임스탬프 추가 (선택사항)
+    const res = await fetch(`${GAS_URL}?checkAllWash=${query}&t=${Date.now()}`);
+    const result = await res.json();
 
-      optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
-      let hasAnyData = false;
+    optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
+    let hasAnyData = false;
 
-      allOptions.forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        if (result[name]) {
-          opt.textContent = `${name} (완료)`;
-          hasAnyData = true;
-        } else {
-          opt.textContent = name;
-        }
-        optionSelect.appendChild(opt);
-      });
+    allOptions.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      if (result[name]) {
+        opt.textContent = `${name} (완료)`;
+        hasAnyData = true;
+      } else {
+        opt.textContent = name;
+      }
+      optionSelect.appendChild(opt);
+    });
 
-      bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
-      bulkOkBtn.style.display = hasAnyData ? "none" : "block";
+    bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
+    bulkOkBtn.style.display = hasAnyData ? "none" : "block";
 
-      return result;
-    } catch (err) { console.error(err); }
+  } catch (err) { 
+    console.error("로딩 에러:", err);
+    optionSelect.innerHTML = `<option value="">로딩 실패 (재시도 필요)</option>`;
   }
+}
 
   dateInput.addEventListener("change", async () => {
     optionSelect.value = "";
