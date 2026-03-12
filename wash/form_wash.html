@@ -57,10 +57,13 @@ input, select { width: 100%; padding: 12px; margin-top: 6px; box-sizing: border-
 
       <div id="loadingMsg">데이터 확인 중...</div>
 
-      <div id="duplicateMsg">
-        <span id="duplicateText"></span><br>
-        <button type="button" id="duplicateConfirmBtn">확인/수정하기</button>
-      </div>
+      <div id="duplicateMsg" style="display:none; background-color: #fff3cd; padding: 15px; border: 1px solid #ffeeba;">
+  <span id="duplicateText" style="color: #856404; font-weight: bold;"></span><br>
+  <div style="display: flex; gap: 10px; margin-top: 10px;">
+    <button type="button" id="duplicateConfirmBtn" style="flex:1; background:#6c757d; color:white;">수정하기</button>
+    <button type="button" id="deleteBtn" style="flex:1; background:#dc3545; color:white; font-weight:bold;">데이터 삭제</button>
+  </div>
+</div>
 
       <div id="oxContainer" class="ox-group"></div>
     </form>
@@ -77,7 +80,7 @@ window.addEventListener("DOMContentLoaded", async function () {
   const optionSelect = document.getElementById("option");
   const oxContainer = document.getElementById("oxContainer");
   const bulkOkBtn = document.getElementById("bulkOkBtn");
-  const GAS_URL = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwP11pmudh_65111nyKYqtYE9jQlYxg1uMy_1deLeEyuUZwI1D5oo48kFKaLCfHjLlRgA/exec";
   
   let oxValues = {};
 
@@ -237,7 +240,22 @@ window.addEventListener("DOMContentLoaded", async function () {
       location.reload();
     } catch (err) { alert("오류: " + err.message); }
   });
+   // [이벤트] 데이터 삭제 버튼 클릭
+document.getElementById("deleteBtn").addEventListener("click", async () => {
+  const opt = optionSelect.value;
+  const dt = dateInput.value;
+  if (!confirm(`[${dt}] ${opt} 데이터를 정말 삭제하시겠습니까?\n삭제 후 엑셀을 열면 해당 시트도 삭제 대상이 됩니다.`)) return;
 
+  try {
+    const fd = new FormData();
+    // GAS의 handleWashDelete(가칭)를 호출하기 위한 파라미터 구성
+    fd.append("deleteWash", JSON.stringify({ date: dt, option: opt }));
+    
+    const res = await fetch(GAS_URL, { method: "POST", body: fd });
+    alert(await res.text());
+    location.reload();
+  } catch (err) { alert("삭제 중 오류: " + err.message); }
+});
   document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
     document.getElementById("duplicateMsg").style.display = "none";
   });
