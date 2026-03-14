@@ -178,19 +178,35 @@ document.addEventListener("DOMContentLoaded", () => {
     submitBtn.style.display = "block";
   };
 
-  // 삭제 (POST 방식 수정)
+ // [삭제 버튼] 에러 방지형 수정
   document.getElementById("duplicateDeleteBtn").onclick = async () => {
     if (!confirm("데이터를 삭제하시겠습니까?")) return;
-    const res = await fetch(`${scriptUrl}?deleteSaengmyeon=${encodeURIComponent(JSON.stringify({date: dateInput.value}))}`, {method:'POST'});
-    const result = await res.json();
-    alert(result.message);
-    location.reload();
+    
+    try {
+      // 쿼리 스트링 방식이 아닌 POST 본문 데이터 방식으로 변경하여 안정성 확보
+      const fd = new URLSearchParams();
+      fd.append("deleteSaengmyeon", JSON.stringify({date: dateInput.value}));
+
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        body: fd
+      });
+      const result = await res.json();
+      alert(result.message);
+      location.reload();
+    } catch (e) {
+      console.error(e);
+      alert("삭제 중 오류가 발생했습니다. (GAS 배포 상태를 확인하세요)");
+    }
   };
 
-  // 저장
+  // [저장 버튼] 에러 방지형 수정
   submitBtn.onclick = async () => {
     if(!productInput.value || lotInput.value == "0") return alert("제품과 LOT를 선택하세요.");
+    
     submitBtn.disabled = true;
+    submitBtn.innerText = "⏳ 저장 중...";
+
     const payload = {
       date: dateInput.value,
       product: productInput.value,
@@ -199,12 +215,25 @@ document.addEventListener("DOMContentLoaded", () => {
       no: Object.values(roundData).map(r => r.no),
       value: Object.values(roundData).map(r => r.value)
     };
-    const fd = new URLSearchParams();
-    fd.append("saengmyeon", JSON.stringify(payload));
-    const res = await fetch(scriptUrl, { method: "POST", body: fd });
-    const result = await res.json();
-    alert(result.message);
-    location.reload();
+
+    try {
+      const fd = new URLSearchParams();
+      fd.append("saengmyeon", JSON.stringify(payload));
+
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        body: fd
+      });
+      
+      const result = await res.json();
+      alert(result.message || "저장되었습니다.");
+      location.reload();
+    } catch (e) {
+      console.error(e);
+      alert("저장 실패: 서버 응답 오류");
+      submitBtn.disabled = false;
+      submitBtn.innerText = "📥 저장하기";
+    }
   };
 
   lotInput.onchange = () => createRounds(Number(lotInput.value));
