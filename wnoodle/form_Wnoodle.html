@@ -97,31 +97,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
   const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
-  const duplicateDeleteBtn = document.getElementById("duplicateDeleteBtn"); // 삭제 버튼
+  const duplicateDeleteBtn = document.getElementById("duplicateDeleteBtn");
   const submitBtn = document.getElementById("submitBtn");
+  
+  // 입력창들을 포함하고 있는 카드 (상단 카드)
+  const inputCard = document.querySelector(".card"); 
 
-  // 헤더/푸터 고정 UI 처리
-  const header = document.querySelector(".app-header");
-  if (header) {
-    const headerHeight = header.offsetHeight || 48;
-    submitBtn.style.height = `${headerHeight}px`;
-  }
-  submitBtn.style.position = "fixed";
-  submitBtn.style.bottom = "0";
-  submitBtn.style.left = "0";
-  submitBtn.style.width = "100%";
-  submitBtn.style.zIndex = "9999";
-
+  // 초기 설정
   dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
-
   let roundData = {};
 
   lotInput.innerHTML = `<option value="0">0</option>` +
     Array.from({ length: MAX_ROUNDS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
   lotInput.value = "0";
 
-  // 1. LOT 생성 로직
+  // [기능] 총 KG 계산
+  function updateTotalKg() {
+    let total = 0;
+    Object.values(roundData).forEach(r => { if (!isNaN(r?.no)) total += r.no; });
+    totalKgInput.value = total;
+  }
+
+  // [기능] LOT 생성
   function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
@@ -141,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div style="flex:0 0 48px;font-weight:700;">${i + 1}차</div>
         <button class="btn" type="button" data-type="3포">3포</button>
         <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" id="result${i + 1}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+        <div class="result" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
       `;
       roundsDiv.appendChild(row);
 
@@ -151,17 +148,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let initNo = data.no ?? 60;
       let initValue = data.value ?? 1;
-      if (data.no === "" && data.value !== "") initNo = data.value === 1 ? 60 : 40;
-      if (data.value === "" && data.no !== "") initValue = data.no === 60 ? 1 : 0.7;
-
       roundData[i + 1] = { no: initNo, value: initValue };
       if (initNo === 60) btn3.classList.add("selected"); else btn2.classList.add("selected");
       resEl.textContent = `주정 ${initValue} kg`;
 
-      btn3.addEventListener("click", () => handleSelect(i + 1, 60, 1, row));
-      btn2.addEventListener("click", () => handleSelect(i + 1, 40, 0.7, row));
+      btn3.onclick = () => { handleSelect(i + 1, 60, 1, row); };
+      btn2.onclick = () => { handleSelect(i + 1, 40, 0.7, row); };
     }
-    lotInput.value = actualCount;
     roundsDiv.style.display = "block";
     updateTotalKg();
   }
@@ -175,173 +168,116 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTotalKg();
   }
 
-  function updateTotalKg() {
-    let total = 0;
-    Object.values(roundData).forEach(r => { if (!isNaN(r?.no)) total += r.no; });
-    totalKgInput.value = total;
-  }
-
-  lotInput.addEventListener("change", () => createRounds(Number(lotInput.value) || 0));
-
-  // 2. 중복 체크 로직 (개선됨)
+  // [중요] 중복 체크 및 UI 제어
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
-    roundsDiv.style.display = "none"; // 세부 내용 일단 숨김
-    submitBtn.style.display = "none"; // 저장 버튼 일단 숨김
-    submitBtn.disabled = true;
+    roundsDiv.style.display = "none";
+    submitBtn.style.display = "none";
+    
+    // 입력창(제품, LOT, 중량) 숨기기
+    productInput.previousElementSibling.style.display = "none"; // 라벨
+    productInput.style.display = "none";
+    document.querySelector(".row-flex").style.display = "none";
+
     try {
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
 
       if (data?.exists) {
-        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
+        duplicateText.textContent = `ℹ️ ${date} 데이터가 이미 존재합니다.`;
         duplicateMsg.style.display = "block";
-        // 중복 시 제품 선택과 LOT 선택도 초기화하거나 숨길 수 있습니다.
-        productInput.value = "";
-        lotInput.value = "0";
       } else {
-        // 중복이 없으면 바로 입력 가능하게 표시
-        duplicateMsg.style.display = "none";
+        // 데이터 없으면 입력창 다시 보이기
+        showInputFields();
         submitBtn.style.display = "block";
         submitBtn.disabled = false;
-        // 빈 라운드 생성 (기본값)
-        roundsDiv.style.display = "block"; 
       }
     } catch (e) {
       loadingMsg.style.display = "none";
+      showInputFields();
       submitBtn.style.display = "block";
-      submitBtn.disabled = false;
     }
   }
 
-  // 3. 중복 데이터 복원
-  async function restoreDuplicateData(date) {
-    loadingMsg.style.display = "block";
-    try {
-      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-      if (!data?.no) return alert("불러올 데이터 없음");
-
-      productInput.value = data.product || "";
-      const noArr = data.no || [];
-      const valueArr = data.value || [];
-      const filled = [];
-      for (let i = 0; i < Math.max(noArr.length, valueArr.length); i++) {
-        if (noArr[i] === "" && valueArr[i] === "") continue;
-        filled.push({ no: noArr[i] || 60, value: valueArr[i] || 1 });
-      }
-      createRounds(filled.length, filled);
-      submitBtn.disabled = false;
-    } catch (err) {
-      loadingMsg.style.display = "none";
-      alert("데이터 불러오기 오류");
-    }
+  function showInputFields() {
+    productInput.previousElementSibling.style.display = "block";
+    productInput.style.display = "block";
+    document.querySelector(".row-flex").style.display = "flex";
   }
 
-  // 4. 날짜 변경 이벤트 (즉시 숨김 로직 추가)
+  // [이벤트] 날짜 변경
   dateInput.addEventListener("change", () => {
     productInput.value = "";
     lotInput.value = "0";
     roundsDiv.innerHTML = "";
-    roundsDiv.style.display = "none";    // 세부 입력창 숨김
-    totalKgInput.value = "";
-    duplicateMsg.style.display = "none"; // 중복 안내창 숨김
-    submitBtn.style.display = "none";    // 저장 버튼 숨김
-    
-    // 날짜가 입력되어 있으면 중복 확인 실행
-    if (dateInput.value) {
-      checkDuplicate(dateInput.value);
-    }
-  });
-
-  // [수정] 불러오기 버튼 클릭 시
-  duplicateConfirmBtn.addEventListener("click", async () => {
+    roundsDiv.style.display = "none";
     duplicateMsg.style.display = "none";
-    if (dateInput.value) {
-      await restoreDuplicateData(dateInput.value);
-      roundsDiv.style.display = "block"; // 데이터 로드 후 펼침
-      submitBtn.style.display = "block"; // 저장 버튼 표시
-    }
+    submitBtn.style.display = "none";
+    if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  duplicateCancelBtn.addEventListener("click", () => {
+  // [이벤트] 기존 불러오기
+  duplicateConfirmBtn.onclick = async () => {
     duplicateMsg.style.display = "none";
-    dateInput.valueAsDate = new Date();
-    checkDuplicate(dateInput.value);
-  });
-
-  // [신규] 삭제 버튼 이벤트
-  duplicateDeleteBtn.addEventListener("click", async () => {
-    const dt = dateInput.value;
-    if (!confirm(`⚠️ [${dt}] 날짜의 모든 데이터를 삭제하시겠습니까?`)) return;
-
-    duplicateDeleteBtn.disabled = true;
-    duplicateDeleteBtn.innerText = "⏳ 삭제 중...";
-
+    loadingMsg.style.display = "block";
     try {
-      const fd = new URLSearchParams();
-      fd.append("deleteSaengmyeon", JSON.stringify({ date: dt }));
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: fd.toString()
-      });
+      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`);
+      const data = await res.json();
+      loadingMsg.style.display = "none";
+      
+      showInputFields(); // 입력창 보이기
+      productInput.value = data.product || "";
+      const noArr = data.no || [];
+      const valueArr = data.value || [];
+      const filled = noArr.map((no, i) => ({ no: no, value: valueArr[i] }));
+      
+      createRounds(filled.length, filled);
+      submitBtn.style.display = "block";
+      submitBtn.disabled = false;
+    } catch (err) { alert("불러오기 실패"); }
+  };
+
+  // [이벤트] 삭제 버튼
+  duplicateDeleteBtn.onclick = async () => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    duplicateDeleteBtn.disabled = true;
+    try {
+      const params = new URLSearchParams();
+      params.append("deleteSaengmyeon", JSON.stringify({ date: dateInput.value }));
+      const res = await fetch(scriptUrl, { method: "POST", body: params });
       const result = await res.json();
-      if (result.result === "success") {
-        alert(result.message);
-        location.reload();
-      } else {
-        alert("삭제 실패: " + result.message);
-        duplicateDeleteBtn.disabled = false;
-        duplicateDeleteBtn.innerText = "데이터 삭제";
-      }
-    } catch (err) {
-      alert("오류 발생");
-      duplicateDeleteBtn.disabled = false;
-    }
-  });
+      alert(result.message);
+      location.reload();
+    } catch (e) { alert("삭제 오류 발생"); duplicateDeleteBtn.disabled = false; }
+  };
 
-  // 6. 저장 로직
-  submitBtn.addEventListener("click", async () => {
-    if (!dateInput.value || !productInput.value) return alert("필수 정보를 선택하세요.");
+  // [이벤트] 저장 버튼
+  submitBtn.onclick = async () => {
+    if (!productInput.value || lotInput.value === "0") return alert("내용을 입력하세요.");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "⏳ 저장 중...";
+
     const lotCount = Object.keys(roundData).length;
-    if (lotCount === 0) return alert("LOT 수를 선택하세요.");
-
-    const noArr = [];
-    const valueArr = [];
+    const noArr = [], valueArr = [];
     for (let i = 1; i <= lotCount; i++) {
-      noArr.push(roundData[i] ? Number(roundData[i].no) : "");
-      valueArr.push(roundData[i] ? Number(roundData[i].value) : "");
+      noArr.push(roundData[i].no);
+      valueArr.push(roundData[i].value);
     }
 
     const payload = { date: dateInput.value, product: productInput.value, weight: totalKgInput.value, lot: lotCount, no: noArr, value: valueArr };
-
     try {
-      submitBtn.disabled = true;
-      const formBody = new URLSearchParams();
-      formBody.append("saengmyeon", JSON.stringify(payload));
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: formBody.toString()
-      });
+      const params = new URLSearchParams();
+      params.append("saengmyeon", JSON.stringify(payload));
+      const res = await fetch(scriptUrl, { method: "POST", body: params });
       const result = await res.json();
-      if (result?.result === "success") {
-        alert(result.message);
-        location.reload();
-      } else {
-        alert("저장 오류");
-        submitBtn.disabled = false;
-      }
-    } catch (err) {
-      submitBtn.disabled = false;
-      alert("서버 오류");
-    }
-  });
+      alert(result.message);
+      location.reload();
+    } catch (e) { alert("저장 실패"); submitBtn.disabled = false; submitBtn.innerText = "📥 저장하기"; }
+  };
 
+  lotInput.onchange = () => createRounds(Number(lotInput.value));
   if (dateInput.value) checkDuplicate(dateInput.value);
 });
 </script>
