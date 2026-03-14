@@ -68,7 +68,7 @@
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyG2pcaryIGGc2GbHNmPdGmX6wPxEp_QNb6hCbwms1GvOEY756UJMCOxylPKJUqP72t3Q/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbz5F2tFw_EatvYRrHS8BIq3cyykuzwcQquJwhfD-c84db6w5tRPikoOMoKKYU1Os_x8SQ/exec";
 const MAX_ROUNDS = 20;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -218,19 +218,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const fd = new URLSearchParams();
-      fd.append("saengmyeon", JSON.stringify(payload));
+      fd.append("saengmyeon", JSON.stringify(payload)); // 서버 doPost의 p.saengmyeon과 일치
 
       const res = await fetch(scriptUrl, {
         method: "POST",
         body: fd
       });
-      
       const result = await res.json();
-      alert(result.message || "저장되었습니다.");
+      alert(result.message);
       location.reload();
     } catch (e) {
-      console.error(e);
-      alert("저장 실패: 서버 응답 오류");
+      alert("저장 실패: 서버 응답을 확인하세요.");
       submitBtn.disabled = false;
       submitBtn.innerText = "📥 저장하기";
     }
