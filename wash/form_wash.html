@@ -152,6 +152,8 @@ window.addEventListener("DOMContentLoaded", async function () {
     optionSelect.value = "";
     oxContainer.innerHTML = "";
     duplicateMsg.style.display = "none";
+    bulkDeleteSection.style.display = "none"; // 날짜 바꾸자마자 삭제 섹션 즉시 숨김
+    bulkOkBtn.style.display = "none";        // 등록 버튼도 일단 숨김 (로딩 후 판단)
     await loadOptionStatus();
   });
 
