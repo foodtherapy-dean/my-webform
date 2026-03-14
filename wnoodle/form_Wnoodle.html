@@ -61,13 +61,13 @@
       </div>
 
       <div id="loadingMsg">⏳ 중복 확인 중...</div>
-      <div id="duplicateMsg" style="display:none; background:#fff3f3; border:1px solid #f2c2c2; padding:10px; border-radius:8px; margin-top:10px;">
-  <div id="duplicateText" style="font-weight:700;margin-bottom:8px; color:#d32f2f;"></div>
-  <div style="display:flex; gap:6px; flex-wrap: wrap;">
-    <button id="duplicateConfirmBtn" class="btn" style="background:var(--g); color:#fff; flex:1; min-width:100px;">기존 불러오기</button>
-    <button id="duplicateDeleteBtn" class="btn" style="background:#f44336; color:#fff; flex:1; min-width:100px;">데이터 삭제</button>
-    <button id="duplicateCancelBtn" class="btn" style="flex:1; min-width:100px;">새로 입력</button>
+      <div id="duplicateMsg" style="display:none; background:#fff3f3; border:1px solid #f2c2c2; padding:12px; border-radius:8px; margin-top:10px;">
+  <div id="duplicateText" style="font-weight:700; margin-bottom:10px; color:#d32f2f; text-align:center;"></div>
+  <div style="display:flex; gap:8px;">
+    <button id="duplicateConfirmBtn" class="btn" style="background:var(--g); color:#fff; flex:1;">기존 불러오기</button>
+    <button id="duplicateDeleteBtn" class="btn" style="background:#f44336; color:#fff; flex:1;">데이터 삭제</button>
   </div>
+</div>
 </div>
     </div>
 
@@ -81,7 +81,7 @@
 
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzUEkXlKp5iEHNDuw4Trvw6667Z73GriUZYeYrKNfaQFGHM8lvvo7DhnLQith0OdcJs5Q/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbyk-wLHwb-4mxq4llPMl4tJMXmRpPR_9XKPbGlySoHJ_30sXFqyp6VoJ1HnOBUcNog7Lw/exec";
 const MAX_ROUNDS = 20;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -187,6 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
+    roundsDiv.style.display = "none"; // 세부 내용 일단 숨김
+    submitBtn.style.display = "none"; // 저장 버튼 일단 숨김
     submitBtn.disabled = true;
     try {
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
@@ -194,13 +196,22 @@ document.addEventListener("DOMContentLoaded", () => {
       loadingMsg.style.display = "none";
 
       if (data?.exists) {
-        duplicateText.textContent = `${date} 에 이미 입력된 데이터가 있습니다.`;
+        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
         duplicateMsg.style.display = "block";
+        // 중복 시 제품 선택과 LOT 선택도 초기화하거나 숨길 수 있습니다.
+        productInput.value = "";
+        lotInput.value = "0";
       } else {
+        // 중복이 없으면 바로 입력 가능하게 표시
+        duplicateMsg.style.display = "none";
+        submitBtn.style.display = "block";
         submitBtn.disabled = false;
+        // 빈 라운드 생성 (기본값)
+        roundsDiv.style.display = "block"; 
       }
     } catch (e) {
       loadingMsg.style.display = "none";
+      submitBtn.style.display = "block";
       submitBtn.disabled = false;
     }
   }
@@ -235,19 +246,25 @@ document.addEventListener("DOMContentLoaded", () => {
     productInput.value = "";
     lotInput.value = "0";
     roundsDiv.innerHTML = "";
+    roundsDiv.style.display = "none";    // 세부 입력창 숨김
     totalKgInput.value = "";
+    duplicateMsg.style.display = "none"; // 중복 안내창 숨김
+    submitBtn.style.display = "none";    // 저장 버튼 숨김
     
-    // 즉시 UI 숨김
-    duplicateMsg.style.display = "none"; 
-    loadingMsg.style.display = "none";
-    
-    if (dateInput.value) checkDuplicate(dateInput.value);
+    // 날짜가 입력되어 있으면 중복 확인 실행
+    if (dateInput.value) {
+      checkDuplicate(dateInput.value);
+    }
   });
 
-  // 5. 버튼 이벤트들
-  duplicateConfirmBtn.addEventListener("click", () => {
+  // [수정] 불러오기 버튼 클릭 시
+  duplicateConfirmBtn.addEventListener("click", async () => {
     duplicateMsg.style.display = "none";
-    if (dateInput.value) restoreDuplicateData(dateInput.value);
+    if (dateInput.value) {
+      await restoreDuplicateData(dateInput.value);
+      roundsDiv.style.display = "block"; // 데이터 로드 후 펼침
+      submitBtn.style.display = "block"; // 저장 버튼 표시
+    }
   });
 
   duplicateCancelBtn.addEventListener("click", () => {
