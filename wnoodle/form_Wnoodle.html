@@ -168,17 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTotalKg();
   }
 
-  // [중요] 중복 체크 및 UI 제어
+  // [중요] 중복 체크 및 UI 제어 (입력창 숨기기 포함)
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
     roundsDiv.style.display = "none";
     submitBtn.style.display = "none";
     
-    // 입력창(제품, LOT, 중량) 숨기기
-    productInput.previousElementSibling.style.display = "none"; // 라벨
-    productInput.style.display = "none";
-    document.querySelector(".row-flex").style.display = "none";
+    // 상단 입력 카드 전체 숨기기 (깔끔한 UI를 위해)
+    const inputFields = document.querySelectorAll(".card label, .card select, .card input, .card .row-flex");
+    inputFields.forEach(el => { if(el.id !== 'date') el.style.display = "none"; });
 
     try {
       const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
@@ -186,76 +185,53 @@ document.addEventListener("DOMContentLoaded", () => {
       loadingMsg.style.display = "none";
 
       if (data?.exists) {
-        duplicateText.textContent = `ℹ️ ${date} 데이터가 이미 존재합니다.`;
+        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
         duplicateMsg.style.display = "block";
       } else {
         // 데이터 없으면 입력창 다시 보이기
-        showInputFields();
+        inputFields.forEach(el => el.style.display = "");
         submitBtn.style.display = "block";
         submitBtn.disabled = false;
       }
     } catch (e) {
       loadingMsg.style.display = "none";
-      showInputFields();
+      inputFields.forEach(el => el.style.display = "");
       submitBtn.style.display = "block";
     }
   }
 
-  function showInputFields() {
-    productInput.previousElementSibling.style.display = "block";
-    productInput.style.display = "block";
-    document.querySelector(".row-flex").style.display = "flex";
-  }
-
-  // [이벤트] 날짜 변경
-  dateInput.addEventListener("change", () => {
-    productInput.value = "";
-    lotInput.value = "0";
-    roundsDiv.innerHTML = "";
-    roundsDiv.style.display = "none";
-    duplicateMsg.style.display = "none";
-    submitBtn.style.display = "none";
-    if (dateInput.value) checkDuplicate(dateInput.value);
-  });
-
-  // [이벤트] 기존 불러오기
-  duplicateConfirmBtn.onclick = async () => {
-    duplicateMsg.style.display = "none";
-    loadingMsg.style.display = "block";
-    try {
-      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`);
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-      
-      showInputFields(); // 입력창 보이기
-      productInput.value = data.product || "";
-      const noArr = data.no || [];
-      const valueArr = data.value || [];
-      const filled = noArr.map((no, i) => ({ no: no, value: valueArr[i] }));
-      
-      createRounds(filled.length, filled);
-      submitBtn.style.display = "block";
-      submitBtn.disabled = false;
-    } catch (err) { alert("불러오기 실패"); }
-  };
-
-  // [이벤트] 삭제 버튼
+  // [삭제 버튼] 반응 없는 문제 해결 및 JSON 에러 방지
   duplicateDeleteBtn.onclick = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
+    
     duplicateDeleteBtn.disabled = true;
+    duplicateDeleteBtn.innerText = "⏳ 삭제 중...";
+
     try {
-      const params = new URLSearchParams();
-      params.append("deleteSaengmyeon", JSON.stringify({ date: dateInput.value }));
-      const res = await fetch(scriptUrl, { method: "POST", body: params });
-      const result = await res.json();
-      alert(result.message);
-      location.reload();
-    } catch (e) { alert("삭제 오류 발생"); duplicateDeleteBtn.disabled = false; }
+      // JSON 에러 방지를 위해 URLSearchParams 대신 단순 쿼리스트링 조합 사용 가능
+      const response = await fetch(`${scriptUrl}?deleteSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.result === "success") {
+        alert(result.message);
+        location.reload();
+      } else {
+        alert("삭제 실패: " + result.message);
+        duplicateDeleteBtn.disabled = false;
+        duplicateDeleteBtn.innerText = "데이터 삭제";
+      }
+    } catch (e) {
+      alert("서버 통신 오류");
+      duplicateDeleteBtn.disabled = false;
+    }
   };
 
-  // [이벤트] 저장 버튼
+  // [저장 버튼] 반응 없는 문제 해결
   submitBtn.onclick = async () => {
-    if (!productInput.value || lotInput.value === "0") return alert("내용을 입력하세요.");
+    if (!productInput.value || lotInput.value === "0") return alert("제품과 LOT를 선택하세요.");
+    
     submitBtn.disabled = true;
     submitBtn.innerText = "⏳ 저장 중...";
 
@@ -266,15 +242,32 @@ document.addEventListener("DOMContentLoaded", () => {
       valueArr.push(roundData[i].value);
     }
 
-    const payload = { date: dateInput.value, product: productInput.value, weight: totalKgInput.value, lot: lotCount, no: noArr, value: valueArr };
+    const payload = {
+      date: dateInput.value,
+      product: productInput.value,
+      weight: totalKgInput.value,
+      lot: lotCount,
+      no: noArr,
+      value: valueArr
+    };
+
     try {
-      const params = new URLSearchParams();
-      params.append("saengmyeon", JSON.stringify(payload));
-      const res = await fetch(scriptUrl, { method: "POST", body: params });
+      const formBody = new URLSearchParams();
+      formBody.append("saengmyeon", JSON.stringify(payload));
+
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: formBody.toString()
+      });
       const result = await res.json();
-      alert(result.message);
+      alert(result.message || "저장되었습니다.");
       location.reload();
-    } catch (e) { alert("저장 실패"); submitBtn.disabled = false; submitBtn.innerText = "📥 저장하기"; }
+    } catch (e) {
+      alert("저장 실패");
+      submitBtn.disabled = false;
+      submitBtn.innerText = "📥 저장하기";
+    }
   };
 
   lotInput.onchange = () => createRounds(Number(lotInput.value));
