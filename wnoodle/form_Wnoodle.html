@@ -11,18 +11,15 @@
   .app-container{display:flex;flex-direction:column;min-height:100vh;}
   .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
   .app-body{flex:1;padding:12px;box-sizing:border-box;}
-  
-  /* 3. 하단 저장 버튼 높이 및 패딩 수정 */
   .app-footer{padding:12px; background:#fff; border-top:1px solid #eee;}
-  #submitBtn{width:100%; background:var(--g); color:#fff; border:0; border-radius:10px; font-size:1.2rem; font-weight:700; cursor:pointer; height:60px; box-shadow:0 -2px 10px rgba(0,0,0,0.05);}
-  
+  #submitBtn{width:100%; background:var(--g); color:#fff; border:0; border-radius:10px; font-size:1.2rem; font-weight:700; cursor:pointer; height:60px;}
   .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
   label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
   input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
   .row-flex{display:flex;gap:8px;align-items:center;}
   #rounds .row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid #eee;margin-bottom:8px;}
   .btn{padding:8px 10px;border-radius:8px;border:0;background:var(--muted);font-weight:700;cursor:pointer;font-size:0.95rem;}
-  .btn.selected{background:var(--g);color:#fff;box-shadow:inset 0 0 0 2px rgba(0,0,0,0.04);}
+  .btn.selected{background:var(--g);color:#fff;}
   .result{margin-left:auto;font-weight:700;font-size:0.95rem;text-align:right;min-width:80px;}
   #loadingMsg{display:none;margin:8px 0;color:#666;font-weight:700;text-align:center;}
   #duplicateMsg{display:none;background:#fff3f3;border:1px solid #f2c2c2;padding:10px;border-radius:8px;}
@@ -31,12 +28,10 @@
 <body>
 <div class="app-container">
   <div class="app-header">생면공정 점검</div>
-
   <div class="app-body">
     <div class="card">
       <label for="date">날짜</label>
       <input type="date" id="date" />
-
       <label for="product" style="margin-top:10px;">생산제품</label>
       <select id="product">
         <option value="">-- 선택하세요 --</option>
@@ -44,18 +39,16 @@
         <option value="생칼국수">생칼국수</option>
         <option value="생우동면">생우동면</option>
       </select>
-
       <div style="margin-top:12px;" class="row-flex">
         <div style="flex:1;">
-          <label style="margin-bottom:6px;">총생산 LOT 수</label>
-          <select id="lotInput" style="font-size:0.95rem;"></select>
+          <label>총생산 LOT 수</label>
+          <select id="lotInput"></select>
         </div>
         <div style="flex:1;">
-          <label style="margin-bottom:6px;">총중량 (kg)</label>
+          <label>총중량 (kg)</label>
           <input type="number" id="totalKg" readonly style="text-align:right;" />
         </div>
       </div>
-
       <div id="loadingMsg">⏳ 중복 확인 중...</div>
       <div id="duplicateMsg">
         <div id="duplicateText" style="font-weight:700; margin-bottom:10px; color:#d32f2f; text-align:center;"></div>
@@ -65,13 +58,9 @@
         </div>
       </div>
     </div>
-
     <div id="rounds" class="card" style="display:none;"></div>
   </div>
-
-  <div class="app-footer">
-    <button id="submitBtn">📥 저장하기</button>
-  </div>
+  <div class="app-footer"><button id="submitBtn">📥 저장하기</button></div>
 </div>
 
 <script>
@@ -92,113 +81,68 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitBtn = document.getElementById("submitBtn");
   
   dateInput.valueAsDate = new Date();
-  let roundData = {};
+  let roundData = []; // 배열로 관리하여 순서 보장
 
   lotInput.innerHTML = `<option value="0">0</option>` +
     Array.from({ length: MAX_ROUNDS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
   lotInput.value = "0";
 
   function updateTotalKg() {
-    let total = 0;
-    Object.values(roundData).forEach(r => { if (!isNaN(r?.no)) total += r.no; });
+    const total = roundData.reduce((sum, r) => sum + (Number(r.no) || 0), 0);
     totalKgInput.value = total;
+    lotInput.value = roundData.length; // LOT 수 동기화
   }
 
-  function createRounds(lotCount, existing = null) {
+  // UI 그리기 함수
+  function renderRounds() {
     roundsDiv.innerHTML = "";
-    roundData = {};
-    const actualCount = existing ? existing.filter(item => item.no !== "" && item.no !== null).length : lotCount;
-
-    if (!actualCount || actualCount <= 0) {
+    if (roundData.length === 0) {
       roundsDiv.style.display = "none";
-      lotInput.value = 0;
       return;
     }
-
-    for (let i = 0; i < actualCount; i++) {
-      const data = existing && existing[i] ? existing[i] : { no: 60, value: 1 };
+    
+    roundData.forEach((data, i) => {
       const row = document.createElement("div");
       row.className = "row";
       row.innerHTML = `
         <div style="flex:0 0 48px;font-weight:700;">${i + 1}차</div>
-        <button class="btn" type="button" data-type="3포">3포</button>
-        <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+        <button class="btn ${data.no === 60 ? 'selected' : ''}" type="button" data-type="3포">3포</button>
+        <button class="btn ${data.no === 40 ? 'selected' : ''}" type="button" data-type="2포">2포</button>
+        <div class="result" style="margin-left:auto;font-weight:700;text-align:right;">주정 ${data.value} kg</div>
       `;
+      
+      const btn3 = row.querySelector("[data-type='3포']");
+      const btn2 = row.querySelector("[data-type='2포']");
+      
+      btn3.onclick = () => handleAction(i, 60, 1);
+      btn2.onclick = () => handleAction(i, 40, 0.7);
+      
       roundsDiv.appendChild(row);
-
-      const btn3 = row.querySelector(".btn[data-type='3포']");
-      const btn2 = row.querySelector(".btn[data-type='2포']");
-      
-      let initNo = data.no ?? 60;
-      let initValue = data.value ?? 1;
-      
-      handleSelect(i + 1, initNo, initValue, row, true);
-
-      btn3.onclick = () => { handleSelect(i + 1, 60, 1, row); };
-      btn2.onclick = () => { handleSelect(i + 1, 40, 0.7, row); };
-    }
+    });
     roundsDiv.style.display = "block";
     updateTotalKg();
   }
 
-  // 1. 클릭 로직 수정: 동일 버튼 클릭 시 해제(Toggle)
-  function handleSelect(idx, no, value, row, isInit = false) {
-    const targetBtn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
-    const isAlreadySelected = targetBtn.classList.contains("selected");
-
-    if (!isInit && isAlreadySelected) {
-      // 이미 선택된 걸 다시 누른 경우 -> 해제
-      targetBtn.classList.remove("selected");
-      roundData[idx] = { no: 0, value: 0 };
-      row.querySelector(".result").textContent = `-`;
+  // 핵심 로직: 선택 또는 삭제(Toggle)
+  function handleAction(index, no, value) {
+    const current = roundData[index];
+    if (current && current.no === no) {
+      // 이미 활성화된 버튼을 또 누르면 해당 차수 삭제
+      roundData.splice(index, 1);
     } else {
-      // 새로 선택하는 경우
-      row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-      targetBtn.classList.add("selected");
-      roundData[idx] = { no: Number(no), value: Number(value) };
-      row.querySelector(".result").textContent = `주정 ${value} kg`;
+      // 다른 버튼을 누르거나 새로 선택한 경우 값 변경
+      roundData[index] = { no: Number(no), value: Number(value) };
     }
-    updateTotalKg();
+    renderRounds();
   }
 
-  async function checkDuplicate(date) {
-    loadingMsg.style.display = "block";
-    duplicateMsg.style.display = "none";
-    roundsDiv.style.display = "none";
-    submitBtn.style.display = "none";
-    productInput.style.display = "none";
-    document.querySelector(".row-flex").style.display = "none";
+  // LOT 수 변경 시 데이터 초기 세팅
+  lotInput.onchange = () => {
+    const count = Number(lotInput.value);
+    roundData = Array.from({ length: count }, () => ({ no: 60, value: 1 }));
+    renderRounds();
+  };
 
-    try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
-      const data = await res.json();
-      loadingMsg.style.display = "none";
-
-      if (data?.exists) {
-        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
-        duplicateMsg.style.display = "block";
-      } else {
-        showInputFields();
-        submitBtn.style.display = "block";
-      }
-    } catch (e) {
-      loadingMsg.style.display = "none";
-      showInputFields();
-      submitBtn.style.display = "block";
-    }
-  }
-
-  function showInputFields() {
-    productInput.style.display = "block";
-    document.querySelector(".row-flex").style.display = "flex";
-  }
-
-  dateInput.addEventListener("change", () => {
-    if (dateInput.value) checkDuplicate(dateInput.value);
-  });
-
-  // 2. 중복 데이터 불러오기 시 LOT 수 연동 수정
   duplicateConfirmBtn.onclick = async () => {
     duplicateMsg.style.display = "none";
     loadingMsg.style.display = "block";
@@ -206,54 +150,75 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
-      showInputFields();
       
+      productInput.style.display = "block";
+      document.querySelector(".row-flex").style.display = "flex";
       productInput.value = data.product || "";
-      const noArr = data.no || [];
-      const valueArr = data.value || [];
-      const filled = noArr.map((no, i) => ({ no: no, value: valueArr[i] }));
       
-      lotInput.value = filled.length; // 상단 LOT 수 셀렉트박스 값 업데이트
-      createRounds(filled.length, filled);
+      // 실제 데이터가 있는 것만 필터링하여 roundData 생성
+      roundData = [];
+      if (data.no && data.no.length > 0) {
+        data.no.forEach((noVal, i) => {
+          if (noVal !== "" && noVal !== null) {
+            roundData.push({ no: Number(noVal), value: Number(data.value[i]) });
+          }
+        });
+      }
+      renderRounds();
       submitBtn.style.display = "block";
     } catch (err) { alert("불러오기 실패"); }
   };
 
+  // 나머지 이벤트 로직 (삭제/저장)
   duplicateDeleteBtn.onclick = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
       const params = new URLSearchParams();
       params.append("deleteSaengmyeon", JSON.stringify({ date: dateInput.value }));
-      const res = await fetch(scriptUrl, { method: "POST", body: params });
-      const result = await res.json();
-      alert(result.message);
+      await fetch(scriptUrl, { method: "POST", body: params });
       location.reload();
     } catch (e) { alert("삭제 오류"); }
   };
 
   submitBtn.onclick = async () => {
-    if (!productInput.value || lotInput.value === "0") return alert("내용을 확인하세요.");
+    if (!productInput.value || roundData.length === 0) return alert("내용을 확인하세요.");
     submitBtn.disabled = true;
     const payload = { 
       date: dateInput.value, 
       product: productInput.value, 
       weight: totalKgInput.value, 
-      lot: lotInput.value, 
-      no: Object.values(roundData).map(r => r.no), 
-      value: Object.values(roundData).map(r => r.value) 
+      lot: roundData.length, 
+      no: roundData.map(r => r.no), 
+      value: roundData.map(r => r.value) 
     };
     try {
       const params = new URLSearchParams();
       params.append("saengmyeon", JSON.stringify(payload));
-      const res = await fetch(scriptUrl, { method: "POST", body: params });
-      const result = await res.json();
-      alert(result.message);
+      await fetch(scriptUrl, { method: "POST", body: params });
       location.reload();
     } catch (e) { alert("저장 실패"); submitBtn.disabled = false; }
   };
 
-  lotInput.onchange = () => createRounds(Number(lotInput.value));
-  if (dateInput.value) checkDuplicate(dateInput.value);
+  async function checkDuplicate(date) {
+    loadingMsg.style.display = "block";
+    duplicateMsg.style.display = "none";
+    try {
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const data = await res.json();
+      loadingMsg.style.display = "none";
+      if (data?.exists) {
+        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
+        duplicateMsg.style.display = "block";
+      } else {
+        productInput.style.display = "block";
+        document.querySelector(".row-flex").style.display = "flex";
+        submitBtn.style.display = "block";
+      }
+    } catch (e) { loadingMsg.style.display = "none"; }
+  }
+
+  dateInput.addEventListener("change", () => checkDuplicate(dateInput.value));
+  checkDuplicate(dateInput.value);
 });
 </script>
 </body>
