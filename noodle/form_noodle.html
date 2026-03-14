@@ -339,23 +339,29 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
 
     submitBtn.addEventListener("click", async () => {
-      const g = groupSelect.value;
-      if (!g) return alert("단계를 선택하세요.");
-      submitBtn.disabled = true; submitBtn.innerText = "⏳ 전송 중...";
-      try {
-        const entry = {
-          hour: document.getElementById("hour").value,
-          minute: document.getElementById("minute").value,
-          temp: document.getElementById("temp").value,
-          humi: document.getElementById("humidity").value,
-          product: document.getElementById("product").value,
-          count: document.getElementById("singleCount").value
-        };
-        await fetch(scriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "noodle=" + encodeURIComponent(JSON.stringify({ date: dateInput.value, group: g, entries: [entry] }))
-        });
+  const g = groupSelect.value;
+  if (!g) return alert("단계를 선택하세요.");
+  submitBtn.disabled = true; submitBtn.innerText = "⏳ 전송 중...";
+  try {
+    const entry = {
+      hour: document.getElementById("hour").value,
+      minute: document.getElementById("minute").value,
+      temp: document.getElementById("temp").value,
+      humi: document.getElementById("humidity").value,
+      product: document.getElementById("product").value,
+      count: document.getElementById("singleCount").value
+    };
+    
+    // entries 배열 안에 넣지 않고 '내용물'을 바로 보냅니다 (GAS 수정본 기준)
+    await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "noodle=" + encodeURIComponent(JSON.stringify({ 
+        date: dateInput.value, 
+        group: g, 
+        entries: [entry] // 이 구조를 유지하려면 위 GAS의 item.hour 부분을 처리해야 함
+      }))
+    });
         alert(`✅ [${g}] 저장 완료`);
         confirmDone = false;
         updateCompletionStatus();
