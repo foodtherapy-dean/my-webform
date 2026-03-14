@@ -115,7 +115,9 @@ window.addEventListener("DOMContentLoaded", async function () {
   
   // 로딩 시작 시 사용자에게 시각적 피드백 제공
   optionSelect.innerHTML = `<option value="">데이터 확인 중...</option>`;
-  
+  // 로딩 중에는 버튼들이 보이지 않도록 다시 한번 보장 (안전장치)
+    bulkDeleteSection.style.display = "none";
+    bulkOkBtn.style.display = "none";
   try {
     const allOptions = Object.keys(itemsMap);
     const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
