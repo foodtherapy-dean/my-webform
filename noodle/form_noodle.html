@@ -341,35 +341,61 @@ window.addEventListener("DOMContentLoaded", async function () {
     submitBtn.addEventListener("click", async () => {
   const g = groupSelect.value;
   if (!g) return alert("단계를 선택하세요.");
-  submitBtn.disabled = true; submitBtn.innerText = "⏳ 전송 중...";
+  
+  // 필수 값 체크 (예: 시간/분 선택 확인)
+  const hourVal = document.getElementById("hour").value;
+  const minuteVal = document.getElementById("minute").value;
+  if (g !== "생산제품" && (!hourVal || !minuteVal)) {
+    return alert("시간과 분을 선택해주세요.");
+  }
+
+  submitBtn.disabled = true; 
+  submitBtn.innerText = "⏳ 서버 전송 중...";
+
   try {
+    // GAS의 handleProcessData가 처리할 수 있는 정확한 구조로 객체 생성
     const entry = {
-      hour: document.getElementById("hour").value,
-      minute: document.getElementById("minute").value,
-      temp: document.getElementById("temp").value,
-      humi: document.getElementById("humidity").value,
-      product: document.getElementById("product").value,
-      count: document.getElementById("singleCount").value
+      hour: hourVal,
+      minute: minuteVal,
+      temp: document.getElementById("temp").value || "",
+      humi: document.getElementById("humidity").value || "",
+      product: document.getElementById("product").value || "",
+      count: document.getElementById("singleCount").value || ""
     };
-    
-    // entries 배열 안에 넣지 않고 '내용물'을 바로 보냅니다 (GAS 수정본 기준)
-    await fetch(scriptUrl, {
+
+    const payload = {
+      date: dateInput.value,
+      group: g,
+      entries: [entry] // 배열 형태로 감싸서 전달
+    };
+
+    // 전송 시작
+    const response = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "noodle=" + encodeURIComponent(JSON.stringify({ 
-        date: dateInput.value, 
-        group: g, 
-        entries: [entry] // 이 구조를 유지하려면 위 GAS의 item.hour 부분을 처리해야 함
-      }))
-    });
-        alert(`✅ [${g}] 저장 완료`);
-        confirmDone = false;
-        updateCompletionStatus();
-      } catch (e) { alert("저장 실패"); } finally { 
-        submitBtn.disabled = false; submitBtn.innerText = "📥 개별 항목 서버 전송"; 
-      }
+      body: "noodle=" + encodeURIComponent(JSON.stringify(payload))
     });
 
+    if (!response.ok) throw new Error("네트워크 응답에 문제가 있습니다.");
+
+    const resultText = await response.text();
+    console.log("서버 응답:", resultText); // 개발자 도구(F12)에서 확인용
+
+    if (resultText.includes("✅") || resultText.includes("success")) {
+      alert(`✅ [${g}] 저장 완료되었습니다.`);
+      confirmDone = false;
+      await updateCompletionStatus(); // 시트에 반영된 내용을 즉시 다시 불러옴
+    } else {
+      alert("⚠️ 서버 응답 결과: " + resultText);
+    }
+  } catch (e) {
+    console.error("전송 오류:", e);
+    alert("❌ 저장에 실패했습니다. (네트워크 오류 또는 GAS 설정 문제)");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerText = "📥 개별 항목 서버 전송";
+  }
+});
     // 🚀 [복구됨] 일괄 등록 버튼 클릭 시 로직
     document.getElementById("bulkSubmitBtn").addEventListener("click", async () => {
       const h = document.getElementById("bulkHour").value;
