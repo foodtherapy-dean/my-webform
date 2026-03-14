@@ -1,282 +1,215 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>생면공정(주정)</title>
-<link rel="icon" type="image/png" sizes="192x192" href="Waterdrop.png">
-<style>
-  :root { --g: #4CAF50; --muted:#e0e0e0; }
-  html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f7f8;}
-  .app-container{display:flex;flex-direction:column;min-height:100vh;}
-  .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
-  .app-body{flex:1;padding:12px;box-sizing:border-box;}
-  .app-footer{padding:0;}
-  .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
-  label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
-  input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
-  .row-flex{display:flex;gap:8px;align-items:center;}
-  .col{flex:1;min-width:0;}
-  .label-inline{flex:0 0 110px;font-weight:700;font-size:0.95rem;}
-  #rounds .row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid #eee;margin-bottom:8px;}
-  .btn{padding:8px 10px;border-radius:8px;border:0;background:var(--muted);font-weight:700;cursor:pointer;font-size:0.95rem;}
-  .btn.selected{background:var(--g);color:#fff;box-shadow:inset 0 0 0 2px rgba(0,0,0,0.04);}
-  .result{margin-left:auto;font-weight:700;font-size:0.95rem;text-align:right;min-width:80px;}
-  #submitBtn{width:100%;background:var(--g);color:#fff;border:0;border-radius:10px;font-size:1.1rem;cursor:pointer;}
-  #loadingMsg{display:none;margin:8px 0;color:#666;font-weight:700;}
-  #duplicateMsg{display:none;background:#fff3f3;border:1px solid #f2c2c2;padding:10px;border-radius:8px;}
-  @media(max-width:420px){
-    .label-inline{flex:0 0 90px;font-size:0.85rem;}
-    .btn{padding:7px 8px;font-size:0.9rem;}
-    .result{min-width:70px;font-size:0.9rem;}
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>생면공정(주정)</title>
+  <style>
+    :root { --g: #4CAF50; --muted:#e0e0e0; }
+    html,body{height:100%;margin:0;font-family:Arial,sans-serif;background:#f6f7f8;}
+    .app-container{display:flex;flex-direction:column;min-height:100vh;}
+    .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
+    .app-body{flex:1;padding:12px;box-sizing:border-box;}
+    .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+    label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
+    input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
+    .row-flex{display:flex;gap:8px;align-items:center;}
+    #rounds .row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid #eee;margin-bottom:8px;}
+    .btn{padding:8px 10px;border-radius:8px;border:0;background:var(--muted);font-weight:700;cursor:pointer;}
+    .btn.selected{background:var(--g);color:#fff;}
+    .result{margin-left:auto;font-weight:700;min-width:80px;text-align:right;}
+    #submitBtn{width:100%; padding: 15px; background:var(--g);color:#fff;border:0;border-radius:10px;font-size:1.1rem;cursor:pointer; display:none;}
+    #loadingMsg{display:none; text-align:center; padding:10px; font-weight:700; color:#666;}
+  </style>
 </head>
 <body>
 <div class="app-container">
   <div class="app-header">생면공정 점검</div>
-
   <div class="app-body">
     <div class="card">
-      <label for="date">날짜</label>
+      <label>날짜</label>
       <input type="date" id="date" />
 
-      <label for="product" style="margin-top:10px;">생산제품</label>
-      <select id="product">
-        <option value="">-- 선택하세요 --</option>
-        <option value="메밀생면">메밀생면</option>
-        <option value="생칼국수">생칼국수</option>
-        <option value="생우동면">생우동면</option>
-      </select>
-
-      <div style="margin-top:12px;" class="row-flex">
-        <div style="flex:1;">
-          <label style="margin-bottom:6px;">총생산 LOT 수</label>
-          <select id="lotInput" style="font-size:0.95rem;"></select>
-        </div>
-        <div style="flex:1;">
-          <label style="margin-bottom:6px;">총중량 (kg)</label>
-          <input type="number" id="totalKg" readonly style="text-align:right;" />
+      <div id="inputGroup">
+        <label style="margin-top:10px;">생산제품</label>
+        <select id="product">
+          <option value="">-- 선택하세요 --</option>
+          <option value="메밀생면">메밀생면</option>
+          <option value="생칼국수">생칼국수</option>
+          <option value="생우동면">생우동면</option>
+        </select>
+        <div style="margin-top:12px;" class="row-flex">
+          <div style="flex:1;">
+            <label>총생산 LOT 수</label>
+            <select id="lotInput"></select>
+          </div>
+          <div style="flex:1;">
+            <label>총중량 (kg)</label>
+            <input type="number" id="totalKg" readonly style="text-align:right;" />
+          </div>
         </div>
       </div>
 
       <div id="loadingMsg">⏳ 중복 확인 중...</div>
-      <div id="duplicateMsg" style="display:none; background:#fff3f3; border:1px solid #f2c2c2; padding:12px; border-radius:8px; margin-top:10px;">
-  <div id="duplicateText" style="font-weight:700; margin-bottom:10px; color:#d32f2f; text-align:center;"></div>
-  <div style="display:flex; gap:8px;">
-    <button id="duplicateConfirmBtn" class="btn" style="background:var(--g); color:#fff; flex:1;">기존 불러오기</button>
-    <button id="duplicateDeleteBtn" class="btn" style="background:#f44336; color:#fff; flex:1;">데이터 삭제</button>
-  </div>
-</div>
-</div>
-    </div>
 
+      <div id="duplicateMsg" style="display:none; background:#fff3f3; border:1px solid #f2c2c2; padding:12px; border-radius:8px; margin-top:10px;">
+        <div id="duplicateText" style="font-weight:700; margin-bottom:10px; color:#d32f2f; text-align:center;"></div>
+        <div style="display:flex; gap:8px;">
+          <button id="duplicateConfirmBtn" class="btn" style="background:var(--g); color:#fff; flex:1;">기존 불러오기</button>
+          <button id="duplicateDeleteBtn" class="btn" style="background:#f44336; color:#fff; flex:1;">데이터 삭제</button>
+        </div>
+      </div>
+    </div>
     <div id="rounds" class="card" style="display:none;"></div>
   </div>
-
-  <div class="app-footer">
+  <div class="app-footer" style="padding:12px;">
     <button id="submitBtn">📥 저장하기</button>
   </div>
 </div>
-
 
 <script>
 const scriptUrl = "https://script.google.com/macros/s/AKfycbyk-wLHwb-4mxq4llPMl4tJMXmRpPR_9XKPbGlySoHJ_30sXFqyp6VoJ1HnOBUcNog7Lw/exec";
 const MAX_ROUNDS = 20;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(location.search);
-  const paramDate = params.get("date");
-
   const dateInput = document.getElementById("date");
   const productInput = document.getElementById("product");
   const lotInput = document.getElementById("lotInput");
   const totalKgInput = document.getElementById("totalKg");
   const roundsDiv = document.getElementById("rounds");
+  const inputGroup = document.getElementById("inputGroup");
   const loadingMsg = document.getElementById("loadingMsg");
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
-  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
-  const duplicateDeleteBtn = document.getElementById("duplicateDeleteBtn");
   const submitBtn = document.getElementById("submitBtn");
-  
-  // 입력창들을 포함하고 있는 카드 (상단 카드)
-  const inputCard = document.querySelector(".card"); 
 
-  // 초기 설정
-  dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
+  dateInput.valueAsDate = new Date();
   let roundData = {};
 
-  lotInput.innerHTML = `<option value="0">0</option>` +
-    Array.from({ length: MAX_ROUNDS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
-  lotInput.value = "0";
+  lotInput.innerHTML = `<option value="0">0</option>` + 
+    Array.from({length: MAX_ROUNDS}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join("");
 
-  // [기능] 총 KG 계산
   function updateTotalKg() {
     let total = 0;
-    Object.values(roundData).forEach(r => { if (!isNaN(r?.no)) total += r.no; });
+    Object.values(roundData).forEach(r => { if(r.no) total += r.no; });
     totalKgInput.value = total;
   }
 
-  // [기능] LOT 생성
   function createRounds(lotCount, existing = null) {
     roundsDiv.innerHTML = "";
     roundData = {};
-    const actualCount = existing ? existing.filter(item => item.no !== "" || item.value !== "").length : lotCount;
+    if (lotCount <= 0) { roundsDiv.style.display = "none"; return; }
 
-    if (!actualCount || actualCount <= 0) {
-      roundsDiv.style.display = "none";
-      lotInput.value = 0;
-      return;
-    }
-
-    for (let i = 0; i < actualCount; i++) {
-      const data = existing && existing[i] ? existing[i] : { no: 60, value: 1 };
+    for (let i = 0; i < lotCount; i++) {
+      const data = existing ? existing[i] : { no: 60, value: 1 };
       const row = document.createElement("div");
       row.className = "row";
       row.innerHTML = `
-        <div style="flex:0 0 48px;font-weight:700;">${i + 1}차</div>
-        <button class="btn" type="button" data-type="3포">3포</button>
-        <button class="btn" type="button" data-type="2포">2포</button>
-        <div class="result" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+        <div style="flex:0 0 48px;font-weight:700;">${i+1}차</div>
+        <button class="btn ${data.no===60?'selected':''}" type="button" data-val="60">3포</button>
+        <button class="btn ${data.no===40?'selected':''}" type="button" data-val="40">2포</button>
+        <div class="result">주정 ${data.value} kg</div>
       `;
       roundsDiv.appendChild(row);
+      roundData[i+1] = { no: data.no, value: data.value };
 
-      const btn3 = row.querySelector(".btn[data-type='3포']");
-      const btn2 = row.querySelector(".btn[data-type='2포']");
-      const resEl = row.querySelector(".result");
-
-      let initNo = data.no ?? 60;
-      let initValue = data.value ?? 1;
-      roundData[i + 1] = { no: initNo, value: initValue };
-      if (initNo === 60) btn3.classList.add("selected"); else btn2.classList.add("selected");
-      resEl.textContent = `주정 ${initValue} kg`;
-
-      btn3.onclick = () => { handleSelect(i + 1, 60, 1, row); };
-      btn2.onclick = () => { handleSelect(i + 1, 40, 0.7, row); };
+      row.querySelectorAll(".btn").forEach(btn => {
+        btn.onclick = () => {
+          row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          const val = Number(btn.dataset.val);
+          const kg = val === 60 ? 1 : 0.7;
+          roundData[i+1] = { no: val, value: kg };
+          row.querySelector(".result").textContent = `주정 ${kg} kg`;
+          updateTotalKg();
+        };
+      });
     }
     roundsDiv.style.display = "block";
     updateTotalKg();
   }
 
-  function handleSelect(idx, no, value, row) {
-    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
-    const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
-    if (btn) btn.classList.add("selected");
-    roundData[idx] = { no: Number(no), value: Number(value) };
-    row.querySelector(".result").textContent = `주정 ${value} kg`;
-    updateTotalKg();
-  }
-
-  // [중요] 중복 체크 및 UI 제어 (입력창 숨기기 포함)
   async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
-    roundsDiv.style.display = "none";
+    inputGroup.style.display = "none"; // 날짜 빼고 나머지 숨김
     submitBtn.style.display = "none";
-    
-    // 상단 입력 카드 전체 숨기기 (깔끔한 UI를 위해)
-    const inputFields = document.querySelectorAll(".card label, .card select, .card input, .card .row-flex");
-    inputFields.forEach(el => { if(el.id !== 'date') el.style.display = "none"; });
+    roundsDiv.style.display = "none";
 
     try {
-      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({date}))}`);
       const data = await res.json();
       loadingMsg.style.display = "none";
 
-      if (data?.exists) {
-        duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
+      if (data.exists) {
+        duplicateText.textContent = `ℹ️ ${date} 데이터가 이미 있습니다.`;
         duplicateMsg.style.display = "block";
       } else {
-        // 데이터 없으면 입력창 다시 보이기
-        inputFields.forEach(el => el.style.display = "");
+        inputGroup.style.display = "block";
         submitBtn.style.display = "block";
-        submitBtn.disabled = false;
       }
     } catch (e) {
       loadingMsg.style.display = "none";
-      inputFields.forEach(el => el.style.display = "");
+      inputGroup.style.display = "block";
       submitBtn.style.display = "block";
     }
   }
 
-  // [삭제 버튼] 반응 없는 문제 해결 및 JSON 에러 방지
-  duplicateDeleteBtn.onclick = async () => {
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-    
-    duplicateDeleteBtn.disabled = true;
-    duplicateDeleteBtn.innerText = "⏳ 삭제 중...";
-
-    try {
-      // JSON 에러 방지를 위해 URLSearchParams 대신 단순 쿼리스트링 조합 사용 가능
-      const response = await fetch(`${scriptUrl}?deleteSaengmyeon=${encodeURIComponent(JSON.stringify({ date: dateInput.value }))}`, {
-        method: 'POST'
-      });
-      const result = await response.json();
-      
-      if (result.result === "success") {
-        alert(result.message);
-        location.reload();
-      } else {
-        alert("삭제 실패: " + result.message);
-        duplicateDeleteBtn.disabled = false;
-        duplicateDeleteBtn.innerText = "데이터 삭제";
-      }
-    } catch (e) {
-      alert("서버 통신 오류");
-      duplicateDeleteBtn.disabled = false;
-    }
+  // 날짜 변경 시 초기화
+  dateInput.onchange = () => {
+    productInput.value = "";
+    lotInput.value = "0";
+    checkDuplicate(dateInput.value);
   };
 
-  // [저장 버튼] 반응 없는 문제 해결
-  submitBtn.onclick = async () => {
-    if (!productInput.value || lotInput.value === "0") return alert("제품과 LOT를 선택하세요.");
+  // 불러오기
+  document.getElementById("duplicateConfirmBtn").onclick = async () => {
+    duplicateMsg.style.display = "none";
+    loadingMsg.style.display = "block";
+    const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({date: dateInput.value}))}`);
+    const data = await res.json();
+    loadingMsg.style.display = "none";
     
+    inputGroup.style.display = "block";
+    productInput.value = data.product;
+    const existing = data.no.map((n, i) => ({ no: n, value: data.value[i] }));
+    lotInput.value = existing.length;
+    createRounds(existing.length, existing);
+    submitBtn.style.display = "block";
+  };
+
+  // 삭제 (POST 방식 수정)
+  document.getElementById("duplicateDeleteBtn").onclick = async () => {
+    if (!confirm("데이터를 삭제하시겠습니까?")) return;
+    const res = await fetch(`${scriptUrl}?deleteSaengmyeon=${encodeURIComponent(JSON.stringify({date: dateInput.value}))}`, {method:'POST'});
+    const result = await res.json();
+    alert(result.message);
+    location.reload();
+  };
+
+  // 저장
+  submitBtn.onclick = async () => {
+    if(!productInput.value || lotInput.value == "0") return alert("제품과 LOT를 선택하세요.");
     submitBtn.disabled = true;
-    submitBtn.innerText = "⏳ 저장 중...";
-
-    const lotCount = Object.keys(roundData).length;
-    const noArr = [], valueArr = [];
-    for (let i = 1; i <= lotCount; i++) {
-      noArr.push(roundData[i].no);
-      valueArr.push(roundData[i].value);
-    }
-
     const payload = {
       date: dateInput.value,
       product: productInput.value,
       weight: totalKgInput.value,
-      lot: lotCount,
-      no: noArr,
-      value: valueArr
+      lot: lotInput.value,
+      no: Object.values(roundData).map(r => r.no),
+      value: Object.values(roundData).map(r => r.value)
     };
-
-    try {
-      const formBody = new URLSearchParams();
-      formBody.append("saengmyeon", JSON.stringify(payload));
-
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: formBody.toString()
-      });
-      const result = await res.json();
-      alert(result.message || "저장되었습니다.");
-      location.reload();
-    } catch (e) {
-      alert("저장 실패");
-      submitBtn.disabled = false;
-      submitBtn.innerText = "📥 저장하기";
-    }
+    const fd = new URLSearchParams();
+    fd.append("saengmyeon", JSON.stringify(payload));
+    const res = await fetch(scriptUrl, { method: "POST", body: fd });
+    const result = await res.json();
+    alert(result.message);
+    location.reload();
   };
 
   lotInput.onchange = () => createRounds(Number(lotInput.value));
-  if (dateInput.value) checkDuplicate(dateInput.value);
+  checkDuplicate(dateInput.value);
 });
 </script>
-
-
-
-
 </body>
 </html>
