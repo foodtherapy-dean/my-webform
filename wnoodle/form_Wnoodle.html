@@ -1,280 +1,392 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>위생 점검</title>
-<link rel="icon" type="image/png" sizes="192x192" href="handwash.png">
-<link rel="apple-touch-icon" href="handwash.png">
-<meta name="theme-color" content="#4CAF50">
-<link rel="manifest" href="manifest.json">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>생면공정(주정)</title>
+<link rel="icon" type="image/png" sizes="192x192" href="Waterdrop.png">
 <style>
-html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
-.app-container { display: flex; flex-direction: column; height: 100%; }
-.app-header { flex: 0 0 auto; background-color: #4CAF50; color: white; text-align: center; padding: 16px; font-size: 1.5rem; }
-.app-body { flex: 1 1 auto; overflow-y: auto; padding: 16px; box-sizing: border-box; background-color: #f9f9f9; }
-.app-footer { flex: 0 0 auto; }
-
-/* 버튼 스타일 */
-button { cursor: pointer; border-radius: 4px; border: none; }
-button[type="submit"] { width: 100%; font-size: 1.4rem; padding: 18px 0; background-color: #28a745; color: white; border-radius: 0; }
-#bulkOkBtn { width: 100%; background-color: #e91e63; color: white; padding: 15px; font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-
-label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
-input, select { width: 100%; padding: 12px; margin-top: 6px; box-sizing: border-box; text-align: center; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 6px; }
-
-.ox-group { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-.ox-set { text-align: center; border: 1px solid #ccc; border-radius: 8px; padding: 10px; background: white; }
-.ox-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 5px; }
-.ox-buttons button { flex: 1; padding: 12px; font-size: 1.1rem; background-color: #f0f0f0; border: 1px solid #ccc; color: #333; }
-.ox-buttons button.selected { background-color: #007bff; color: white; border-color: #0056b3; }
-
-#loadingMsg { background-color: #007bff; color: white; padding: 10px; margin-top: 10px; text-align: center; border-radius: 4px; display: none; }
-#duplicateMsg { background-color: #ffc107; color: #333; padding: 10px; margin-top: 12px; text-align: center; border-radius: 4px; display: none; font-weight: bold; }
-#duplicateMsg button { margin-top: 10px; padding: 8px 16px; background: #333; color: #fff; }
+  :root { --g: #4CAF50; --muted:#e0e0e0; }
+  html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f7f8;}
+  .app-container{display:flex;flex-direction:column;min-height:100vh;}
+  .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
+  .app-body{flex:1;padding:12px;box-sizing:border-box;}
+  .app-footer{padding:0;}
+  .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+  label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
+  input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
+  .row-flex{display:flex;gap:8px;align-items:center;}
+  .col{flex:1;min-width:0;}
+  .label-inline{flex:0 0 110px;font-weight:700;font-size:0.95rem;}
+  #rounds .row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid #eee;margin-bottom:8px;}
+  .btn{padding:8px 10px;border-radius:8px;border:0;background:var(--muted);font-weight:700;cursor:pointer;font-size:0.95rem;}
+  .btn.selected{background:var(--g);color:#fff;box-shadow:inset 0 0 0 2px rgba(0,0,0,0.04);}
+  .result{margin-left:auto;font-weight:700;font-size:0.95rem;text-align:right;min-width:80px;}
+  #submitBtn{width:100%;background:var(--g);color:#fff;border:0;border-radius:10px;font-size:1.1rem;cursor:pointer;}
+  #loadingMsg{display:none;margin:8px 0;color:#666;font-weight:700;}
+  #duplicateMsg{display:none;background:#fff3f3;border:1px solid #f2c2c2;padding:10px;border-radius:8px;}
+  @media(max-width:420px){
+    .label-inline{flex:0 0 90px;font-size:0.85rem;}
+    .btn{padding:7px 8px;font-size:0.9rem;}
+    .result{min-width:70px;font-size:0.9rem;}
+  }
 </style>
 </head>
-
 <body>
 <div class="app-container">
-  <div class="app-header">위생 점검 시스템</div>
+  <div class="app-header">생면공정 점검</div>
 
   <div class="app-body">
-    <label>점검 날짜
-      <input type="date" id="date" name="date" />
-    </label>
+    <div class="card">
+      <label for="date">날짜</label>
+      <input type="date" id="date" />
 
-    <button type="button" id="bulkOkBtn">🚀 전 공정 일괄 [O] 등록</button>
-<div id="bulkDeleteSection" style="display:none; margin-bottom: 20px; padding: 15px; background-color: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; text-align: center;">
-  <span style="color: #c53030; font-weight: bold; font-size: 1rem;">⚠️ 해당 날짜에 등록된 데이터가 있습니다.</span><br>
-  <button type="button" id="bulkDeleteBtn" style="margin-top: 10px; width: 100%; padding: 12px; background-color: #e53e3e; color: white; font-weight: bold; border-radius: 6px;">
-    📅 해당 날짜 전체 데이터 삭제
-  </button>
-</div>
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-<div id="duplicateMsg" style="display:none; background-color: #e3f2fd; padding: 12px; border-radius: 6px; margin-top: 10px; text-align: center;">
-  <span id="duplicateText" style="color: #0d47a1; font-weight: bold;"></span><br>
-  <button type="button" id="duplicateConfirmBtn" style="margin-top: 8px; background: #007bff; color: white; padding: 8px 15px;">수정하기(잠금해제)</button>
-</div>
-    <form id="inspectForm">
-      <label>개별 점검 옵션 선택
-        <select id="option" name="option" required>
-          <option value="">데이터 로딩 중...</option>
-        </select>
-      </label>
+      <label for="product" style="margin-top:10px;">생산제품</label>
+      <select id="product">
+        <option value="">-- 선택하세요 --</option>
+        <option value="메밀생면">메밀생면</option>
+        <option value="생칼국수">생칼국수</option>
+        <option value="생우동면">생우동면</option>
+      </select>
 
-      <div id="loadingMsg">데이터 확인 중...</div>
+      <div style="margin-top:12px;" class="row-flex">
+        <div style="flex:1;">
+          <label style="margin-bottom:6px;">총생산 LOT 수</label>
+          <select id="lotInput" style="font-size:0.95rem;"></select>
+        </div>
+        <div style="flex:1;">
+          <label style="margin-bottom:6px;">총중량 (kg)</label>
+          <input type="number" id="totalKg" readonly style="text-align:right;" />
+        </div>
+      </div>
 
-      <div id="duplicateMsg" style="display:none; background-color: #fff3cd; padding: 15px; border: 1px solid #ffeeba;">
-  <span id="duplicateText" style="color: #856404; font-weight: bold;"></span><br>
-  <div style="display: flex; gap: 10px; margin-top: 10px;">
-    <button type="button" id="duplicateConfirmBtn" style="flex:1; background:#6c757d; color:white;">수정하기</button>
-    <button type="button" id="deleteBtn" style="flex:1; background:#dc3545; color:white; font-weight:bold;">데이터 삭제</button>
-  </div>
-</div>
+      <div id="loadingMsg">⏳ 중복 확인 중...</div>
+      <div id="duplicateMsg">
+        <div id="duplicateText" style="font-weight:700;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="duplicateConfirmBtn" class="btn" style="background:var(--g);color:#fff;">기존 불러오기</button>
+          <button id="duplicateCancelBtn" class="btn">새로 입력</button>
+        </div>
+      </div>
+    </div>
 
-      <div id="oxContainer" class="ox-group"></div>
-    </form>
+    <div id="rounds" class="card" style="display:none;"></div>
   </div>
 
   <div class="app-footer">
-    <button type="submit" form="inspectForm">선택 항목 저장</button>
+    <button id="submitBtn">📥 저장하기</button>
   </div>
 </div>
 
+
 <script>
-window.addEventListener("DOMContentLoaded", async function () {
+const scriptUrl = "https://script.google.com/macros/s/AKfycbyqtL0wcteU6s0yZoY5ujpvhqbeq-s0TCerDoIBsicmNgwkm5rOIMYi-eMDAeOUF4A0RQ/exec";
+const MAX_ROUNDS = 20; // 최대 차수 (LOT) 제한
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const params = new URLSearchParams(location.search);
+  const paramDate = params.get("date");
+
   const dateInput = document.getElementById("date");
-  const optionSelect = document.getElementById("option");
-  const oxContainer = document.getElementById("oxContainer");
-  const bulkOkBtn = document.getElementById("bulkOkBtn");
-  const bulkDeleteSection = document.getElementById("bulkDeleteSection");
-  const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+  const productInput = document.getElementById("product");
+  const lotInput = document.getElementById("lotInput");
+  const totalKgInput = document.getElementById("totalKg");
+  const roundsDiv = document.getElementById("rounds");
+  const loadingMsg = document.getElementById("loadingMsg");
   const duplicateMsg = document.getElementById("duplicateMsg");
   const duplicateText = document.getElementById("duplicateText");
-  const loadingMsg = document.getElementById("loadingMsg");
+  const duplicateConfirmBtn = document.getElementById("duplicateConfirmBtn");
+  const duplicateCancelBtn = document.getElementById("duplicateCancelBtn");
+  const submitBtn = document.getElementById("submitBtn");
 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyqtL0wcteU6s0yZoY5ujpvhqbeq-s0TCerDoIBsicmNgwkm5rOIMYi-eMDAeOUF4A0RQ/exec";
-  
-  let oxValues = {};
-
-  const itemsMap = {
-    "작업전": ["개인위생 - 복장구분 보관여부", "개인위생 - 건강/장신구/위생복 착용여부", "개인위생 - 위생설비 이상/위생처리", "방충방서 - 밀폐상태/방충시설", "설비 - 파손,고장 설비유무", "보관 - 보관소 정리정돈 상태"],
-    "작업중": ["공정관리 - 구역분리 및 오염관리", "공정관리 - 완제품 포장상태", "공정관리 - 반제품 적재기준", "공정관리 - 포장라인 위해요소 여부"],
-    "작업후": ["방충방서 - 생산부산물 별도구획 보관 및 반출", "청소소독 - 작업장/설비/위생시설", "설비 - 파손/고장 설비 유무", "점검 - CCP점검 상태/개선조치 여부", "보관 - 원부재료 오염방지 보관여부"],
-    "수시점검": ["입고검수 - 원부재료 입고검수 준수여부"]
-  };
-
-  const paramDate = new URLSearchParams(location.search).get("date");
-  if (paramDate) dateInput.value = paramDate;
-  else dateInput.valueAsDate = new Date();
-
-  // [개선] 날짜별 상태 로드 최적화
-  async function loadOptionStatus() {
-  if (!dateInput.value) return;
-  
-  // 로딩 시작 시 사용자에게 시각적 피드백 제공
-  optionSelect.innerHTML = `<option value="">데이터 확인 중...</option>`;
-  
-  try {
-    const allOptions = Object.keys(itemsMap);
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
-    
-    // 캐시 방지를 위해 타임스탬프 추가 (선택사항)
-    const res = await fetch(`${GAS_URL}?checkAllWash=${query}&t=${Date.now()}`);
-    const result = await res.json();
-
-    optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
-    let hasAnyData = false;
-
-    allOptions.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      if (result[name]) {
-        opt.textContent = `${name} (완료)`;
-        hasAnyData = true;
-      } else {
-        opt.textContent = name;
-      }
-      optionSelect.appendChild(opt);
-    });
-
-    bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
-    bulkOkBtn.style.display = hasAnyData ? "none" : "block";
-
-  } catch (err) { 
-    console.error("로딩 에러:", err);
-    optionSelect.innerHTML = `<option value="">로딩 실패 (재시도 필요)</option>`;
+  // 상단 헤더 높이와 하단 버튼 고정
+  const header = document.querySelector(".app-header");
+  if (header) {
+    const headerHeight = header.offsetHeight || 48;
+    submitBtn.style.height = `${headerHeight}px`;
   }
-}
+  submitBtn.style.position = "fixed";
+  submitBtn.style.bottom = "0";
+  submitBtn.style.left = "0";
+  submitBtn.style.width = "100%";
+  submitBtn.style.zIndex = "9999";
 
-  dateInput.addEventListener("change", async () => {
-    optionSelect.value = "";
-    oxContainer.innerHTML = "";
-    duplicateMsg.style.display = "none";
-    await loadOptionStatus();
+  dateInput.valueAsDate = paramDate ? new Date(paramDate) : new Date();
+
+  let roundData = {};
+
+  // lotInput 초기 옵션 고정
+  lotInput.innerHTML = `<option value="0">0</option>` +
+    Array.from({ length: MAX_ROUNDS }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+  lotInput.value = "0";
+
+  // =========================
+  // createRounds: LOT 버튼 생성
+  // =========================
+  function createRounds(lotCount, existing = null) {
+    roundsDiv.innerHTML = "";
+    roundData = {};
+
+    // 값 있는 셀만 카운트
+    const actualCount = existing
+      ? existing.filter(item => item.no !== "" || item.value !== "").length
+      : lotCount;
+
+    if (!actualCount || actualCount <= 0) {
+      roundsDiv.style.display = "none";
+      lotInput.value = 0;
+      return;
+    }
+
+    for (let i = 0; i < actualCount; i++) {
+      const data = existing && existing[i] ? existing[i] : { no: 60, value: 1 };
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.dataset.round = i + 1;
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "8px";
+      row.style.padding = "8px";
+      row.style.border = "1px solid #eee";
+      row.style.borderRadius = "8px";
+      row.style.marginBottom = "8px";
+
+      row.innerHTML = `
+        <div style="flex:0 0 48px;font-weight:700;">${i + 1}차</div>
+        <button class="btn" type="button" data-type="3포">3포</button>
+        <button class="btn" type="button" data-type="2포">2포</button>
+        <div class="result" id="result${i + 1}" style="margin-left:auto;font-weight:700;min-width:80px;text-align:right;"></div>
+      `;
+      roundsDiv.appendChild(row);
+
+      const btn3 = row.querySelector(".btn[data-type='3포']");
+      const btn2 = row.querySelector(".btn[data-type='2포']");
+      const resEl = row.querySelector(".result");
+
+      let initNo = data.no ?? 60;
+      let initValue = data.value ?? 1;
+
+      // 값이 한쪽만 있으면 보정
+      if (data.no === "" && data.value !== "") initNo = data.value === 1 ? 60 : 40;
+      if (data.value === "" && data.no !== "") initValue = data.no === 60 ? 1 : 0.7;
+
+      roundData[i + 1] = { no: initNo, value: initValue };
+
+      btn2.classList.remove("selected");
+      btn3.classList.remove("selected");
+      if (initNo === 60) btn3.classList.add("selected");
+      else btn2.classList.add("selected");
+
+      resEl.textContent = `주정 ${initValue} kg`;
+
+      btn3.addEventListener("click", () => handleSelect(i + 1, 60, 1, row));
+      btn2.addEventListener("click", () => handleSelect(i + 1, 40, 0.7, row));
+    }
+
+    lotInput.value = actualCount;
+    roundsDiv.style.display = "block";
+    updateTotalKg();
+  }
+
+  // =========================
+  // handleSelect: 버튼 선택
+  // =========================
+  function handleSelect(idx, no, value, row) {
+    const current = roundData[idx];
+
+    if (current && current.no === no) {
+      delete roundData[idx];
+      const keys = Object.keys(roundData).map(Number).sort((a, b) => a - b);
+      for (let i = idx + 1; i <= (keys[keys.length - 1] || 0); i++) {
+        if (roundData[i]) {
+          roundData[i - 1] = roundData[i];
+          delete roundData[i];
+        }
+      }
+      createRounds(Object.keys(roundData).length, Object.values(roundData));
+      return;
+    }
+
+    row.querySelectorAll(".btn").forEach(b => b.classList.remove("selected"));
+    const btn = row.querySelector(`.btn[data-type='${no === 60 ? "3포" : "2포"}']`);
+    if (btn) btn.classList.add("selected");
+
+    roundData[idx] = { no: Number(no), value: Number(value) };
+    const resEl = row.querySelector(".result");
+    if (resEl) resEl.textContent = `주정 ${value} kg`;
+
+    updateTotalKg();
+  }
+
+  // =========================
+  // 총 KG 계산
+  // =========================
+  function updateTotalKg() {
+    let total = 0;
+    Object.values(roundData).forEach(r => {
+      const nv = Number(r?.no);
+      if (!isNaN(nv)) total += nv;
+    });
+    totalKgInput.value = total;
+  }
+
+  lotInput.addEventListener("change", () => {
+    const cnt = Number(lotInput.value) || 0;
+    createRounds(cnt, null);
   });
 
-  optionSelect.addEventListener("change", async (e) => {
-    const opt = e.target.value;
-    oxContainer.innerHTML = "";
-    oxValues = {};
-    if (!opt) return;
-
-    duplicateMsg.style.display = "none";
+  // =========================
+  // 중복 체크
+  // =========================
+  async function checkDuplicate(date) {
     loadingMsg.style.display = "block";
-
+    duplicateMsg.style.display = "none";
+    submitBtn.disabled = true;
     try {
-      const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, option: opt }));
-      const res = await fetch(`${GAS_URL}?checkWash=${query}`);
-      const result = await res.json();
+      const res = await fetch(`${scriptUrl}?checkSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const data = await res.json();
       loadingMsg.style.display = "none";
 
-      let existingValues = result.exists ? result.values : null;
-      if (result.exists) {
-        duplicateText.innerText = `ℹ️ [${opt}] 단계 데이터가 존재합니다. 수정 가능합니다.`;
+      if (data?.exists) {
+        duplicateText.textContent = `${date} 에 이미 입력된 데이터가 있습니다.`;
         duplicateMsg.style.display = "block";
+      } else {
+        duplicateMsg.style.display = "none";
+        submitBtn.disabled = false;
+      }
+    } catch (e) {
+      loadingMsg.style.display = "none";
+      alert("중복 확인 오류");
+      submitBtn.disabled = false;
+    }
+  }
+
+  // =========================
+  // 중복 데이터 복원
+  // =========================
+  async function restoreDuplicateData(date) {
+    loadingMsg.style.display = "block";
+    try {
+      const res = await fetch(`${scriptUrl}?getSaengmyeon=${encodeURIComponent(JSON.stringify({ date }))}`);
+      const data = await res.json();
+      loadingMsg.style.display = "none";
+
+      if (!data?.no) { alert("불러올 데이터 없음"); return; }
+
+      productInput.value = data.product || "";
+
+      const noArr = data.no || [];
+      const valueArr = data.value || [];
+      const maxLen = Math.max(noArr.length, valueArr.length);
+      const filled = [];
+
+      for (let i = 0; i < maxLen; i++) {
+        const rawNo = (noArr[i] ?? "").toString().trim();
+        const rawVal = (valueArr[i] ?? "").toString().trim();
+        if (rawNo === "" && rawVal === "") continue; // 값 없는 LOT 제외
+
+        const parsedNo = rawNo !== "" ? Number(rawNo) : (rawVal == 1 ? 60 : 40);
+        const parsedVal = rawVal !== "" ? Number(rawVal) : (parsedNo === 60 ? 1 : 0.7);
+
+        filled.push({ no: parsedNo, value: parsedVal });
       }
 
-      itemsMap[opt].forEach((label, i) => {
-        const saved = (existingValues && existingValues[i]) ? existingValues[i] : "";
-        oxValues[label] = saved;
-        const oxSet = document.createElement("div");
-        oxSet.className = "ox-set";
-        oxSet.innerHTML = `
-          <div style="font-size:0.95rem; margin-bottom:8px;">${label}</div>
-          <div class="ox-buttons">
-            <button type="button" class="ox ${saved === "O" ? "selected" : ""}" data-label="${label}" data-value="O">O</button>
-            <button type="button" class="ox ${saved === "X" ? "selected" : ""}" data-label="${label}" data-value="X">X</button>
-          </div>
-        `;
-        oxContainer.appendChild(oxSet);
-      });
-    } catch (err) { loadingMsg.style.display = "none"; }
-  });
+      createRounds(filled.length, filled);
+      submitBtn.disabled = false;
 
-  document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("ox")) {
-      const btn = e.target;
-      const label = btn.dataset.label;
-      oxValues[label] = btn.dataset.value;
-      document.querySelectorAll(`.ox[data-label="${label}"]`).forEach(b => b.classList.toggle("selected", b === btn));
-    }
-  });
-
-  // ⭐ [초고속 개선] 일괄 등록: 한 번의 통신으로 묶어 보내기
-  bulkOkBtn.addEventListener("click", async () => {
-    if (!confirm(`${dateInput.value} 날짜의 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) return;
-
-    bulkOkBtn.disabled = true;
-    bulkOkBtn.innerText = "⏳ 초고속 등록 중...";
-
-    try {
-      const allOptions = Object.keys(itemsMap);
-      const batchData = allOptions.map(opt => ({
-        date: dateInput.value,
-        option: opt,
-        states: itemsMap[opt].map(() => "O")
-      }));
-
-      const fd = new FormData();
-      fd.append("bulkInspect", JSON.stringify(batchData)); 
-      
-      const response = await fetch(GAS_URL, { method: "POST", body: fd });
-      alert(await response.text());
-      location.reload();
     } catch (err) {
-      alert("오류: " + err.message);
-      bulkOkBtn.disabled = false;
-      bulkOkBtn.innerText = "🚀 전 공정 일괄 [O] 등록";
+      loadingMsg.style.display = "none";
+      alert("데이터 불러오기 오류");
+      console.error(err);
+      submitBtn.disabled = false;
     }
+  }
+
+  dateInput.addEventListener("change", () => {
+    productInput.value = "";
+    lotInput.value = "0";
+    roundsDiv.innerHTML = "";
+    totalKgInput.value = "";
+    if (dateInput.value) checkDuplicate(dateInput.value);
   });
 
-  bulkDeleteBtn.addEventListener("click", async () => {
-    const dt = dateInput.value;
-    if (!confirm(`⚠️ [${dt}] 날짜의 모든 위생 점검 데이터를 삭제하시겠습니까?`)) return;
-
-    bulkDeleteBtn.disabled = true;
-    bulkDeleteBtn.innerText = "⏳ 전체 삭제 중...";
-
-    try {
-      const fd = new FormData();
-      fd.append("deleteAllWash", JSON.stringify({ date: dt }));
-      const res = await fetch(GAS_URL, { method: "POST", body: fd });
-      alert(await res.text());
-      location.reload();
-    } catch (err) {
-      alert("삭제 실패: " + err.message);
-      bulkDeleteBtn.disabled = false;
-      bulkDeleteBtn.innerText = "📅 해당 날짜 전체 데이터 삭제";
-    }
-  });
-
-  document.getElementById("inspectForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const opt = optionSelect.value;
-    if (!opt) return alert("옵션을 선택하세요.");
-
-    const states = itemsMap[opt].map(lbl => oxValues[lbl]);
-    if (states.includes("")) return alert("모든 항목을 선택해주세요.");
-
-    const data = { date: dateInput.value, option: opt, states: states };
-    const fd = new FormData();
-    fd.append("inspect", JSON.stringify(data));
-
-    try {
-      const response = await fetch(GAS_URL, { method: "POST", body: fd });
-      alert(await response.text());
-      location.reload();
-    } catch (err) { alert("저장 오류: " + err.message); }
-  });
-
-  document.getElementById("duplicateConfirmBtn").addEventListener("click", () => {
+  duplicateConfirmBtn.addEventListener("click", () => {
     duplicateMsg.style.display = "none";
+    if (dateInput.value) restoreDuplicateData(dateInput.value);
   });
 
-  await loadOptionStatus();
+  duplicateCancelBtn.addEventListener("click", () => {
+    duplicateMsg.style.display = "none";
+    dateInput.valueAsDate = new Date();
+    checkDuplicate(dateInput.value);
+  });
+
+  // =========================
+  // submit
+  // =========================
+  submitBtn.addEventListener("click", async () => {
+    if (!dateInput.value) return alert("날짜를 선택하세요.");
+    if (!productInput.value) return alert("생산제품을 선택하세요.");
+
+    const lotCount = Object.keys(roundData).length;
+    if (lotCount === 0) return alert("총생산 LOT 수를 선택하세요.");
+    if (!totalKgInput.value || Number(totalKgInput.value) === 0) return alert("총중량 오류");
+
+    const noArr = [];
+    const valueArr = [];
+    for (let i = 1; i <= lotCount; i++) {
+      if (roundData[i]) {
+        noArr.push(Number(roundData[i].no));
+        valueArr.push(Number(roundData[i].value));
+      } else {
+        noArr.push("");
+        valueArr.push("");
+      }
+    }
+
+    const payload = {
+      date: dateInput.value,
+      product: productInput.value,
+      weight: totalKgInput.value,
+      lot: lotCount,
+      no: noArr,
+      value: valueArr
+    };
+
+    try {
+      submitBtn.disabled = true;
+      const formBody = new URLSearchParams();
+      formBody.append("saengmyeon", JSON.stringify(payload));
+
+      const res = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: formBody.toString()
+      });
+
+      const result = await res.json();
+      submitBtn.disabled = false;
+
+      if (result?.result === "success" || result?.success) {
+        alert(result.message || "저장되었습니다.");
+      } else {
+        alert("저장 오류: " + (result.error || result.message || JSON.stringify(result)));
+      }
+    } catch (err) {
+      submitBtn.disabled = false;
+      alert("서버 오류: " + (err?.message || err));
+    }
+  });
+
+  if (dateInput.value) checkDuplicate(dateInput.value);
+
 });
 </script>
+
+
+
+
 </body>
 </html>
