@@ -10,9 +10,36 @@
   html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f7f8;}
   .app-container{display:flex;flex-direction:column;min-height:100vh;}
   .app-header{background:var(--g);color:#fff;padding:16px 12px;text-align:center;font-size:1.4rem;font-weight:700;}
-  .app-body{flex:1;padding:12px;box-sizing:border-box;}
-  .app-footer{padding:12px; background:#fff; border-top:1px solid #eee;}
-  #submitBtn{width:100%; background:var(--g); color:#fff; border:0; border-radius:10px; font-size:1.2rem; font-weight:700; cursor:pointer; height:60px; display:none;}
+  
+  /* 본문 영역: 하단 버튼 높이만큼 여백 확보 */
+  .app-body{flex:1;padding:12px;box-sizing:border-box; padding-bottom: 90px;}
+  
+  /* [수정] 하단 저장 버튼 고정 스타일 */
+  .app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    background: #fff;
+    border-top: 1px solid #eee;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.05); /* 버튼이 떠 있는 느낌 부여 */
+    z-index: 1000;
+  }
+  
+  #submitBtn {
+    width: 100%;
+    background: var(--g);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    height: 60px;
+    display: none; /* 초기 상태 숨김 */
+  }
+
   .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
   label{display:block;font-size:0.95rem;margin-bottom:6px;color:#222;}
   input[type="date"], select, input[type="number"]{width:100%;padding:8px;font-size:0.95rem;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
@@ -66,10 +93,14 @@
     </div>
     <div id="rounds" class="card" style="display:none;"></div>
   </div>
-  <div class="app-footer"><button id="submitBtn">📥 저장하기</button></div>
+
+  <div class="app-footer">
+    <button id="submitBtn">📥 저장하기</button>
+  </div>
 </div>
 
 <script>
+// [스크립트 부분은 이전과 동일하므로 유지됩니다]
 const scriptUrl = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
 const MAX_ROUNDS = 20;
 
@@ -134,7 +165,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkDuplicate(date) {
-    // 1. 날짜 변경 시 모든 입력창 숨김 및 초기화
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
     productArea.style.display = "none";
@@ -149,11 +179,9 @@ document.addEventListener("DOMContentLoaded", () => {
       loadingMsg.style.display = "none";
 
       if (data?.exists) {
-        // 중복 데이터가 있는 경우
         duplicateText.textContent = `ℹ️ ${date} 데이터가 존재합니다.`;
         duplicateMsg.style.display = "block";
       } else {
-        // 신규 데이터인 경우 제품 선택창 노출
         productArea.style.display = "block";
         lotRow.style.display = "flex";
         submitBtn.style.display = "block";
@@ -198,11 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   dateInput.addEventListener("change", () => checkDuplicate(dateInput.value));
-  
-  // 초기 실행
   checkDuplicate(dateInput.value);
 
-  // 저장/삭제 로직 (기존 유지)
   duplicateDeleteBtn.onclick = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
@@ -216,6 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
   submitBtn.onclick = async () => {
     if (!productInput.value || roundData.length === 0) return alert("제품과 차수를 확인하세요.");
     submitBtn.disabled = true;
+    submitBtn.innerText = "⏳ 저장 중...";
     const payload = { 
       date: dateInput.value, product: productInput.value, weight: totalKgInput.value, 
       lot: roundData.length, no: roundData.map(r => r.no), value: roundData.map(r => r.value) 
@@ -225,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
       params.append("saengmyeon", JSON.stringify(payload));
       await fetch(scriptUrl, { method: "POST", body: params });
       location.reload();
-    } catch (e) { alert("저장 실패"); submitBtn.disabled = false; }
+    } catch (e) { alert("저장 실패"); submitBtn.disabled = false; submitBtn.innerText = "📥 저장하기"; }
   };
 });
 </script>
