@@ -223,49 +223,50 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
   }
 });
 document.getElementById("deleteBtn").addEventListener("click", async () => {
-  if (!confirm("데이터를 삭제하시겠습니까?")) return;
-  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ deleteWater: JSON.stringify({ date: dateInput.value, option: "정기점검" }) }) });
-  alert(await res.text());
-  location.reload();
-});
+  const currentOption = optionSelect.value; // '검침' 또는 '정기점검'
+  
+  if (!confirm(`해당 날짜의 [${currentOption}] 데이터를 삭제하시겠습니까?`)) return;
 
-saveBtn.addEventListener("click", async () => {
-  const states = {};
-  checkItems.forEach(item => {
-    const active = document.querySelector(`.ox-btn[data-key='${item.replace(/\s+/g, '')}'].active`);
-    states[item] = active ? active.dataset.value : "";
-  });
-  saveBtn.disabled = true;
-  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify({ date: dateInput.value, option: optionSelect.value, value: document.getElementById("value").value, checklist: states }) }) });
-  alert(await res.text());
-  location.reload();
-});
+  try {
+    const formData = new URLSearchParams();
+    // 현재 선택된 옵션값을 서버로 전달하여 해당 행만 삭제하도록 함
+    formData.append("deleteWater", JSON.stringify({ 
+      date: dateInput.value, 
+      option: currentOption 
+    }));
 
-bulkBtn.addEventListener("click", async () => {
-  if (confirm("모든 항목을 'O'로 일괄 등록하시겠습니까?")) {
-    const states = {};
-    checkItems.forEach(item => { states[item] = "O"; });
-    const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify({ date: dateInput.value, option: "정기점검", value: "", checklist: states }) }) });
-    alert(await res.text());
-    location.reload();
+    const res = await fetch(BASE_URL, { method: "POST", body: formData });
+    const resultText = await res.text();
+    
+    alert(`${currentOption} 데이터가 삭제되었습니다.`);
+    location.reload(); // 삭제 후 화면 새로고침
+  } catch (e) {
+    alert("삭제 중 오류가 발생했습니다.");
+    console.error(e);
   }
 });
 
+/**
+ * 점검 구분 변경 시: 삭제 버튼의 텍스트를 동적으로 변경
+ */
 optionSelect.addEventListener("change", async () => {
   const isInsp = optionSelect.value === "정기점검";
+  const deleteBtn = document.getElementById("deleteBtn");
   
   // 1. UI 모드 전환
   valueBox.style.display = isInsp ? "none" : "block";
   checklistDiv.style.display = isInsp ? "block" : "none";
   bulkBtn.style.display = isInsp ? "block" : "none";
+  
+  // 2. 삭제 버튼 텍스트 변경 (사용자 혼선 방지)
+  deleteBtn.innerText = isInsp ? "정기점검 삭제" : "검침 데이터 삭제";
 
-  // 2. '검침'으로 바꿨을 때 중복 데이터가 있으면 수치 가져오기
+  // 3. '검침' 선택 시 기존 데이터 자동 로드 (이전 코드 유지)
   if (!isInsp && dateInput.value) {
     const valueInput = document.getElementById("value");
-    valueInput.placeholder = "⏳ 확인 중...";
+    valueInput.placeholder = "⏳ 기존 검침 확인 중...";
     
     try {
-      // 서버에 현재 날짜와 '검침' 옵션으로 중복 데이터 요청
       const url = `${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({
         date: dateInput.value, 
         option: "검침"
@@ -275,18 +276,19 @@ optionSelect.addEventListener("change", async () => {
       const result = await res.json();
       
       if (result.exists && result.value !== undefined) {
-        // 중복 데이터가 있으면 수치창에 값 대입
         valueInput.value = result.value;
-        // 안내 메시지 살짝 표시 (선택 사항)
         document.getElementById("dupBox").style.display = "block";
-        document.getElementById("dupMsgText").innerText = "📢 해당 날짜의 기존 검침 데이터를 불러왔습니다.";
+        document.getElementById("actionBtns").style.display = "flex"; // 삭제 버튼이 포함된 영역 노출
+        document.getElementById("dupMsgText").innerText = "📢 기존 검침 데이터가 있습니다.";
       } else {
-        // 데이터가 없으면 입력창 비우기
         valueInput.value = "";
-        document.getElementById("dupBox").style.display = "none";
+        // 검침 데이터가 없으면 삭제 버튼 숨김 (선택 사항)
+        if (document.getElementById("dupMsgText").innerText.includes("검침")) {
+            document.getElementById("dupBox").style.display = "none";
+        }
       }
     } catch (e) {
-      console.error("검침 데이터 로드 실패:", e);
+      console.error(e);
     } finally {
       valueInput.placeholder = "";
     }
