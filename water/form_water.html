@@ -170,47 +170,54 @@ async function runInitialCheck() {
 // 5. 데이터 수정/삭제/저장 로직
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const btn = document.getElementById("loadBtn");
-  const valueInput = document.getElementById("value"); // 검침 수치 입력칸
+  const valueInput = document.getElementById("value");
   
   btn.innerText = "⏳ 로딩...";
   
   try {
-    // 1. 서버에서 해당 날짜의 데이터를 다시 가져옴
+    // 1. 서버에서 데이터 가져오기 (정기점검 기준으로 먼저 조회했더라도 서버 응답의 option 값을 활용)
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`);
     const result = await res.json();
     
-    // 2. 화면 요소들 다시 표시
-    optionArea.style.display = "block"; // 점검 구분 표시
-    saveBtn.style.display = "block";   // 저장 버튼 표시
-    dupBox.style.display = "none";     // 메시지 박스 숨김
-
     if (result.exists) {
-      // [A] 구글 시트 B열(수치) 값 반영
-      if (result.value !== undefined) {
-        valueInput.value = result.value; // 시트에서 가져온 수치 대입
-        valueBox.style.display = "block"; // 수치 입력창 보여주기
-      }
+      // [A] UI 공통 활성화
+      optionArea.style.display = "block";
+      dupBox.style.display = "none";
+      saveBtn.style.display = "block";
 
-      // [B] 체크리스트(O/X) 상태 반영
-      if (result.states) {
-        checklistDiv.style.display = "block"; // 체크리스트 보여주기
-        checkItems.forEach(item => {
-          const val = String(result.states[item] || "").trim().toUpperCase();
-          if (val === "O" || val === "X") {
-            const cleanKey = item.replace(/\s+/g, '');
-            const target = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
-            if (target) {
-              // 기존 active 제거 후 새로 세팅
+      // [B] 점검 구분(option) 값을 서버 데이터에 맞춰 업데이트
+      // 서버에서 보낸 데이터가 '검침'이면 '검침'으로, '정기점검'이면 '정기점검'으로 선택창 변경
+      const serverOption = result.option || "정기점검"; 
+      optionSelect.value = serverOption;
+
+      // [C] 선택된 모드에 따른 화면 전환 (검침 vs 정기점검)
+      if (serverOption === "검침") {
+        // 검침 모드: 수치 입력창 보여주고 C열(value) 값 대입
+        valueBox.style.display = "block";
+        checklistDiv.style.display = "none";
+        bulkBtn.style.display = "none";
+        valueInput.value = result.value || ""; // 시트의 수치 데이터
+      } else {
+        // 정기점검 모드: 체크리스트 보여주고 OX 상태 반영
+        valueBox.style.display = "none";
+        checklistDiv.style.display = "block";
+        bulkBtn.style.display = "block";
+        
+        if (result.states) {
+          checkItems.forEach(item => {
+            const val = String(result.states[item] || "").trim().toUpperCase();
+            if (val === "O" || val === "X") {
+              const cleanKey = item.replace(/\s+/g, '');
               document.querySelectorAll(`.ox-btn[data-key='${cleanKey}']`).forEach(b => b.classList.remove("active"));
-              target.classList.add("active");
+              const target = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
+              if (target) target.classList.add("active");
             }
-          }
-        });
+          });
+        }
       }
     }
   } catch (e) { 
-    alert("데이터를 불러오는 중 오류가 발생했습니다."); 
-    console.error(e);
+    alert("데이터 로드 중 오류가 발생했습니다.");
   } finally { 
     btn.innerText = "데이터 수정"; 
   }
