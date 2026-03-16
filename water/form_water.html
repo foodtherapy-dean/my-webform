@@ -86,13 +86,14 @@ const dupBox = document.getElementById("dupBox");
 const actionBtns = document.getElementById("actionBtns");
 const saveBtn = document.getElementById("saveBtn");
 const bulkBtn = document.getElementById("bulkBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 
 /**
- * 1. UI 초기화: 날짜창은 남기고 나머지는 싹 숨김
+ * 1. UI 초기화: 날짜만 남기고 모두 숨김
  */
 function resetUIForCheck() {
   dateArea.style.display = "block";
-  optionArea.style.display = "none";
+  optionArea.style.display = "none"; 
   valueBox.style.display = "none";
   checklistDiv.style.display = "none";
   saveBtn.style.display = "none";
@@ -106,21 +107,38 @@ function resetUIForCheck() {
 /**
  * 2. 체크 결과에 따른 화면 복구
  */
-function activateForm(exists) {
+function activateForm(exists, currentOption) {
+  // 어떤 경우든 점검 구분창은 노출
+  optionArea.style.display = "block";
+  optionSelect.value = currentOption;
+  deleteBtn.innerText = (currentOption === "정기점검") ? "정기점검 데이터 삭제" : "검침 데이터 삭제";
+
   if (exists) {
-    document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 데이터가 이미 존재합니다.";
+    // [데이터 있음] 수정/삭제 대기 상태
+    document.getElementById("dupMsgText").innerText = `⚠️ 해당 날짜에 [${currentOption}] 데이터가 존재합니다.`;
     actionBtns.style.display = "flex";
-  } else {
-    dupBox.style.display = "none";
-    optionArea.style.display = "block";
     
-    // 신규 작성 시 기본 설정 반영
-    const isInsp = optionSelect.value === "정기점검";
-    bulkBtn.style.display = isInsp ? "block" : "none";
-    checklistDiv.style.display = isInsp ? "block" : "none";
-    valueBox.style.display = isInsp ? "none" : "block";
+    dupBox.style.display = "block";
+    checklistDiv.style.display = "none";
+    valueBox.style.display = "none";
+    saveBtn.style.display = "none";
+    bulkBtn.style.display = "none";
+  } else {
+    // [데이터 없음] 즉시 입력 모드
+    dupBox.style.display = "none";
     saveBtn.style.display = "block";
     
+    if (currentOption === "정기점검") {
+      checklistDiv.style.display = "block";
+      bulkBtn.style.display = "block";
+      valueBox.style.display = "none";
+    } else {
+      checklistDiv.style.display = "none";
+      bulkBtn.style.display = "none";
+      valueBox.style.display = "block";
+      valueInput.value = "";
+    }
+    // 버튼 상태 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
@@ -139,7 +157,6 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-// OX 버튼 클릭 이벤트
 document.addEventListener("click", function(e) {
   if (e.target.classList.contains("ox-btn")) {
     const key = e.target.dataset.key;
@@ -149,7 +166,7 @@ document.addEventListener("click", function(e) {
 });
 
 /**
- * 4. 서버 통신 (중복 확인)
+ * 4. 서버 통신 (초기 날짜 변경 시 정기점검 우선 체크)
  */
 async function runInitialCheck() {
   if (!dateInput.value) return;
@@ -159,41 +176,34 @@ async function runInitialCheck() {
     const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`;
     const res = await fetch(url);
     const result = await res.json();
-    activateForm(result.exists);
+    activateForm(result.exists, "정기점검");
   } catch (e) {
-    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류가 발생했습니다.";
+    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류 발생";
   }
 }
 
 /**
- * 5. 데이터 불러오기 (수정)
+ * 5. 데이터 불러오기 (데이터 수정 버튼 클릭 시 실행)
  */
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const btn = document.getElementById("loadBtn");
+  const currentOption = optionSelect.value;
   btn.innerText = "⏳ 로딩...";
   
   try {
-    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`);
+    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: currentOption}))}`);
     const result = await res.json();
     
     if (result.exists) {
-      optionArea.style.display = "block";
       dupBox.style.display = "none";
       saveBtn.style.display = "block";
 
-      const serverOption = result.option || "정기점검"; 
-      optionSelect.value = serverOption;
-
-      if (serverOption === "검침") {
+      if (currentOption === "검침") {
         valueBox.style.display = "block";
-        checklistDiv.style.display = "none";
-        bulkBtn.style.display = "none";
         valueInput.value = result.value || "";
       } else {
-        valueBox.style.display = "none";
         checklistDiv.style.display = "block";
         bulkBtn.style.display = "block";
-        
         if (result.states) {
           checkItems.forEach(item => {
             const val = String(result.states[item] || "").trim().toUpperCase();
@@ -207,135 +217,69 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
         }
       }
     }
-  } catch (e) { 
-    alert("데이터 로드 중 오류가 발생했습니다.");
-  } finally { 
-    btn.innerText = "데이터 수정"; 
-  }
+  } catch (e) { alert("데이터를 가져오는데 실패했습니다."); }
+  finally { btn.innerText = "데이터 수정"; }
 });
 
 /**
- * 6. 데이터 삭제 로직
+ * 6. 삭제 로직
  */
 document.getElementById("deleteBtn").addEventListener("click", async () => {
   const currentOption = optionSelect.value;
   if (!confirm(`해당 날짜의 [${currentOption}] 데이터를 삭제하시겠습니까?`)) return;
-
-  try {
-    const formData = new URLSearchParams();
-    formData.append("deleteWater", JSON.stringify({ date: dateInput.value, option: currentOption }));
-    const res = await fetch(BASE_URL, { method: "POST", body: formData });
-    alert(await res.text());
-    location.reload();
-  } catch (e) {
-    alert("삭제 중 오류가 발생했습니다.");
-  }
+  const formData = new URLSearchParams();
+  formData.append("deleteWater", JSON.stringify({ date: dateInput.value, option: currentOption }));
+  const res = await fetch(BASE_URL, { method: "POST", body: formData });
+  alert(await res.text());
+  location.reload();
 });
 
 /**
- * 7. 저장하기 버튼 로직
+ * 7. 저장 로직
  */
 saveBtn.addEventListener("click", async () => {
   const currentOption = optionSelect.value;
   const states = {};
-  
   if (currentOption === "정기점검") {
     checkItems.forEach(item => {
       const active = document.querySelector(`.ox-btn[data-key='${item.replace(/\s+/g, '')}'].active`);
       states[item] = active ? active.dataset.value : "";
     });
   }
-
-  const payload = {
-    date: dateInput.value,
-    option: currentOption,
-    value: valueInput.value,
-    checklist: states
-  };
-
+  const payload = { date: dateInput.value, option: currentOption, value: valueInput.value, checklist: states };
   saveBtn.disabled = true;
-  saveBtn.innerText = "⏳ 저장 중...";
-
-  try {
-    const res = await fetch(BASE_URL, {
-      method: "POST",
-      body: new URLSearchParams({ water: JSON.stringify(payload) })
-    });
-    alert(await res.text());
-    location.reload();
-  } catch (e) {
-    alert("저장 중 오류 발생");
-    saveBtn.disabled = false;
-    saveBtn.innerText = "저장하기";
-  }
+  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
+  alert(await res.text());
+  location.reload();
 });
 
 /**
- * 8. 일괄등록 버튼 로직
+ * 8. 일괄등록 로직
  */
 bulkBtn.addEventListener("click", async () => {
   if (!confirm("모든 항목을 'O'로 일괄 등록하시겠습니까?")) return;
-
   const states = {};
   checkItems.forEach(item => { states[item] = "O"; });
-
-  const payload = {
-    date: dateInput.value,
-    option: "정기점검",
-    value: "",
-    checklist: states
-  };
-
+  const payload = { date: dateInput.value, option: "정기점검", value: "", checklist: states };
   bulkBtn.disabled = true;
-  bulkBtn.innerText = "⏳ 처리 중...";
-
-  try {
-    const res = await fetch(BASE_URL, {
-      method: "POST",
-      body: new URLSearchParams({ water: JSON.stringify(payload) })
-    });
-    alert(await res.text());
-    location.reload();
-  } catch (e) {
-    alert("처리 중 오류 발생");
-    bulkBtn.disabled = false;
-    bulkBtn.innerText = "🚀 정기점검 일괄 [O] 등록";
-  }
+  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
+  alert(await res.text());
+  location.reload();
 });
 
 /**
- * 9. 점검 구분 변경 이벤트
+ * 9. 점검 구분 변경 시 실시간 체크
  */
 optionSelect.addEventListener("change", async () => {
-  const isInsp = optionSelect.value === "정기점검";
-  const deleteBtn = document.getElementById("deleteBtn");
+  const currentOption = optionSelect.value;
+  resetUIForCheck(); 
   
-  valueBox.style.display = isInsp ? "none" : "block";
-  checklistDiv.style.display = isInsp ? "block" : "none";
-  bulkBtn.style.display = isInsp ? "block" : "none";
-  deleteBtn.innerText = isInsp ? "정기점검 삭제" : "검침 데이터 삭제";
-
-  if (!isInsp && dateInput.value) {
-    valueInput.placeholder = "⏳ 기존 검침 확인 중...";
-    try {
-      const url = `${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({ date: dateInput.value, option: "검침" }))}`;
-      const res = await fetch(url);
-      const result = await res.json();
-      
-      if (result.exists && result.value !== undefined) {
-        valueInput.value = result.value;
-        dupBox.style.display = "block";
-        actionBtns.style.display = "flex";
-        document.getElementById("dupMsgText").innerText = "📢 기존 검침 데이터가 있습니다.";
-      } else {
-        valueInput.value = "";
-        if (document.getElementById("dupMsgText").innerText.includes("검침")) {
-          dupBox.style.display = "none";
-        }
-      }
-    } catch (e) { console.error(e); }
-    finally { valueInput.placeholder = ""; }
-  }
+  try {
+    const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: currentOption}))}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    activateForm(result.exists, currentOption);
+  } catch (e) { console.error(e); }
 });
 
 dateInput.addEventListener("change", runInitialCheck);
