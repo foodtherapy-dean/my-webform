@@ -128,30 +128,31 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
 // 삭제 버튼 엘리먼트 취득
 const deleteBtn = document.getElementById("deleteBtn");
 
-// 데이터 삭제 이벤트
+// [삭제 오류 해결] 삭제 이벤트 리스너 보정
 deleteBtn.addEventListener("click", async () => {
   const date = dateInput.value;
   const option = optionSelect.value;
   
-  if (!confirm(`⚠️ [${date} / ${option}] 데이터를 정말 삭제하시겠습니까?`)) {
-    return;
-  }
+  if (!confirm(`⚠️ [${date} / ${option}] 데이터를 정말 삭제하시겠습니까?`)) return;
   
   deleteBtn.disabled = true;
   deleteBtn.innerText = "⏳ 삭제 중...";
   
   try {
-    const payload = { date: date, option: option };
+    // [보정] URLSearchParams 대신 명확한 전송 방식 사용
+    const formData = new URLSearchParams();
+    formData.append("deleteWater", JSON.stringify({ date: date, option: option }));
+
     const res = await fetch(BASE_URL, {
       method: "POST",
-      body: new URLSearchParams({ deleteWater: JSON.stringify(payload) })
+      body: formData,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     
     const msg = await res.text();
     alert(msg);
-    location.reload(); // 성공 후 새로고침
+    location.reload();
   } catch (e) {
-    console.error("삭제 오류:", e);
     alert("삭제 처리 중 오류가 발생했습니다.");
     deleteBtn.disabled = false;
     deleteBtn.innerText = "데이터 삭제";
@@ -198,16 +199,25 @@ async function loadWaterData() {
 }
 
 // 4. 중복 확인 함수 (변동 없음)
+// [기능 추가] 중복 확인 시 상태 표시를 위한 함수 수정
 async function checkDuplicate() {
   const date = dateInput.value;
   const option = optionSelect.value;
   if (!date || !option) return;
+
+  // 상태 표시: 중복 확인 중임을 알림
+  dupBox.style.display = "block";
+  document.getElementById("dupMsgText").innerText = "⏳ 중복 데이터 확인 중...";
+  document.getElementById("loadBtn").parentElement.style.display = "none"; // 버튼 숨김
+
   try {
     const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option}))}`;
     const res = await fetch(url);
     const result = await res.json();
+    
     if (result.exists === true) {
-      dupBox.style.display = "block"; 
+      document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 데이터가 이미 존재합니다.";
+      document.getElementById("loadBtn").parentElement.style.display = "flex"; // 버튼 표시
       valueBox.style.display = "none";
       checklistDiv.style.display = "none";
     } else {
@@ -224,7 +234,6 @@ async function checkDuplicate() {
   } catch (e) { 
     console.error("통신 오류:", e);
     dupBox.style.display = "none";
-    checklistDiv.style.display = (option === "정기점검" ? "block" : "none");
   }
 }
 
