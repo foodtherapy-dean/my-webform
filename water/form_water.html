@@ -251,11 +251,46 @@ bulkBtn.addEventListener("click", async () => {
   }
 });
 
-optionSelect.addEventListener("change", () => {
+optionSelect.addEventListener("change", async () => {
   const isInsp = optionSelect.value === "정기점검";
+  
+  // 1. UI 모드 전환
   valueBox.style.display = isInsp ? "none" : "block";
   checklistDiv.style.display = isInsp ? "block" : "none";
   bulkBtn.style.display = isInsp ? "block" : "none";
+
+  // 2. '검침'으로 바꿨을 때 중복 데이터가 있으면 수치 가져오기
+  if (!isInsp && dateInput.value) {
+    const valueInput = document.getElementById("value");
+    valueInput.placeholder = "⏳ 확인 중...";
+    
+    try {
+      // 서버에 현재 날짜와 '검침' 옵션으로 중복 데이터 요청
+      const url = `${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({
+        date: dateInput.value, 
+        option: "검침"
+      }))}`;
+      
+      const res = await fetch(url);
+      const result = await res.json();
+      
+      if (result.exists && result.value !== undefined) {
+        // 중복 데이터가 있으면 수치창에 값 대입
+        valueInput.value = result.value;
+        // 안내 메시지 살짝 표시 (선택 사항)
+        document.getElementById("dupBox").style.display = "block";
+        document.getElementById("dupMsgText").innerText = "📢 해당 날짜의 기존 검침 데이터를 불러왔습니다.";
+      } else {
+        // 데이터가 없으면 입력창 비우기
+        valueInput.value = "";
+        document.getElementById("dupBox").style.display = "none";
+      }
+    } catch (e) {
+      console.error("검침 데이터 로드 실패:", e);
+    } finally {
+      valueInput.placeholder = "";
+    }
+  }
 });
 
 dateInput.addEventListener("change", runInitialCheck);
