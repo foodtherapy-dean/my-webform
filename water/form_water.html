@@ -9,8 +9,7 @@
   header { background:#0078d7; color:white; font-weight:bold; font-size:28px; position:fixed; width:100%; top:0; z-index:10; padding:16px 0; display:flex; justify-content:center; align-items:center; }
   main { flex:1; overflow-y:auto; padding:90px 15px 100px; }
   
-  #bulkBtn { width: 100%; background: #e91e63; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
-  #bulkBtn:disabled { background: #ccc; }
+  #bulkBtn { width: 100%; background: #e91e63; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 10px; margin-bottom: 20px; cursor: pointer; display: none; }
 
   label { font-weight:600; margin-top:15px; display:block; font-size:16px; color: #333; }
   input, select { width:100%; padding:12px; font-size:18px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; margin-top:5px; }
@@ -20,15 +19,12 @@
   .item-title { font-weight:bold; margin-bottom:8px; font-size: 15px; }
   .ox-buttons { display:flex; gap:8px; }
   .ox-btn { flex:1; padding:10px; border-radius:6px; border:1px solid #ccc; background:#f2f2f2; text-align:center; font-weight:bold; cursor:pointer; }
-  
-  /* 활성화된 버튼 스타일 - 가장 중요 */
   .ox-btn.active { background-color: #0078d7 !important; color: white !important; border-color: #0078d7 !important; }
 
   #dupBox { display:none; margin-top:10px; padding:12px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; text-align: center; }
-  #dupBox button { margin-top:8px; background:#0078d7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
-
+  
   footer { position:fixed; bottom:0; width:100%; background:#0078d7; z-index:10; text-align:center; }
-  button#saveBtn { width: 100%; background: transparent; color: white; border: none; font-size: 26px; font-weight: bold; padding: 16px 0; cursor: pointer; }
+  button#saveBtn { width: 100%; background: transparent; color: white; border: none; font-size: 26px; font-weight: bold; padding: 16px 0; cursor: pointer; display: none; }
 </style>
 </head>
 <body>
@@ -38,21 +34,26 @@
   <button type="button" id="bulkBtn">🚀 정기점검 일괄 [O] 등록</button>
 
   <form id="waterForm">
-    <div id="optionGroup">
-  <label>점검 구분</label>
-  <select id="option" required>
-    <option value="검침" selected>검침</option>
-    <option value="정기점검">정기점검</option>
-  </select>
-</div>
+    <div id="dateArea">
+      <label>점검 날짜</label>
+      <input type="date" id="date" required />
+    </div>
+
+    <div id="optionArea">
+      <label>점검 구분</label>
+      <select id="option" required>
+        <option value="검침" selected>검침</option>
+        <option value="정기점검">정기점검</option>
+      </select>
+    </div>
 
     <div id="dupBox">
-  <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
-  <div style="display: flex; gap: 8px; margin-top: 10px; justify-content: center;">
-    <button type="button" id="loadBtn" style="background:#0078d7; flex:1;">데이터 수정</button>
-    <button type="button" id="deleteBtn" style="background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; flex:1;">데이터 삭제</button>
-  </div>
-</div>
+      <span id="dupMsgText">⏳ 데이터를 확인하고 있습니다...</span><br>
+      <div id="actionBtns" style="display: none; gap: 8px; margin-top: 10px; justify-content: center;">
+        <button type="button" id="loadBtn" style="background:#0078d7; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; flex:1;">데이터 수정</button>
+        <button type="button" id="deleteBtn" style="background:#dc3545; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; flex:1;">데이터 삭제</button>
+      </div>
+    </div>
 
     <div id="valueBox" style="display:none;">
       <label>검침 수치 입력</label>
@@ -73,94 +74,66 @@ const checkItems = [
   "급수펌프 작동유무", "접합부 고정여부"
 ];
 
-// 엘리먼트 취득
+// 주요 엘리먼트 취득
 const dateInput = document.getElementById("date");
+const dateArea = document.getElementById("dateArea");
+const optionArea = document.getElementById("optionArea");
 const optionSelect = document.getElementById("option");
 const valueBox = document.getElementById("valueBox");
-const valueInput = document.getElementById("value");
 const checklistDiv = document.getElementById("checklist");
 const dupBox = document.getElementById("dupBox");
-const loadBtn = document.getElementById("loadBtn");
-const deleteBtn = document.getElementById("deleteBtn");
+const actionBtns = document.getElementById("actionBtns");
 const saveBtn = document.getElementById("saveBtn");
 const bulkBtn = document.getElementById("bulkBtn");
 
 /**
- * 1. UI 초기화: 날짜 입력창은 무조건 남기고 나머지만 숨김
+ * 1. UI 초기화: 날짜창은 남기고 나머지는 싹 숨김
  */
 function resetUIForCheck() {
-  const optionGroup = document.getElementById("optionGroup");
-  
-  // 숨겨야 할 요소들
-  const toHide = [
-    optionGroup,         // 점검 구분 그룹 전체
-    valueBox,            // 검침 수치 입력창
-    checklistDiv,        // 체크리스트
-    saveBtn,             // 저장 버튼
-    bulkBtn,             // 일괄등록 버튼
-    loadBtn.parentElement // 수정/삭제 버튼 그룹
-  ];
-  
-  toHide.forEach(el => { if(el) el.style.display = "none"; });
-  
-  // 레이블 제어: '점검 날짜'만 남기고 숨김
-  const labels = document.querySelectorAll('label');
-  labels.forEach((l, idx) => {
-    // 날짜 입력창의 label(보통 첫 번째)만 표시
-    if (l.innerText.includes("날짜")) {
-      l.style.display = "block";
-    } else {
-      l.style.display = "none";
-    }
-  });
+  // 날짜 영역은 보이고 나머지는 숨김
+  dateArea.style.display = "block";
+  optionArea.style.display = "none";
+  valueBox.style.display = "none";
+  checklistDiv.style.display = "none";
+  saveBtn.style.display = "none";
+  bulkBtn.style.display = "none";
+  actionBtns.style.display = "none";
 
-  // 날짜 입력창은 항상 유지
-  dateInput.style.display = "block";
-  
-  // 안내 메시지 표시
+  // 메시지 초기화
   dupBox.style.display = "block";
   document.getElementById("dupMsgText").innerText = "⏳ 데이터를 확인하고 있습니다...";
 }
 
 /**
- * 2. 체크 결과에 따른 화면 활성화
+ * 2. 체크 결과에 따른 화면 복구
  */
 function activateForm(exists) {
-  const optionGroup = document.getElementById("optionGroup");
-  const labels = document.querySelectorAll('label');
-  
   if (exists) {
-    // [데이터 있음] 메시지 업데이트 및 수정/삭제 버튼 노출
+    // 데이터 있음: 수정/삭제 버튼 노출
     document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 데이터가 이미 존재합니다.";
-    loadBtn.parentElement.style.display = "flex";
+    actionBtns.style.display = "flex";
   } else {
-    // [데이터 없음] 전체 폼 노출
+    // 데이터 없음: 전체 폼 활성화
     dupBox.style.display = "none";
+    optionArea.style.display = "block";
+    optionSelect.value = "정기점검";
     
-    // 모든 레이블과 점검 구분 그룹 보이기
-    labels.forEach(l => l.style.display = "block");
-    if(optionGroup) optionGroup.style.display = "block";
-    
-    optionSelect.value = "정기점검"; // 기본값 설정
     bulkBtn.style.display = "block";
     checklistDiv.style.display = "block";
     saveBtn.style.display = "block";
     
-    // 초기화
+    // 버튼 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
-// 3. 날짜 초기값 설정
-const params = new URLSearchParams(window.location.search);
-const paramDate = params.get("date");
-dateInput.value = (paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)) ? paramDate : new Date().toISOString().split('T')[0];
 
-// 4. OX 체크리스트 생성
+// 3. 날짜 초기화 및 리스트 생성
+dateInput.value = new URLSearchParams(window.location.search).get("date") || new Date().toISOString().split('T')[0];
+
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
-  div.innerHTML = `
-    <div class="item-title">${idx+1}. ${item}</div>
+  div.innerHTML = `<div class="item-title">${idx+1}. ${item}</div>
     <div class="ox-buttons">
       <div class="ox-btn" data-key="${item.replace(/\s+/g, '')}" data-value="O">O</div>
       <div class="ox-btn" data-key="${item.replace(/\s+/g, '')}" data-value="X">X</div>
@@ -168,69 +141,62 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-document.querySelectorAll(".ox-btn").forEach(btn => {
-  btn.addEventListener("click", function() {
-    const key = this.dataset.key;
+// OX 버튼 클릭 이벤트 전역 바인딩
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("ox-btn")) {
+    const key = e.target.dataset.key;
     document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
-    this.classList.add("active");
-  });
+    e.target.classList.add("active");
+  }
 });
 
 /**
- * 5. 서버 통신: 정기점검 여부 확인
+ * 4. 서버 통신 (중복 확인)
  */
 async function runInitialCheck() {
-  const date = dateInput.value;
-  if (!date) return;
-
-  resetUIForCheck(); // 날짜 빼고 다 숨기기
+  if (!dateInput.value) return;
+  resetUIForCheck();
 
   try {
-    const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`;
+    const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`;
     const res = await fetch(url);
     const result = await res.json();
     activateForm(result.exists);
   } catch (e) {
-    console.error("오류:", e);
-    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류 발생";
+    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류가 발생했습니다.";
   }
 }
 
-// 6. 데이터 수정 로드
-loadBtn.addEventListener("click", async () => {
-  loadBtn.innerText = "⏳ 로딩...";
-  const date = dateInput.value;
+// 5. 데이터 수정/삭제/저장 로직
+document.getElementById("loadBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("loadBtn");
+  btn.innerText = "⏳ 로딩...";
   try {
-    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`);
+    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`);
     const result = await res.json();
     
-    document.querySelectorAll('label').forEach(l => l.style.display = "block");
-    optionSelect.parentElement.style.display = "block";
+    optionArea.style.display = "block";
     saveBtn.style.display = "block";
     checklistDiv.style.display = "block";
     dupBox.style.display = "none";
 
-    if (result.exists) {
-      const states = result.states || {};
+    if (result.exists && result.states) {
       checkItems.forEach(item => {
-        const val = String(states[item] || "").trim().toUpperCase();
+        const val = String(result.states[item] || "").trim().toUpperCase();
         if (val === "O" || val === "X") {
           const cleanKey = item.replace(/\s+/g, '');
-          const targetBtn = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
-          if (targetBtn) targetBtn.classList.add("active");
+          const target = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
+          if (target) target.classList.add("active");
         }
       });
     }
   } catch (e) { alert("로드 실패"); }
-  finally { loadBtn.innerText = "데이터 수정"; }
+  finally { btn.innerText = "데이터 수정"; }
 });
 
-// 7. 기타 버튼들
-deleteBtn.addEventListener("click", async () => {
+document.getElementById("deleteBtn").addEventListener("click", async () => {
   if (!confirm("데이터를 삭제하시겠습니까?")) return;
-  const formData = new URLSearchParams();
-  formData.append("deleteWater", JSON.stringify({ date: dateInput.value, option: "정기점검" }));
-  const res = await fetch(BASE_URL, { method: "POST", body: formData });
+  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ deleteWater: JSON.stringify({ date: dateInput.value, option: "정기점검" }) }) });
   alert(await res.text());
   location.reload();
 });
@@ -238,14 +204,12 @@ deleteBtn.addEventListener("click", async () => {
 saveBtn.addEventListener("click", async () => {
   const states = {};
   checkItems.forEach(item => {
-    const cleanKey = item.replace(/\s+/g, '');
-    const active = document.querySelector(`.ox-btn[data-key='${cleanKey}'].active`);
+    const active = document.querySelector(`.ox-btn[data-key='${item.replace(/\s+/g, '')}'].active`);
     states[item] = active ? active.dataset.value : "";
   });
-  const payload = { date: dateInput.value, option: optionSelect.value, value: valueInput.value, checklist: states };
   saveBtn.disabled = true;
-  const r = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
-  alert(await r.text());
+  const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify({ date: dateInput.value, option: optionSelect.value, value: document.getElementById("value").value, checklist: states }) }) });
+  alert(await res.text());
   location.reload();
 });
 
@@ -253,24 +217,20 @@ bulkBtn.addEventListener("click", async () => {
   if (confirm("모든 항목을 'O'로 일괄 등록하시겠습니까?")) {
     const states = {};
     checkItems.forEach(item => { states[item] = "O"; });
-    const payload = { date: dateInput.value, option: "정기점검", value: "", checklist: states };
-    const postRes = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
-    alert(await postRes.text());
+    const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify({ date: dateInput.value, option: "정기점검", value: "", checklist: states }) }) });
+    alert(await res.text());
     location.reload();
   }
 });
 
 optionSelect.addEventListener("change", () => {
-  const isInspection = optionSelect.value === "정기점검";
-  valueBox.style.display = isInspection ? "none" : "block";
-  checklistDiv.style.display = isInspection ? "block" : "none";
-  bulkBtn.style.display = isInspection ? "block" : "none";
+  const isInsp = optionSelect.value === "정기점검";
+  valueBox.style.display = isInsp ? "none" : "block";
+  checklistDiv.style.display = isInsp ? "block" : "none";
+  bulkBtn.style.display = isInsp ? "block" : "none";
 });
 
-// 날짜 변경 시 즉시 체크
 dateInput.addEventListener("change", runInitialCheck);
-
-// 초기 실행
 runInitialCheck(); 
 </script>
 </body>
