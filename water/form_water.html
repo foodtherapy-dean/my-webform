@@ -170,30 +170,51 @@ async function runInitialCheck() {
 // 5. 데이터 수정/삭제/저장 로직
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const btn = document.getElementById("loadBtn");
+  const valueInput = document.getElementById("value"); // 검침 수치 입력칸
+  
   btn.innerText = "⏳ 로딩...";
+  
   try {
+    // 1. 서버에서 해당 날짜의 데이터를 다시 가져옴
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`);
     const result = await res.json();
     
-    optionArea.style.display = "block";
-    saveBtn.style.display = "block";
-    checklistDiv.style.display = "block";
-    dupBox.style.display = "none";
+    // 2. 화면 요소들 다시 표시
+    optionArea.style.display = "block"; // 점검 구분 표시
+    saveBtn.style.display = "block";   // 저장 버튼 표시
+    dupBox.style.display = "none";     // 메시지 박스 숨김
 
-    if (result.exists && result.states) {
-      checkItems.forEach(item => {
-        const val = String(result.states[item] || "").trim().toUpperCase();
-        if (val === "O" || val === "X") {
-          const cleanKey = item.replace(/\s+/g, '');
-          const target = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
-          if (target) target.classList.add("active");
-        }
-      });
+    if (result.exists) {
+      // [A] 구글 시트 B열(수치) 값 반영
+      if (result.value !== undefined) {
+        valueInput.value = result.value; // 시트에서 가져온 수치 대입
+        valueBox.style.display = "block"; // 수치 입력창 보여주기
+      }
+
+      // [B] 체크리스트(O/X) 상태 반영
+      if (result.states) {
+        checklistDiv.style.display = "block"; // 체크리스트 보여주기
+        checkItems.forEach(item => {
+          const val = String(result.states[item] || "").trim().toUpperCase();
+          if (val === "O" || val === "X") {
+            const cleanKey = item.replace(/\s+/g, '');
+            const target = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
+            if (target) {
+              // 기존 active 제거 후 새로 세팅
+              document.querySelectorAll(`.ox-btn[data-key='${cleanKey}']`).forEach(b => b.classList.remove("active"));
+              target.classList.add("active");
+            }
+          }
+        });
+      }
     }
-  } catch (e) { alert("로드 실패"); }
-  finally { btn.innerText = "데이터 수정"; }
+  } catch (e) { 
+    alert("데이터를 불러오는 중 오류가 발생했습니다."); 
+    console.error(e);
+  } finally { 
+    btn.innerText = "데이터 수정"; 
+  }
 });
-
 document.getElementById("deleteBtn").addEventListener("click", async () => {
   if (!confirm("데이터를 삭제하시겠습니까?")) return;
   const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ deleteWater: JSON.stringify({ date: dateInput.value, option: "정기점검" }) }) });
