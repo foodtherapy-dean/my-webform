@@ -85,48 +85,54 @@ const deleteBtn = document.getElementById("deleteBtn");
 const saveBtn = document.getElementById("saveBtn");
 const bulkBtn = document.getElementById("bulkBtn");
 
-// 1. UI 상태 제어: 날짜 변경 시 모든 것을 숨기고 초기화
+/**
+ * 1. UI 상태 제어: 날짜 입력창은 남기고 나머지만 숨김
+ */
 function resetUIForCheck() {
   const elements = [bulkBtn, optionSelect.parentElement, valueBox, checklistDiv, saveBtn];
   const labels = document.querySelectorAll('label');
 
-  // 날짜와 안내 메시지 제외하고 전부 숨김
+  // 모든 입력 요소와 버튼 숨김 (날짜 입력창과 그 레이블 제외)
   elements.forEach(el => { if(el) el.style.display = "none"; });
-  labels.forEach((l, idx) => { if(idx > 0) l.style.display = "none"; });
+  labels.forEach((l, idx) => { if(idx > 0) l.style.display = "none"; }); // 0번째(날짜) 레이블 외 모두 숨김
   
+  // 날짜 입력창 바로 아래의 중복 안내 박스 노출
   dupBox.style.display = "block";
-  document.getElementById("dupMsgText").innerText = "⏳ 해당 일자 [정기점검] 기록 확인 중...";
-  loadBtn.parentElement.style.display = "none";
+  document.getElementById("dupMsgText").innerText = "⏳ 해당 일자 기록 확인 중...";
+  loadBtn.parentElement.style.display = "none"; // 수정/삭제 버튼 그룹 숨김
 }
 
-// 2. 중복 확인 결과에 따른 화면 활성화
+/**
+ * 2. 체크 결과에 따른 화면 활성화
+ */
 function activateForm(exists) {
   const labels = document.querySelectorAll('label');
   
   if (exists) {
-    // [기존 데이터 있음] 수정/삭제 버튼만 노출
+    // [데이터 있음] 날짜 아래에 수정/삭제 버튼 노출
     document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 [정기점검] 데이터가 이미 존재합니다.";
     loadBtn.parentElement.style.display = "flex";
   } else {
-    // [데이터 없음] 일괄등록, 정기점검 선택 상태로 폼 활성화
+    // [데이터 없음] 전체 입력 폼 활성화
     dupBox.style.display = "none";
     labels.forEach(l => l.style.display = "block");
     optionSelect.parentElement.style.display = "block";
-    optionSelect.value = "정기점검"; // 무조건 정기점검 우선
+    optionSelect.value = "정기점검";
     
     bulkBtn.style.display = "block";
     checklistDiv.style.display = "block";
     saveBtn.style.display = "block";
+    // 버튼 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
 
-// 3. 날짜 우선순위 로직
+// 3. 날짜 초기값 설정
 const params = new URLSearchParams(window.location.search);
 const paramDate = params.get("date");
 dateInput.value = (paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)) ? paramDate : new Date().toISOString().split('T')[0];
 
-// 4. OX 버튼 생성 및 이벤트
+// 4. OX 체크리스트 생성
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -147,15 +153,16 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
   });
 });
 
-// 5. 핵심: 정기점검 기준 중복 체크
+/**
+ * 5. 핵심: 정기점검 기준 중복 확인 실행
+ */
 async function runInitialCheck() {
   const date = dateInput.value;
   if (!date) return;
 
-  resetUIForCheck(); // 일단 다 숨기기
+  resetUIForCheck(); // 날짜 외 모두 숨기기
 
   try {
-    // '정기점검' 항목에 대해서만 중복 여부 확인
     const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`;
     const res = await fetch(url);
     const result = await res.json();
@@ -163,20 +170,19 @@ async function runInitialCheck() {
     activateForm(result.exists);
   } catch (e) {
     console.error("체크 오류:", e);
+    document.getElementById("dupMsgText").innerText = "❌ 통신 오류가 발생했습니다.";
   }
 }
 
-// 6. 수정하기 버튼 클릭 시 데이터 로드 및 폼 표시
+// 6. 데이터 수정(불러오기)
 loadBtn.addEventListener("click", async () => {
   loadBtn.innerText = "⏳ 불러오는 중...";
   const date = dateInput.value;
-  const option = "정기점검"; // 정기점검 수정 전용
-
   try {
-    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option}))}`);
+    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`);
     const result = await res.json();
     
-    // 폼 강제 활성화
+    // UI 다시 그리기
     document.querySelectorAll('label').forEach(l => l.style.display = "block");
     optionSelect.parentElement.style.display = "block";
     optionSelect.value = "정기점검";
@@ -199,9 +205,10 @@ loadBtn.addEventListener("click", async () => {
   finally { loadBtn.innerText = "데이터 수정"; }
 });
 
-// 7. 삭제/저장/일괄등록 로직 (기존 연동 유지)
+// 7. 삭제/저장/일괄등록
 deleteBtn.addEventListener("click", async () => {
   if (!confirm("데이터를 정말 삭제하시겠습니까?")) return;
+  deleteBtn.innerText = "삭제 중...";
   const formData = new URLSearchParams();
   formData.append("deleteWater", JSON.stringify({ date: dateInput.value, option: "정기점검" }));
   const res = await fetch(BASE_URL, { method: "POST", body: formData });
@@ -218,6 +225,7 @@ saveBtn.addEventListener("click", async () => {
   });
   const payload = { date: dateInput.value, option: optionSelect.value, value: valueInput.value, checklist: states };
   saveBtn.disabled = true;
+  saveBtn.innerText = "저장 중...";
   const r = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ water: JSON.stringify(payload) }) });
   alert(await r.text());
   location.reload();
@@ -234,7 +242,7 @@ bulkBtn.addEventListener("click", async () => {
   }
 });
 
-// 8. 점검 구분 변경 시 처리 (검침/정기점검 스위칭)
+// 8. 구분 변경 시 화면 스위칭
 optionSelect.addEventListener("change", () => {
   if (optionSelect.value === "검침") {
     valueBox.style.display = "block";
@@ -247,7 +255,7 @@ optionSelect.addEventListener("change", () => {
   }
 });
 
-// 초기 실행 및 날짜 변경 이벤트
+// 초기 실행 및 날짜 변경 이벤트 바인딩
 dateInput.addEventListener("change", runInitialCheck);
 runInitialCheck(); 
 </script>
