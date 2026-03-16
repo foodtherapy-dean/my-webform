@@ -38,14 +38,13 @@
   <button type="button" id="bulkBtn">🚀 정기점검 일괄 [O] 등록</button>
 
   <form id="waterForm">
-    <label>점검 날짜</label>
-    <input type="date" id="date" required />
-
-    <label>점검 구분</label>
-    <select id="option" required>
-      <option value="검침" selected>검침</option>
-      <option value="정기점검">정기점검</option>
-    </select>
+    <div id="optionGroup">
+  <label>점검 구분</label>
+  <select id="option" required>
+    <option value="검침" selected>검침</option>
+    <option value="정기점검">정기점검</option>
+  </select>
+</div>
 
     <div id="dupBox">
   <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
@@ -90,36 +89,35 @@ const bulkBtn = document.getElementById("bulkBtn");
  * 1. UI 초기화: 날짜 입력창은 무조건 남기고 나머지만 숨김
  */
 function resetUIForCheck() {
-  // 숨겨야 할 리스트 (날짜 관련 제외)
+  const optionGroup = document.getElementById("optionGroup");
+  
+  // 숨겨야 할 요소들
   const toHide = [
-    optionSelect.parentElement, 
-    valueBox, 
-    checklistDiv, 
-    saveBtn, 
-    bulkBtn, 
-    loadBtn.parentElement
+    optionGroup,         // 점검 구분 그룹 전체
+    valueBox,            // 검침 수치 입력창
+    checklistDiv,        // 체크리스트
+    saveBtn,             // 저장 버튼
+    bulkBtn,             // 일괄등록 버튼
+    loadBtn.parentElement // 수정/삭제 버튼 그룹
   ];
   
-  // 1-1. 요소들 숨기기
   toHide.forEach(el => { if(el) el.style.display = "none"; });
   
-  // 1-2. 레이블 제어: 첫 번째 label(날짜)만 남기고 싹 숨김
+  // 레이블 제어: '점검 날짜'만 남기고 숨김
   const labels = document.querySelectorAll('label');
   labels.forEach((l, idx) => {
-    if (idx === 0) {
-      l.style.display = "block"; // '날짜' 글자 보이기
+    // 날짜 입력창의 label(보통 첫 번째)만 표시
+    if (l.innerText.includes("날짜")) {
+      l.style.display = "block";
     } else {
-      l.style.display = "none";  // 나머지 글자 숨기기
+      l.style.display = "none";
     }
   });
 
-  // 1-3. 날짜 입력창 자체를 강제로 보이게 설정
+  // 날짜 입력창은 항상 유지
   dateInput.style.display = "block";
-  if (dateInput.parentElement) {
-    dateInput.parentElement.style.display = "block";
-  }
   
-  // 1-4. 안내 메시지 표시
+  // 안내 메시지 표시
   dupBox.style.display = "block";
   document.getElementById("dupMsgText").innerText = "⏳ 데이터를 확인하고 있습니다...";
 }
@@ -128,26 +126,30 @@ function resetUIForCheck() {
  * 2. 체크 결과에 따른 화면 활성화
  */
 function activateForm(exists) {
+  const optionGroup = document.getElementById("optionGroup");
   const labels = document.querySelectorAll('label');
   
   if (exists) {
-    // [데이터 있음] 수정/삭제 버튼 노출
-    document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 [정기점검] 데이터가 이미 존재합니다.";
+    // [데이터 있음] 메시지 업데이트 및 수정/삭제 버튼 노출
+    document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 데이터가 이미 존재합니다.";
     loadBtn.parentElement.style.display = "flex";
   } else {
-    // [데이터 없음] 전체 입력 폼 활성화
+    // [데이터 없음] 전체 폼 노출
     dupBox.style.display = "none";
-    labels.forEach(l => l.style.display = "block"); // 모든 제목(레이블) 보이기
-    optionSelect.parentElement.style.display = "block";
-    optionSelect.value = "정기점검"; 
     
+    // 모든 레이블과 점검 구분 그룹 보이기
+    labels.forEach(l => l.style.display = "block");
+    if(optionGroup) optionGroup.style.display = "block";
+    
+    optionSelect.value = "정기점검"; // 기본값 설정
     bulkBtn.style.display = "block";
     checklistDiv.style.display = "block";
     saveBtn.style.display = "block";
+    
+    // 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
-
 // 3. 날짜 초기값 설정
 const params = new URLSearchParams(window.location.search);
 const paramDate = params.get("date");
