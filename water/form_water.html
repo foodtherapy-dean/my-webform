@@ -48,9 +48,12 @@
     </select>
 
     <div id="dupBox">
-      <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
-      <button type="button" id="loadBtn">데이터 불러오기(수정)</button>
-    </div>
+  <span id="dupMsgText">⚠️ 해당 날짜에 데이터가 이미 존재합니다.</span><br>
+  <div style="display: flex; gap: 8px; margin-top: 10px; justify-content: center;">
+    <button type="button" id="loadBtn" style="background:#0078d7; flex:1;">데이터 수정</button>
+    <button type="button" id="deleteBtn" style="background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; flex:1;">데이터 삭제</button>
+  </div>
+</div>
 
     <div id="valueBox" style="display:none;">
       <label>검침 수치 입력</label>
@@ -64,7 +67,7 @@
 <footer><button id="saveBtn" type="button">저장하기</button></footer>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycby7hJviHC_aU1f42aZUDikZj30b8mLXCS7AEdYcBcE7KplFwSHJdizuLnk2tklpYEX0Hg/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
 const checkItems = [
   "쓰레기 등 불필요한 물건 방치여부","청소상태 양호여부","잠금장치 상태","오염원 양호여부",
   "저수조 균열여부","저수조내 침전물 상태","저수조내 부유물 상태","배관 누수 상태",
@@ -122,7 +125,38 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
     this.classList.add("active");
   });
 });
+// 삭제 버튼 엘리먼트 취득
+const deleteBtn = document.getElementById("deleteBtn");
 
+// 데이터 삭제 이벤트
+deleteBtn.addEventListener("click", async () => {
+  const date = dateInput.value;
+  const option = optionSelect.value;
+  
+  if (!confirm(`⚠️ [${date} / ${option}] 데이터를 정말 삭제하시겠습니까?`)) {
+    return;
+  }
+  
+  deleteBtn.disabled = true;
+  deleteBtn.innerText = "⏳ 삭제 중...";
+  
+  try {
+    const payload = { date: date, option: option };
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      body: new URLSearchParams({ deleteWater: JSON.stringify(payload) })
+    });
+    
+    const msg = await res.text();
+    alert(msg);
+    location.reload(); // 성공 후 새로고침
+  } catch (e) {
+    console.error("삭제 오류:", e);
+    alert("삭제 처리 중 오류가 발생했습니다.");
+    deleteBtn.disabled = false;
+    deleteBtn.innerText = "데이터 삭제";
+  }
+});
 // 3. 데이터 불러오기 및 버튼 활성화 (변동 없음)
 async function loadWaterData() {
   const date = dateInput.value;
