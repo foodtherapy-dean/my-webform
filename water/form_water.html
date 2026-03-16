@@ -74,66 +74,80 @@ const checkItems = [
   "급수펌프 작동유무", "접합부 고정여부"
 ];
 
-// 주요 요소들
+// 주요 엘리먼트
 const dateInput = document.getElementById("date");
 const optionSelect = document.getElementById("option");
-const valueBox = document.getElementById("valueBox");
 const checklistDiv = document.getElementById("checklist");
 const dupBox = document.getElementById("dupBox");
-const actionBtns = document.getElementById("loadBtn").parentElement; // 수정/삭제 그룹
-const mainBtns = [document.getElementById("saveBtn"), document.getElementById("bulkBtn")];
 
 /**
- * 1. UI 초기화: 날짜창은 남기고 '점검 구분' 포함 나머지만 숨김
+ * 1. UI 초기화: 날짜창은 '성역'으로 지정하여 절대 숨기지 않음
  */
 function resetUIForCheck() {
-  // 1-1. 날짜 입력창과 그 제목은 절대 숨기지 않음
-  dateInput.style.display = "block";
-  
-  // 1-2. 모든 레이블(제목) 중 첫 번째(날짜)만 빼고 숨김
+  // 1-1. 날짜 입력창(input)과 그 부모 영역을 강제로 노출
+  if (dateInput) {
+    dateInput.style.display = "block";
+    if (dateInput.parentElement) dateInput.parentElement.style.display = "block";
+  }
+
+  // 1-2. 날짜 관련 레이블을 제외한 모든 레이블 숨기기
   const labels = document.querySelectorAll('label');
-  labels.forEach((l, idx) => {
-    l.style.display = (idx === 0) ? "block" : "none"; 
+  labels.forEach(l => {
+    // 레이블 텍스트에 '날짜'가 포함되어 있으면 살리고, 아니면 숨김
+    if (l.innerText.includes("날짜")) {
+      l.style.display = "block";
+    } else {
+      l.style.display = "none";
+    }
   });
 
-  // 1-3. 점검 구분(Select)을 포함한 하단 모든 요소 숨김
-  if(optionSelect.parentElement) optionSelect.parentElement.style.display = "none";
-  if(valueBox) valueBox.style.display = "none";
-  if(checklistDiv) checklistDiv.style.display = "none";
-  if(actionBtns) actionBtns.style.display = "none";
-  mainBtns.forEach(btn => { if(btn) btn.style.display = "none"; });
+  // 1-3. 점검 구분, 체크리스트, 모든 버튼 그룹 숨기기
+  const hideTargets = [
+    optionSelect.parentElement, 
+    document.getElementById("valueBox"),
+    checklistDiv,
+    document.getElementById("saveBtn"),
+    document.getElementById("bulkBtn"),
+    document.getElementById("loadBtn")?.parentElement
+  ];
+  
+  hideTargets.forEach(target => {
+    if (target) target.style.display = "none";
+  });
 
-  // 1-4. 안내 메시지 표시 (이미지 위치)
+  // 1-4. 안내 메시지 표시
   dupBox.style.display = "block";
   document.getElementById("dupMsgText").innerText = "⏳ 데이터를 확인하고 있습니다...";
 }
 
 /**
- * 2. 체크 결과에 따른 복구
+ * 2. 체크 결과에 따른 화면 복구
  */
 function activateForm(exists) {
   const labels = document.querySelectorAll('label');
   
   if (exists) {
-    // [기존 데이터 있음] 날짜 아래에 수정/삭제 버튼 노출
+    // 데이터 있음: 수정/삭제 버튼만 노출
     document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 [정기점검] 데이터가 이미 존재합니다.";
-    actionBtns.style.display = "flex";
+    document.getElementById("loadBtn").parentElement.style.display = "flex";
   } else {
-    // [데이터 없음] 모든 제목과 점검 구분창을 다시 보여줌
+    // 데이터 없음: 점검 구분창을 포함한 전체 폼 노출
     dupBox.style.display = "none";
     labels.forEach(l => l.style.display = "block");
     optionSelect.parentElement.style.display = "block";
-    optionSelect.value = "정기점검"; 
+    optionSelect.value = "정기점검";
     
     checklistDiv.style.display = "block";
-    mainBtns.forEach(btn => { if(btn) btn.style.display = "block"; });
+    document.getElementById("saveBtn").style.display = "block";
+    document.getElementById("bulkBtn").style.display = "block";
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
 
-// 3. 초기 세팅 (날짜, 리스트 생성 등)
+// 3. 날짜 설정 및 초기화
 dateInput.value = new URLSearchParams(window.location.search).get("date") || new Date().toISOString().split('T')[0];
 
+// 4. 체크리스트 생성 (기존 로직 동일)
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -145,16 +159,17 @@ checkItems.forEach((item, idx) => {
   checklistDiv.appendChild(div);
 });
 
-document.querySelectorAll(".ox-btn").forEach(btn => {
-  btn.addEventListener("click", function() {
-    const key = this.dataset.key;
+// OX 버튼 클릭 이벤트
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("ox-btn")) {
+    const key = e.target.dataset.key;
     document.querySelectorAll(`.ox-btn[data-key='${key}']`).forEach(b => b.classList.remove("active"));
-    this.classList.add("active");
-  });
+    e.target.classList.add("active");
+  }
 });
 
 /**
- * 4. 서버 통신 실행
+ * 5. 서버 통신 실행
  */
 async function runInitialCheck() {
   if (!dateInput.value) return;
@@ -166,49 +181,16 @@ async function runInitialCheck() {
     const result = await res.json();
     activateForm(result.exists);
   } catch (e) {
-    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류 발생";
+    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류 발생. 새로고침 해주세요.";
+    dateInput.style.display = "block"; // 오류 시에도 날짜창은 살려둠
   }
 }
 
-// 5. 데이터 수정/불러오기
-document.getElementById("loadBtn").addEventListener("click", async function() {
-  this.innerText = "⏳ 로딩...";
-  try {
-    const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date: dateInput.value, option: "정기점검"}))}`);
-    const result = await res.json();
-    
-    document.querySelectorAll('label').forEach(l => l.style.display = "block");
-    optionSelect.parentElement.style.display = "block";
-    checklistDiv.style.display = "block";
-    mainBtns[0].style.display = "block"; // 저장 버튼
-    dupBox.style.display = "none";
-
-    if (result.exists) {
-      const states = result.states || {};
-      checkItems.forEach(item => {
-        const val = String(states[item] || "").trim().toUpperCase();
-        if (val === "O" || val === "X") {
-          const cleanKey = item.replace(/\s+/g, '');
-          const targetBtn = document.querySelector(`.ox-btn[data-key='${cleanKey}'][data-value='${val}']`);
-          if (targetBtn) targetBtn.classList.add("active");
-        }
-      });
-    }
-  } catch (e) { alert("로드 실패"); }
-  finally { this.innerText = "데이터 수정"; }
-});
-
-// 구분 변경 핸들러
-optionSelect.addEventListener("change", () => {
-  const isInsp = optionSelect.value === "정기점검";
-  valueBox.style.display = isInsp ? "none" : "block";
-  checklistDiv.style.display = isInsp ? "block" : "none";
-  mainBtns[1].style.display = isInsp ? "block" : "none"; // 일괄등록
-});
-
-// 이벤트 바인딩 및 실행
+// 6. 이벤트 바인딩
 dateInput.addEventListener("change", runInitialCheck);
-runInitialCheck(); 
+
+// 페이지 로드 시 즉시 실행
+window.onload = runInitialCheck;
 </script>
 </body>
 </html>
