@@ -74,6 +74,7 @@ const checkItems = [
   "급수펌프 작동유무", "접합부 고정여부"
 ];
 
+// 주요 엘리먼트 정의
 const dateInput = document.getElementById("date");
 const optionSelect = document.getElementById("option");
 const valueBox = document.getElementById("valueBox");
@@ -86,63 +87,66 @@ const saveBtn = document.getElementById("saveBtn");
 const bulkBtn = document.getElementById("bulkBtn");
 
 /**
- * 1. UI 상태 제어: 날짜 입력창(첫 번째 레이블+input)은 절대 숨기지 않음
+ * 1. UI 초기화: 날짜 입력창만 남기고 모두 숨김
+ * 최초 활성화 시 및 날짜 변경 시 호출됨
  */
 function resetUIForCheck() {
-  const elements = [bulkBtn, optionSelect.parentElement, valueBox, checklistDiv, saveBtn];
-  const labels = document.querySelectorAll('label');
-
-  // 1-1. 모든 입력 요소와 버튼 숨김
-  elements.forEach(el => { if(el) el.style.display = "none"; });
+  // 숨겨야 할 컨테이너 및 버튼들
+  const containers = [
+    optionSelect.parentElement, // 점검 구분 영역
+    valueBox,                   // 검침 입력창
+    checklistDiv,               // 체크리스트 영역
+    saveBtn,                    // 저장 버튼
+    bulkBtn,                    // 일괄등록 버튼
+    loadBtn.parentElement       // 수정/삭제 버튼 그룹
+  ];
   
-  // 1-2. 레이블 제어: 첫 번째 '점검 날짜' 레이블(index 0)만 남기고 나머지 숨김
+  // 1-1. 모든 컨테이너 숨김
+  containers.forEach(el => { if(el) el.style.display = "none"; });
+  
+  // 1-2. 레이블 제어: '점검 날짜' 레이블만 남기고 모두 숨김
+  const labels = document.querySelectorAll('label');
   labels.forEach((l, idx) => {
-    if (idx === 0) {
-      l.style.display = "block"; // 날짜 레이블 강제 표시
-    } else {
-      l.style.display = "none";
-    }
+    // HTML 구조상 첫 번째 label이 '점검 날짜'인 경우
+    l.style.display = (idx === 0) ? "block" : "none";
   });
 
-  // 1-3. 날짜 입력창 자체는 항상 표시
-  dateInput.style.display = "block";
-  
-  // 1-4. 안내 메시지 노출
+  // 1-3. 안내 메시지 표시 (이미지 예시와 동일하게)
   dupBox.style.display = "block";
-  document.getElementById("dupMsgText").innerText = "⏳ 해당 일자 기록 확인 중...";
-  loadBtn.parentElement.style.display = "none";
+  document.getElementById("dupMsgText").innerText = "⏳ 데이터를 확인하고 있습니다...";
 }
 
 /**
- * 2. 체크 결과에 따른 화면 활성화
+ * 2. 중복 확인 결과에 따른 화면 활성화
  */
 function activateForm(exists) {
   const labels = document.querySelectorAll('label');
   
   if (exists) {
-    // [데이터 있음] 수정/삭제 버튼 노출
+    // [기존 데이터 있음] 수정/삭제 버튼 노출
     document.getElementById("dupMsgText").innerText = "⚠️ 해당 날짜에 [정기점검] 데이터가 이미 존재합니다.";
     loadBtn.parentElement.style.display = "flex";
   } else {
-    // [데이터 없음] 전체 입력 폼 활성화
+    // [데이터 없음] '정기점검' 기본값으로 폼 전체 노출
     dupBox.style.display = "none";
     labels.forEach(l => l.style.display = "block");
     optionSelect.parentElement.style.display = "block";
-    optionSelect.value = "정기점검";
+    optionSelect.value = "정기점검"; 
     
     bulkBtn.style.display = "block";
     checklistDiv.style.display = "block";
     saveBtn.style.display = "block";
+    // OX 버튼 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
 
-// 3. 날짜 초기값 설정
+// 3. 날짜 초기값 설정 (오늘 날짜)
 const params = new URLSearchParams(window.location.search);
 const paramDate = params.get("date");
 dateInput.value = (paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)) ? paramDate : new Date().toISOString().split('T')[0];
 
-// 4. OX 체크리스트 생성
+// 4. OX 체크리스트 생성 및 이벤트 바인딩
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
   div.className = "item";
@@ -164,37 +168,36 @@ document.querySelectorAll(".ox-btn").forEach(btn => {
 });
 
 /**
- * 5. 정기점검 기준 중복 확인 실행
+ * 5. 서버 통신: 정기점검 데이터 존재 여부 확인
  */
 async function runInitialCheck() {
   const date = dateInput.value;
   if (!date) return;
 
-  resetUIForCheck(); // 날짜 레이블과 창만 남기고 다 숨김
+  resetUIForCheck(); // 화면 정리
 
   try {
     const url = `${BASE_URL}?checkWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`;
     const res = await fetch(url);
     const result = await res.json();
-    
     activateForm(result.exists);
   } catch (e) {
-    console.error("체크 오류:", e);
-    document.getElementById("dupMsgText").innerText = "❌ 확인 중 오류가 발생했습니다.";
+    console.error("통신 오류:", e);
+    document.getElementById("dupMsgText").innerText = "❌ 데이터 확인 중 오류가 발생했습니다.";
   }
 }
 
-// 6. 데이터 수정 모드 진입
+// 6. 데이터 로드 (수정 모드)
 loadBtn.addEventListener("click", async () => {
-  loadBtn.innerText = "⏳ 로딩...";
+  loadBtn.innerText = "⏳ 불러오는 중...";
   const date = dateInput.value;
   try {
     const res = await fetch(`${BASE_URL}?getWater=${encodeURIComponent(JSON.stringify({date, option: "정기점검"}))}`);
     const result = await res.json();
     
+    // UI 전체 표시
     document.querySelectorAll('label').forEach(l => l.style.display = "block");
     optionSelect.parentElement.style.display = "block";
-    optionSelect.value = "정기점검";
     saveBtn.style.display = "block";
     checklistDiv.style.display = "block";
     dupBox.style.display = "none";
@@ -210,13 +213,13 @@ loadBtn.addEventListener("click", async () => {
         }
       });
     }
-  } catch (e) { alert("로드 실패"); }
+  } catch (e) { alert("데이터 로드 실패"); }
   finally { loadBtn.innerText = "데이터 수정"; }
 });
 
-// 7. 삭제/저장/일괄등록
+// 7. 삭제/저장/일괄등록 (기본 기능)
 deleteBtn.addEventListener("click", async () => {
-  if (!confirm("데이터를 정말 삭제하시겠습니까?")) return;
+  if (!confirm("해당 날짜의 [정기점검] 데이터를 삭제하시겠습니까?")) return;
   const formData = new URLSearchParams();
   formData.append("deleteWater", JSON.stringify({ date: dateInput.value, option: "정기점검" }));
   const res = await fetch(BASE_URL, { method: "POST", body: formData });
@@ -249,21 +252,18 @@ bulkBtn.addEventListener("click", async () => {
   }
 });
 
-// 8. 구분 변경 시 화면 스위칭
+// 8. 점검 구분 변경 시 입력창 스위칭
 optionSelect.addEventListener("change", () => {
-  if (optionSelect.value === "검침") {
-    valueBox.style.display = "block";
-    checklistDiv.style.display = "none";
-    bulkBtn.style.display = "none";
-  } else {
-    valueBox.style.display = "none";
-    checklistDiv.style.display = "block";
-    bulkBtn.style.display = "block";
-  }
+  const isInspection = optionSelect.value === "정기점검";
+  valueBox.style.display = isInspection ? "none" : "block";
+  checklistDiv.style.display = isInspection ? "block" : "none";
+  bulkBtn.style.display = isInspection ? "block" : "none";
 });
 
-// 초기 실행 및 날짜 변경 이벤트
+// 이벤트 리스너: 날짜 변경 시 즉시 체크 시작
 dateInput.addEventListener("change", runInitialCheck);
+
+// 초기 실행
 runInitialCheck(); 
 </script>
 </body>
