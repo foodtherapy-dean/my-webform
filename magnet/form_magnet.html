@@ -206,20 +206,31 @@ document.addEventListener("DOMContentLoaded", () => {
       // 2. 제품명 복원
       productInput.value = existing.product || "";
       
-      // 3. 통과/검출 수량 복원 (숫자 0 완벽 대응)
-      // passCount 속성 존재 시 입력
-      if ("passCount" in existing && existing.passCount !== "") {
-        document.getElementById("passCount").value = existing.passCount;
-      }
-      
-      // detectCount 속성 존재 시 입력 (0 포함)
-      if ("detectCount" in existing && existing.detectCount !== "") {
-        document.getElementById("detectCount").value = existing.detectCount;
-      } else if (existing.detectCount === 0 || existing.detectCount === "0") {
-        document.getElementById("detectCount").value = 0;
+      // 3. 통과/검출 수량 복원 (숫자 0을 절대 놓치지 않는 로직)
+    const passInput = document.getElementById("passCount");
+    const detectInput = document.getElementById("detectCount");
+
+    // 초기화 (기본적으로 비움)
+    passInput.value = "";
+    detectInput.value = "";
+
+    if (existing) {
+      // 통과 수량 처리
+      const pVal = existing.passCount ?? existing.pass;
+      if (pVal === 0 || pVal === "0") {
+        passInput.value = 0;
+      } else if (pVal) {
+        passInput.value = pVal;
       }
 
-      // 4. OX 상태 복원
+      // 검출 수량 처리 (0인 경우를 가장 먼저 체크!)
+      const dVal = existing.detectCount ?? existing.detect;
+      if (dVal === 0 || dVal === "0") {
+        detectInput.value = 0; // 값이 0이면 강제로 숫자 0 주입
+      } else if (dVal) {
+        detectInput.value = dVal; // 그 외의 숫자가 있으면 그 숫자 주입
+      }
+      
       oxValues = existing.states || {};
     }
 
