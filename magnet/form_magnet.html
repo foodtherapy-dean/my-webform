@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>금속검출점검</title>
 <style>
-/* 스타일 유지 */
 html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-container { display:flex; flex-direction:column; height:100%; }
 .app-header { flex:0 0 auto; background:#4CAF50; color:white; text-align:center; padding:16px; font-size:1.5rem; }
@@ -13,10 +12,18 @@ html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-footer { flex:0 0 auto; display: flex; }
 button[type="submit"] { flex: 1; font-size: 1.4rem; padding: 18px 0; background: #28a745; color: white; border: none; cursor: pointer; }
 
+/* 중앙 안내창 스타일 */
+#loadingOverlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(0,0,0,0.6); color: white; 
+  display: none; flex-direction: column; justify-content: center; align-items: center; 
+  z-index: 9999; font-size: 1.2rem; font-weight: bold;
+}
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
 .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; font-size: 1.1rem; width: 100%; padding: 12px; border-radius: 4px; margin-top: 10px; }
 .btn-bulk { width: 100%; padding: 12px; background: #17a2b8; color: white; border: none; border-radius: 4px; margin-top: 10px; font-weight: bold; cursor: pointer; }
-
-#loadingMsg { background: #007bff; color: white; padding: 20px; margin-top: 20px; text-align: center; border-radius: 8px; font-size: 1.2rem; display: none; }
 
 label { display:block; margin-top:20px; font-weight:bold; }
 input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box; text-align:center; font-size:1.1rem; }
@@ -36,14 +43,18 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </style>
 </head>
 <body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div id="loadingText">처리 중...</div>
+</div>
+
 <div class="app-container">
   <div class="app-header">금속검출 점검</div>
 
   <form id="magnetForm" class="app-body">
     <label>날짜 <input type="date" id="date" name="date" /></label>
     
-    <div id="loadingMsg">🔄 데이터 중복 확인 중...</div>
-
     <div id="mainContent" style="display:none;">
       <div id="deleteArea" style="display:none;">
         <button type="button" id="deleteBtnTop" class="btn-delete">🗑️ <span id="delDateText"></span> 데이터 일괄 삭제</button>
@@ -95,7 +106,8 @@ const BASE_URL = "https://script.google.com/macros/s/AKfycbzBomaVEDZsJhph0ipgQE0
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
   const mainContent = document.getElementById("mainContent");
-  const loadingMsg = document.getElementById("loadingMsg");
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  const loadingText = document.getElementById("loadingText");
   const customOption = document.getElementById("customOption");
   const selectedDiv = customOption.querySelector(".selected-option");
   const optionsList = customOption.querySelector(".options");
@@ -109,13 +121,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
-  let serverData = []; // 서버에서 받아온 상세 데이터 저장용
+  let serverData = [];
 
   dateInput.value = new Date().toISOString().split("T")[0];
 
-  // 1. 서버 데이터 호출 (최초 로드 및 날짜 변경 시)
+  function showLoading(msg) {
+    loadingText.textContent = msg;
+    loadingOverlay.style.display = "flex";
+  }
+
+  function hideLoading() {
+    loadingOverlay.style.display = "none";
+  }
+
   async function updateOptionCompletion(dateVal) {
-    loadingMsg.style.display = "block";
+    showLoading("🔄 데이터 확인 중...");
     mainContent.style.display = "none"; 
     subInputs.style.display = "none";
     summaryInputs.style.display = "none";
@@ -125,10 +145,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${BASE_URL}?getMagnet=${encodeURIComponent(JSON.stringify({date:dateVal}))}`);
       const result = await res.json();
       
-      serverData = result.data || []; // 전체 상세 데이터 저장
-      const existingOptions = result.options || []; // 완료된 옵션명 배열
+      serverData = result.data || [];
+      const existingOptions = result.options || [];
       
-      // 옵션 리스트 생성
       optionsList.innerHTML = "";
       optionItems.forEach(opt => {
         const li = document.createElement("li");
@@ -141,50 +160,53 @@ document.addEventListener("DOMContentLoaded", () => {
       if(existingOptions.length > 0) delDateText.textContent = dateVal;
 
     } catch(e) {
-      console.error("데이터 로드 실패:", e);
+      console.error("로드 실패:", e);
     } finally {
-      loadingMsg.style.display = "none";
+      hideLoading();
       mainContent.style.display = "block";
     }
   }
 
-  // 2. 항목 선택 시 데이터 채우기 (핵심 로직)
   function handleOptionChange(opt) {
     subInputs.style.display = "block";
     const isBasic = ["작업전", "작업후"].includes(opt);
     const isCheck = ["1차점검", "2차점검"].includes(opt);
     const isFinal = opt === "최종취합";
 
-    // UI 보임/숨김
     document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
     productInput.closest("label").style.display = isBasic ? "none" : "block";
     summaryInputs.style.display = isFinal ? "block" : "none";
     oxContainer.style.display = isFinal ? "none" : "block";
 
-    // 폼 초기화
     document.getElementById("time").value = "";
     productInput.value = "";
     document.getElementById("passCount").value = "";
     document.getElementById("detectCount").value = "";
     oxValues = {};
 
-    // serverData에서 해당 옵션 찾기
     const existing = serverData.find(d => String(d.option) === String(opt));
 
     if (existing) {
-      // 시간 복원
-      if (existing.hour) {
+      if (existing.hour !== undefined && existing.hour !== "") {
         const hh = String(existing.hour).padStart(2, '0');
         const mm = String(existing.minute || "0").padStart(2, '0');
-        document.getElementById("time").value = `${hh}:${hh === "" ? "" : mm}`;
+        document.getElementById("time").value = `${hh}:${mm}`;
       }
       productInput.value = existing.product || "";
-      document.getElementById("passCount").value = existing.passCount || "";
-      document.getElementById("detectCount").value = existing.detectCount || "";
+      
+      // [수정 포인트] 숫자 0 완벽 대응 로직
+      if (existing.passCount !== undefined && existing.passCount !== "") {
+        document.getElementById("passCount").value = existing.passCount;
+      }
+      if (existing.detectCount !== undefined && existing.detectCount !== "") {
+        document.getElementById("detectCount").value = existing.detectCount;
+      } else if (existing.detectCount === 0 || existing.detectCount === "0") {
+        document.getElementById("detectCount").value = 0;
+      }
+
       oxValues = existing.states || {};
     }
 
-    // OX 버튼 생성 및 체크상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
@@ -199,37 +221,35 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 일괄 등록 버튼
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
-    const btn = document.getElementById("bulkBtn");
-    btn.disabled = true;
-    btn.textContent = "🚀 등록 중...";
+    showLoading("🚀 일괄 데이터 생성 중...");
     const bulkData = [
       { opt: "작업전", time: "08:10", states: {Fe:"O", Sus:"O"}, prod: "" },
       { opt: "1차점검", time: "10:30", states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: "구포국수1.4kg" },
       { opt: "2차점검", time: "14:10", states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: "구포국수1.4kg" },
       { opt: "작업후", time: "16:40", states: {Fe:"O", Sus:"O"}, prod: "" },
-      { opt: "최종취합", time: "", states: {}, prod: "구포국수1.4kg", pass: 1800 + (Math.floor(Math.random()*10)*30), detect: 0 }
+      { opt: "최종취합", time: "", states: {}, prod: "구포국수1.4kg", passCount: 1800 + (Math.floor(Math.random()*10)*30), detectCount: 0 }
     ];
     try {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "bulk", date: dateVal, items: bulkData }) }) });
       alert("완료!");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch (e) { alert("실패"); } finally { btn.disabled = false; btn.textContent = "📅 이 날짜 데이터 일괄 생성"; }
+    } catch (e) { alert("실패"); } finally { hideLoading(); }
   });
 
-  // 일괄 삭제 버튼
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
-    await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
-    alert("삭제되었습니다.");
-    resetForm(document.getElementById("magnetForm"), dateVal);
+    showLoading("🗑️ 데이터 삭제 중...");
+    try {
+      await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
+      alert("삭제되었습니다.");
+      resetForm(document.getElementById("magnetForm"), dateVal);
+    } catch(e) { alert("삭제 실패"); } finally { hideLoading(); }
   });
 
-  // 옵션 선택 클릭 이벤트
   customOption.addEventListener("click", e => {
     if (e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
     if (e.target.tagName === "LI") {
@@ -240,7 +260,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // OX 버튼 클릭 이벤트
   document.addEventListener("click", e => {
     if(e.target.classList.contains("ox")) {
       const { label, value } = e.target.dataset;
@@ -249,9 +268,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 저장
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
+    if(!currentOption) { alert("점검 옵션을 선택해주세요."); return; }
+    showLoading("📥 데이터 저장 중...");
     const form = e.target;
     let [h, m] = form.time.value ? form.time.value.split(":") : ["", ""];
     const data = {
@@ -259,9 +279,11 @@ document.addEventListener("DOMContentLoaded", () => {
       hour: h, minute: m, product: productInput.value, states: oxValues,
       passCount: form.passCount.value, detectCount: form.detectCount.value
     };
-    await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
-    alert("저장되었습니다.");
-    resetForm(form, form.date.value);
+    try {
+      await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
+      alert("저장되었습니다.");
+      resetForm(form, form.date.value);
+    } catch(e) { alert("저장 실패"); } finally { hideLoading(); }
   });
 
   function resetForm(form, keepDate) {
