@@ -140,13 +140,15 @@ function updateGroupSelect(completed) {
   });
 }
 
-// 일괄 등록 클릭
+// 일괄 등록 모드 (랜덤 생성 및 즉시 전송)
 document.getElementById("autoModeBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
-  if(!confirm("건면동, 생면동 데이터를 일괄 생성하여 전송하시겠습니까?")) return;
+  if(!date) return alert("날짜를 먼저 선택해주세요.");
+  if(!confirm(`${date} 날짜로 모든 그룹(건면동, 생면동) 데이터를 일괄 등록하시겠습니까?`)) return;
 
-  showLoading("🚀 일괄 데이터 전송 중...");
+  showLoading("🚀 전 구역 일괄 데이터 생성 및 전송 중...");
 
+  // 1. 데이터 생성 (건면동 & 생면동)
   const bulkData = ["건면동", "생면동"].map(g => {
     const entries = [];
     for (const [cat, subs] of Object.entries(structure)) {
@@ -167,18 +169,23 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
     params.append("date", date);
     params.append("data", JSON.stringify(bulkData));
 
-    await fetch(scriptUrl, { method: "POST", body: params });
+    const response = await fetch(scriptUrl, { method: "POST", body: params });
+    const result = await response.text();
+
     hideLoading();
-    alert("✅ 일괄 등록 완료!");
+    alert("✅ 일괄 등록이 완료되었습니다!");
+
+    // 핵심: 일괄 등록 후 UI를 리셋하고 서버 상태를 다시 조회합니다.
+    // 이렇게 하면 '개별모드 전환' 버튼 대신 '삭제' 버튼과 '(완료)' 목록이 나타납니다.
+    document.getElementById("switchToManualBtn").classList.add("hidden"); 
+    document.getElementById("submitBtn").classList.remove("hidden");
     
-    // UI 전환
-    document.getElementById("modeButtons").classList.add("hidden");
-    document.getElementById("submitBtn").classList.add("hidden");
-    document.getElementById("switchToManualBtn").classList.remove("hidden");
-    checkStatus(); // 완료 후 상태 확인 로딩창 자동 실행
-  } catch (e) { 
+    // 서버의 최신 데이터를 다시 읽어와서 (완료) 표시와 삭제 버튼을 띄움
+    await checkStatus(); 
+
+  } catch (e) {
     hideLoading();
-    alert("전송 실패"); 
+    alert("일괄 등록 중 오류 발생: " + e.message);
   }
 });
 
