@@ -96,7 +96,9 @@ const structure = {
 
 const loadingOverlay = document.getElementById("loadingOverlay");
 const loadingText = document.getElementById("loadingText");
+let serverDetails = {}; // 서버 상세 데이터를 담을 변수
 
+// 로딩 표시 함수
 function showLoading(msg) {
   loadingText.textContent = msg;
   loadingOverlay.style.display = "flex";
@@ -106,9 +108,11 @@ function hideLoading() {
   loadingOverlay.style.display = "none";
 }
 
-// 상태 체크 및 UI 동기화
+// 1. 상태 체크 및 UI 동기화 (가장 중요)
 async function checkStatus() {
   const date = document.getElementById("date").value;
+  if (!date) return; // 날짜 없으면 중단
+
   showLoading("🔄 최신 상태 확인 중...");
   
   try {
@@ -118,29 +122,51 @@ async function checkStatus() {
     const completedGroups = result.groups || [];
     serverDetails = result.details || {};
 
-    // UI 초기화
-    document.getElementById("statusArea").classList.toggle("hidden", completedGroups.length === 0);
-    document.getElementById("statusArea").innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
-    document.getElementById("deleteAllBtn").classList.toggle("hidden", completedGroups.length === 0);
-    document.getElementById("deleteAllBtn").textContent = `🗑 ${date} 전체삭제`;
+    // UI 요소들 정의
+    const statusArea = document.getElementById("statusArea");
+    const deleteAllBtn = document.getElementById("deleteAllBtn");
+    const modeButtons = document.getElementById("modeButtons");
+    const groupArea = document.getElementById("groupArea");
+    const switchToManualBtn = document.getElementById("switchToManualBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    // 초기 상태 리셋
+    statusArea.classList.toggle("hidden", completedGroups.length === 0);
+    statusArea.innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
     
-    document.getElementById("modeButtons").classList.toggle("hidden", completedGroups.length > 0);
-    document.getElementById("groupArea").classList.toggle("hidden", completedGroups.length === 0);
+    deleteAllBtn.classList.toggle("hidden", completedGroups.length === 0);
+    deleteAllBtn.textContent = `🗑 ${date} 전체삭제`;
     
+    // 일괄 등록이 완료되었으면 모드 선택 버튼을 숨김
+    modeButtons.classList.toggle("hidden", completedGroups.length > 0);
+    
+    // 완료된 데이터가 있으면 그룹 선택창을 보여줌
+    groupArea.classList.toggle("hidden", completedGroups.length === 0);
+    
+    // 일괄등록 후 남을 수 있는 특수 버튼들 초기화
+    if(switchToManualBtn) switchToManualBtn.classList.add("hidden");
+    if(submitBtn) submitBtn.classList.remove("hidden");
+
     updateGroupSelect(completedGroups);
-  } catch(e) { console.error(e); } 
-  finally { hideLoading(); }
+  } catch(e) { 
+    console.error("상태 확인 실패:", e); 
+  } finally { 
+    hideLoading(); 
+  }
 }
 
+// 그룹 선택창 (완료) 표시 업데이트
 function updateGroupSelect(completed) {
   const groupSelect = document.getElementById("group");
   groupSelect.querySelectorAll("option").forEach(opt => {
     if(!opt.value) return;
-    opt.textContent = completed.includes(opt.value) ? `${opt.value}(완료)` : opt.value;
+    const cleanValue = opt.value.replace("(완료)", "");
+    opt.textContent = completed.includes(cleanValue) ? `${cleanValue}(완료)` : cleanValue;
+    opt.value = cleanValue;
   });
 }
 
-// 일괄 등록 모드 (랜덤 생성 및 즉시 전송)
+// 2. 일괄 등록 모드 (랜덤 생성 및 전송)
 document.getElementById("autoModeBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
   if(!date) return alert("날짜를 먼저 선택해주세요.");
@@ -148,7 +174,6 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
 
   showLoading("🚀 전 구역 일괄 데이터 생성 및 전송 중...");
 
-  // 1. 데이터 생성 (건면동 & 생면동)
   const bulkData = ["건면동", "생면동"].map(g => {
     const entries = [];
     for (const [cat, subs] of Object.entries(structure)) {
@@ -169,18 +194,12 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
     params.append("date", date);
     params.append("data", JSON.stringify(bulkData));
 
-    const response = await fetch(scriptUrl, { method: "POST", body: params });
-    const result = await response.text();
-
+    await fetch(scriptUrl, { method: "POST", body: params });
+    
     hideLoading();
     alert("✅ 일괄 등록이 완료되었습니다!");
 
-    // 핵심: 일괄 등록 후 UI를 리셋하고 서버 상태를 다시 조회합니다.
-    // 이렇게 하면 '개별모드 전환' 버튼 대신 '삭제' 버튼과 '(완료)' 목록이 나타납니다.
-    document.getElementById("switchToManualBtn").classList.add("hidden"); 
-    document.getElementById("submitBtn").classList.remove("hidden");
-    
-    // 서버의 최신 데이터를 다시 읽어와서 (완료) 표시와 삭제 버튼을 띄움
+    // 저장 완료 후 개별모드 전환 버튼을 거치지 않고 바로 상태 리프레시
     await checkStatus(); 
 
   } catch (e) {
@@ -189,10 +208,10 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
   }
 });
 
-// 삭제 버튼
+// 3. 전체 삭제 버튼
 document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
-  if(!confirm("정말 삭제하시겠습니까?")) return;
+  if(!confirm("정말 전체 데이터를 삭제하시겠습니까?")) return;
 
   showLoading("🗑️ 데이터 삭제 중...");
   try {
@@ -200,19 +219,21 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
     params.append("type", "deleteAllPest");
     params.append("date", date);
     await fetch(scriptUrl, { method: "POST", body: params });
+    
     hideLoading();
     alert("삭제되었습니다.");
-    checkStatus();
+    await checkStatus(); // 삭제 후 상태 갱신
   } catch(e) { 
     hideLoading();
     alert("삭제 실패"); 
   }
 });
 
-// 개별 전송
+// 4. 개별 전송 (서버 전송 버튼)
 document.getElementById("trapForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const group = document.getElementById("group").value;
+  const date = document.getElementById("date").value;
   if(!group) return alert("그룹 선택 필수");
 
   showLoading("📥 데이터 저장 중...");
@@ -226,18 +247,19 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
 
   try {
     const params = new URLSearchParams();
-    params.append("data", JSON.stringify({ date: document.getElementById("date").value, group, entries }));
+    params.append("data", JSON.stringify({ date: date, group, entries }));
     await fetch(scriptUrl, { method: "POST", body: params });
+    
     hideLoading();
     alert("저장 완료");
-    checkStatus();
+    await checkStatus();
   } catch(e) { 
     hideLoading();
     alert("저장 실패"); 
   }
 });
 
-// 모드 전환
+// 5. 기타 UI 이벤트
 document.getElementById("switchToManualBtn").addEventListener("click", () => {
   document.getElementById("switchToManualBtn").classList.add("hidden");
   document.getElementById("submitBtn").classList.remove("hidden");
@@ -245,23 +267,35 @@ document.getElementById("switchToManualBtn").addEventListener("click", () => {
 });
 
 document.getElementById("date").addEventListener("change", checkStatus);
+
 document.getElementById("manualModeBtn").addEventListener("click", () => {
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
 });
 
-// 초기화
+// 6. 초기화 (오늘 날짜 자동 입력 및 시작)
 (function init() {
+  const dateInput = document.getElementById("date");
+  
+  // 오늘 날짜를 YYYY-MM-DD 형식으로 세팅
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  dateInput.value = `${year}-${month}-${day}`;
+
   const container = document.getElementById("sections");
   for (const [cat, subs] of Object.entries(structure)) {
     const div = document.createElement("div");
     div.className = "entry hidden";
     div.dataset.category = cat;
     div.innerHTML = `<h3>${cat}</h3><div class="input-row">${subs.map(s => `
-      <div class="input-group"><div>${s}</div><input type="number" data-sub="${s}" value="0"></div>
+      <div class="input-group"><div>${s}</div><input type="number" data-sub="${s}" value="0" min="0"></div>
     `).join("")}</div>`;
     container.appendChild(div);
   }
+  
+  // 날짜 세팅이 끝난 후 즉시 해당 날짜의 데이터 상태 확인
   checkStatus();
 })();
 </script>
