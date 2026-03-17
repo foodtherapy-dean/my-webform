@@ -120,13 +120,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const lotRow = document.getElementById("lotRow");
   
   const urlParams = new URLSearchParams(window.location.search);
-const paramDate = urlParams.get('date');
+  const paramDate = urlParams.get('date');
 
-if (paramDate) {
-  dateInput.value = paramDate; // URL에 날짜가 있으면 적용
-} else {
-  dateInput.valueAsDate = new Date(); // 없으면 오늘 날짜
-}
+  if (paramDate) {
+    dateInput.value = paramDate;
+  } else {
+    dateInput.valueAsDate = new Date();
+  }
+
   let roundData = [];
 
   lotInput.innerHTML = `<option value="0">0</option>` +
@@ -172,6 +173,8 @@ if (paramDate) {
   }
 
   async function checkDuplicate(date) {
+    const newUrl = `${window.location.pathname}?date=${date}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
     loadingMsg.style.display = "block";
     duplicateMsg.style.display = "none";
     productArea.style.display = "none";
