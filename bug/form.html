@@ -2,130 +2,55 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>모바일_방충</title>
-  <!-- 홈화면/바로가기용 아이콘 지정 -->
-<link rel="icon" type="image/png" sizes="192x192" href="bug.png">
-<link rel="apple-touch-icon" href="bug.png">
-<meta name="theme-color" content="#4CAF50">
-
-<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
-<link rel="manifest" href="manifest.json">
+  <title>모바일_방충_관리</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="192x192" href="bug.png">
+  <link rel="apple-touch-icon" href="bug.png">
+  <meta name="theme-color" content="#2196F3">
   <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: sans-serif;
-}
+    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+    .app-container { display: flex; flex-direction: column; height: 100%; }
+    .app-header { flex: 0 0 auto; background-color: #2196F3; color: white; text-align: center; padding: 16px; font-size: 1.5rem; }
+    .app-body { flex: 1 1 auto; overflow-y: auto; padding: 16px; box-sizing: border-box; background-color: #f9f9f9; }
+    .app-footer { flex: 0 0 auto; }
 
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+    label { display: block; margin-top: 16px; font-weight: bold; font-size: 1.1rem; }
+    input[type="date"], select { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 5px; }
 
-.app-header {
-  flex: 0 0 auto;
-  background-color: #2196F3;
-  color: white;
-  text-align: center;
-  padding: 16px;
-  font-size: 1.5rem;
-}
+    /* 버튼 그룹 스타일 */
+    .button-row { display: flex; gap: 10px; margin-top: 15px; }
+    .btn-sub { flex: 1; padding: 12px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
+    .btn-auto { background-color: #00bcd4; } /* 일괄등록: 하늘색 */
+    .btn-del { background-color: #f44336; }  /* 전체삭제: 빨간색 */
 
-.app-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 16px;
-  box-sizing: border-box;
-  background-color: #f9f9f9;
-}
+    .entry { border: 1px solid #ccc; padding: 12px; margin-top: 16px; border-radius: 5px; background-color: white; }
+    .entry h2 { margin-top: 0; font-size: 1.2rem; color: #333; border-bottom: 2px solid #2196F3; padding-bottom: 5px; }
+    .hidden { display: none; }
 
-.app-footer {
-  flex: 0 0 auto;
-}
+    .input-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .input-group { flex: 1 1 calc(33.333% - 10px); min-width: 100px; display: flex; flex-direction: column; }
+    .input-group div { margin-bottom: 4px; font-weight: bold; font-size: 0.9rem; color: #666; }
+    .input-group input { text-align: center; font-size: 1.1rem; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 
-label {
-  display: block;
-  margin-top: 16px;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
+    /* 전송 버튼 */
+    button[type="submit"] { width: 100%; font-size: 1.4rem; padding: 18px 0; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold; }
 
-input[type="date"],
-select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  box-sizing: border-box;
-  font-size: 1.1rem;
-}
+    /* 로딩 메시지 중앙 배치 */
+    #loadingMsg { 
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+      background: rgba(0,0,0,0.8); color: white; padding: 30px 50px; border-radius: 12px; 
+      z-index: 9999; text-align: center; font-size: 1.2rem; white-space: nowrap;
+    }
 
-button[type="submit"] {
-  width: 100%;
-  font-size: 1.4rem;
-  padding: 18px 0;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-button[type="submit"]:hover {
-  background-color: #45a049;
-}
-
-.entry {
-  border: 1px solid #ccc;
-  padding: 12px;
-  margin-top: 16px;
-  border-radius: 5px;
-  background-color: white;
-}
-
-.hidden {
-  display: none;
-}
-
-.input-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.input-group {
-  flex: 1 1 calc(33.333% - 10px);
-  min-width: 100px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.input-group div {
-  margin-bottom: 4px;
-  font-weight: bold;
-  line-height: 1.4;
-  word-break: keep-all;
-}
-
-.input-group input {
-  text-align: center;
-  font-size: 1.1rem;
-  padding: 8px;
-}
-
-@media (max-width: 500px) {
-  .input-group {
-    flex: 1 1 calc(50% - 10px);
-  }
-}
+    @media (max-width: 500px) { .input-group { flex: 1 1 calc(50% - 10px); } }
   </style>
 </head>
 <body>
+
+  <div id="loadingMsg">⏳ 서버 통신 중...</div>
+
   <div class="app-container">
-    <div class="app-header">모바일 해충 입력1</div>
+    <div class="app-header">모바일 해충 관리 v2</div>
 
     <form id="trapForm" class="app-body">
       <label>📅 날짜</label>
@@ -138,32 +63,22 @@ button[type="submit"]:hover {
         <option value="생면동">생면동</option>
       </select>
 
+      <div class="button-row">
+        <button type="button" id="autoFillBtn" class="btn-sub btn-auto">🎲 랜덤 일괄입력</button>
+        <button type="button" id="deleteAllBtn" class="btn-sub btn-del">🗑 해당날짜 전체삭제</button>
+      </div>
+
       <div id="sections"></div>
     </form>
 
     <div class="app-footer">
-      <button type="submit" form="trapForm">📥 서버로 전송</button>
+      <button type="submit" form="trapForm">📥 서버로 전송하기</button>
     </div>
   </div>
 
   <script>
-    // ===== URL 날짜 파라미터 자동 반영 =====
-window.addEventListener("DOMContentLoaded", function () {
-  const params = new URLSearchParams(location.search);
-  const d = params.get("date");
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
 
-  if (d) {
-    const dateInput = document.getElementById("date");
-    if (dateInput) {
-      dateInput.value = d;
-
-      // 날짜 입력 후 자동 조회 기능이 있는 경우 실행
-      if (typeof loadExistingData === "function") {
-        loadExistingData();
-      }
-    }
-  }
-});
     const structure = {
       "포충등(입구)": ["파리", "나방", "모기", "하루살이", "기타"],
       "포충등(포장실)": ["파리", "나방", "모기", "하루살이", "기타"],
@@ -178,7 +93,9 @@ window.addEventListener("DOMContentLoaded", function () {
     };
 
     const container = document.getElementById("sections");
+    const loadingMsg = document.getElementById("loadingMsg");
 
+    // 폼 초기 생성
     for (const [category, subs] of Object.entries(structure)) {
       const section = document.createElement("div");
       section.className = "entry";
@@ -202,63 +119,90 @@ window.addEventListener("DOMContentLoaded", function () {
       container.appendChild(section);
     }
 
+    // 그룹 선택 시 방서트랩 숨김 처리
     document.getElementById("group").addEventListener("change", function () {
       const group = this.value;
-      const allSections = document.querySelectorAll(".entry");
-
-      allSections.forEach(section => {
-        const cat = section.dataset.category;
-        if (cat.startsWith("방서트랩")) {
+      document.querySelectorAll(".entry").forEach(section => {
+        if (section.dataset.category.startsWith("방서트랩")) {
           section.classList.toggle("hidden", group === "생면동");
         }
       });
     });
 
+    // 오늘 날짜 기본값
     document.getElementById("date").valueAsDate = new Date();
 
+    // --- [기능 1] 랜덤 일괄 입력 ---
+    document.getElementById("autoFillBtn").addEventListener("click", () => {
+      const groupVal = document.getElementById("group").value;
+      if (!groupVal) return alert("먼저 그룹을 선택해주세요.");
+
+      document.querySelectorAll(".entry:not(.hidden)").forEach(section => {
+        const category = section.dataset.category;
+        section.querySelectorAll("input").forEach(input => {
+          const sub = input.dataset.sub;
+          let val = 0;
+
+          if (category.includes("포충등") && (sub === "하루살이" || sub === "기타")) {
+            val = Math.floor(Math.random() * 6); // 0~5 랜덤
+          } else if (category.includes("보행트랩") && sub === "기타1") {
+            val = Math.floor(Math.random() * 4); // 0~3 랜덤
+          }
+          input.value = val;
+        });
+      });
+    });
+
+    // --- [기능 2] 해당 날짜 전체 삭제 ---
+    document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+      const date = document.getElementById("date").value;
+      if (!confirm(`${date} 날짜의 모든 기록을 삭제하시겠습니까?\n(그룹 상관없이 해당일 전체 데이터가 삭제됩니다.)`)) return;
+
+      loadingMsg.style.display = "block";
+      try {
+        const response = await fetch(`${scriptUrl}?type=deleteAllPest&date=${date}`, { method: "POST" });
+        const result = await response.json();
+        alert(result.message || "삭제되었습니다.");
+        location.reload(); 
+      } catch (err) {
+        alert("삭제 중 오류 발생: " + err.message);
+      } finally {
+        loadingMsg.style.display = "none";
+      }
+    });
+
+    // --- [기능 3] 서버 전송 ---
     document.getElementById("trapForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-
+      
       const date = document.getElementById("date").value;
       const group = document.getElementById("group").value;
-      const sections = document.querySelectorAll(".entry:not(.hidden)");
-
-      if (!group) {
-        alert("그룹을 선택하세요.");
-        return;
-      }
-
       const entries = [];
-      sections.forEach(div => {
+
+      document.querySelectorAll(".entry:not(.hidden)").forEach(div => {
         const category = div.dataset.category;
         div.querySelectorAll("input").forEach(input => {
-          const subcategory = input.dataset.sub;
-          const value = parseInt(input.value) || 0;
-          entries.push({ category, subcategory, value });
+          entries.push({
+            category: category,
+            subcategory: input.dataset.sub,
+            value: parseInt(input.value) || 0
+          });
         });
       });
 
-      const data = { date, group, entries };
-
+      loadingMsg.style.display = "block";
       const formData = new FormData();
-      formData.append("data", JSON.stringify(data));
+      formData.append("data", JSON.stringify({ date, group, entries }));
 
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec", {
-          method: "POST",  
-          body: formData
-        });
-
+        const response = await fetch(scriptUrl, { method: "POST", body: formData });
         const result = await response.text();
-        if (response.ok) {
-          alert("✅ Google Sheet에 저장 완료!\n\n" + result);
-          document.getElementById("trapForm").reset();
-          document.getElementById("date").valueAsDate = new Date();
-        } else {
-          alert("❌ 서버 오류:\n\n" + result);
-        }
+        alert("✅ 저장 완료!\n" + result);
+        location.reload();
       } catch (err) {
-        alert("❌ 전송 중 오류 발생:\n\n" + err.message);
+        alert("❌ 전송 실패: " + err.message);
+      } finally {
+        loadingMsg.style.display = "none";
       }
     });
   </script>
