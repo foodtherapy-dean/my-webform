@@ -5,38 +5,32 @@
   <title>모바일_방충_스마트폼</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* 기본 스타일 */
+    /* 기존 스타일 유지 및 추가 */
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; background: #f4f7f6; }
     .app-container { display: flex; flex-direction: column; height: 100%; }
     .app-header { background: #2196F3; color: white; text-align: center; padding: 15px; font-size: 1.3rem; font-weight: bold; }
     .app-body { flex: 1; overflow-y: auto; padding: 15px; }
-    
     .status-msg { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 10px; color: #1565c0; font-weight: bold; font-size: 0.9rem; border: 1px solid #bbdefb; }
     .hidden { display: none !important; }
-    
-    /* 버튼 스타일 */
     .mode-btn-row { display: flex; gap: 10px; margin: 15px 0; }
     .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
     .btn-blue { background: #2196F3; }
     .btn-green { background: #4CAF50; }
-    
-    /* 삭제 버튼: 날짜창과 동일하게 가로 꽉 차도록 수정 */
     .btn-red { background: #f44336; width: 100%; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; }
+    .btn-orange { background: #ff9800; width: 100%; margin-bottom: 10px; }
 
     label { display: block; margin-top: 15px; font-weight: bold; }
     input[type="date"], select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
-
     .entry { border: 1px solid #ccc; padding: 12px; margin-top: 16px; border-radius: 8px; background: white; }
     .input-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .input-group { flex: 1 1 calc(33% - 8px); min-width: 80px; text-align: center; }
     .input-group input { width: 100%; text-align: center; padding: 8px; border: 1px solid #ddd; }
-
-    #loadingMsg { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:25px; border-radius:12px; z-index:9999; }
+    #loadingMsg { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:white; padding:25px; border-radius:12px; z-index:9999; text-align:center; }
   </style>
 </head>
 <body>
 
-<div id="loadingMsg">⏳ 데이터 확인중...</div>
+<div id="loadingMsg">⏳ <span id="loadingTxt">데이터 확인중...</span></div>
 
 <div class="app-container">
   <div class="app-header">스마트 방충 관리</div>
@@ -46,13 +40,14 @@
     <input type="date" id="date">
 
     <button type="button" id="deleteAllBtn" class="btn btn-red hidden"></button>
-
     <div id="statusArea" class="status-msg hidden"></div>
 
     <div id="modeButtons" class="mode-btn-row hidden">
       <button type="button" id="manualModeBtn" class="btn btn-blue">📝 개별 입력</button>
-      <button type="button" id="autoModeBtn" class="btn btn-green">🎲 일괄 입력(랜덤)</button>
+      <button type="button" id="autoModeBtn" class="btn btn-green">🎲 일괄 등록(랜덤)</button>
     </div>
+
+    <button type="button" id="switchToManualBtn" class="btn btn-orange hidden">🔄 개별 등록 모드로 전환</button>
 
     <div id="groupArea" class="hidden">
       <label>⚙ 그룹 선택</label>
@@ -90,18 +85,12 @@ const structure = {
 
 let completedGroups = [];
 let serverDetails = {};
-let isAutoMode = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const paramDate = urlParams.get('date');
   const dateInput = document.getElementById("date");
-
-  if (paramDate) {
-    dateInput.value = paramDate;
-  } else {
-    dateInput.valueAsDate = new Date();
-  }
+  if (paramDate) dateInput.value = paramDate; else dateInput.valueAsDate = new Date();
 
   initForm();
   checkStatus();
@@ -127,12 +116,14 @@ async function checkStatus() {
   const deleteAllBtn = document.getElementById("deleteAllBtn");
   const modeButtons = document.getElementById("modeButtons");
   const groupArea = document.getElementById("groupArea");
+  const submitBtn = document.getElementById("submitBtn");
+  const switchToManualBtn = document.getElementById("switchToManualBtn");
   const loadingMsg = document.getElementById("loadingMsg");
 
-  // 주소창 URL 동기화
   const newUrl = `${window.location.pathname}?date=${date}`;
   window.history.pushState({ path: newUrl }, '', newUrl);
 
+  document.getElementById("loadingTxt").textContent = "데이터 확인중...";
   loadingMsg.style.display = "block";
   
   try {
@@ -142,30 +133,27 @@ async function checkStatus() {
     completedGroups = result.groups || [];
     serverDetails = result.details || {};
 
+    // 초기 상태 리셋
     statusArea.classList.add("hidden");
     deleteAllBtn.classList.add("hidden");
     modeButtons.classList.add("hidden");
     groupArea.classList.add("hidden");
+    switchToManualBtn.classList.add("hidden");
+    submitBtn.classList.remove("hidden");
     document.getElementById("sections").classList.add("hidden");
 
     if (completedGroups.length > 0) {
       statusArea.innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
       statusArea.classList.remove("hidden");
-      
-      // 삭제 버튼 텍스트 업데이트 및 표시
       deleteAllBtn.textContent = `🗑 ${date} 전체삭제`;
       deleteAllBtn.classList.remove("hidden");
-      
       groupArea.classList.remove("hidden");
       updateGroupSelect();
     } else {
       modeButtons.classList.remove("hidden");
     }
-  } catch(e) { 
-    console.error("데이터 로드 실패", e); 
-  } finally { 
-    loadingMsg.style.display = "none"; 
-  }
+  } catch(e) { console.error("데이터 로드 실패", e); } 
+  finally { loadingMsg.style.display = "none"; }
 }
 
 function updateGroupSelect() {
@@ -179,32 +167,72 @@ function updateGroupSelect() {
   });
 }
 
+// 개별 입력 모드
 document.getElementById("manualModeBtn").addEventListener("click", () => {
-  isAutoMode = false;
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
 });
 
-document.getElementById("autoModeBtn").addEventListener("click", () => {
-  isAutoMode = true;
-  document.getElementById("modeButtons").classList.add("hidden");
-  document.getElementById("groupArea").classList.remove("hidden");
-  alert("🎲 랜덤값이 생성되었습니다. 그룹을 선택해 확인하세요.");
-  applyRandomAll();
-});
+// 일괄 등록 모드 (랜덤 생성 및 즉시 전송)
+document.getElementById("autoModeBtn").addEventListener("click", async () => {
+  const date = document.getElementById("date").value;
+  if(!confirm(`${date} 날짜로 모든 그룹(건면동, 생면동) 데이터를 일괄 등록하시겠습니까?`)) return;
 
-function applyRandomAll() {
-  document.querySelectorAll(".entry").forEach(section => {
-    const cat = section.dataset.category;
-    section.querySelectorAll("input").forEach(input => {
-      const sub = input.dataset.sub;
-      let val = 0;
-      if (cat.includes("포충등") && (sub === "하루살이" || sub === "기타")) val = Math.floor(Math.random()*6);
-      else if (cat.includes("보행트랩") && sub === "기타1") val = Math.floor(Math.random()*4);
-      input.value = val;
-    });
+  document.getElementById("loadingTxt").textContent = "전체 데이터 생성 및 전송 중...";
+  document.getElementById("loadingMsg").style.display = "block";
+
+  // 1. 데이터 생성 (건면동 & 생면동)
+  const bulkPayload = ["건면동", "생면동"].map(groupName => {
+    const entries = [];
+    for (const [cat, subs] of Object.entries(structure)) {
+      // 생면동일 경우 방서트랩 제외
+      if (groupName === "생면동" && cat.startsWith("방서트랩")) continue;
+
+      subs.forEach(sub => {
+        let val = 0;
+        if (cat.includes("포충등") && (sub === "하루살이" || sub === "기타")) val = Math.floor(Math.random()*6);
+        else if (cat.includes("보행트랩") && sub === "기타1") val = Math.floor(Math.random()*4);
+        
+        entries.push({ category: cat, subcategory: sub, value: val });
+      });
+    }
+    return { group: groupName, entries: entries };
   });
-}
+
+  // 2. 서버 전송
+  try {
+    const params = new URLSearchParams();
+    params.append("type", "bulkPest"); // GAS에서 bulk 처리를 위해 type 지정
+    params.append("date", date);
+    params.append("data", JSON.stringify(bulkPayload));
+
+    await fetch(scriptUrl, {
+      method: "POST",
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
+
+    alert("🎲 건면동/생면동 일괄 등록이 완료되었습니다.");
+    
+    // UI 전환
+    document.getElementById("modeButtons").classList.add("hidden");
+    document.getElementById("submitBtn").classList.add("hidden");
+    document.getElementById("switchToManualBtn").classList.remove("hidden");
+    checkStatus(); // 상태 새로고침
+
+  } catch (e) {
+    alert("일괄 등록 실패: " + e.message);
+  } finally {
+    document.getElementById("loadingMsg").style.display = "none";
+  }
+});
+
+// 개별 등록 모드로 전환 버튼
+document.getElementById("switchToManualBtn").addEventListener("click", () => {
+  document.getElementById("switchToManualBtn").classList.add("hidden");
+  document.getElementById("submitBtn").classList.remove("hidden");
+  document.getElementById("groupArea").classList.remove("hidden");
+});
 
 document.getElementById("group").addEventListener("change", function() {
   const group = this.value;
@@ -213,8 +241,11 @@ document.getElementById("group").addEventListener("change", function() {
 
   sections.classList.remove("hidden");
   const existingData = serverDetails[group] || [];
+  
+  // 모든 입력값 초기화
   document.querySelectorAll(".entry input").forEach(input => input.value = 0);
 
+  // 기존 데이터가 있다면 채우기
   if (existingData.length > 0) {
     existingData.forEach(item => {
       const targetInput = document.querySelector(
@@ -224,6 +255,7 @@ document.getElementById("group").addEventListener("change", function() {
     });
   }
 
+  // 그룹에 따른 섹션 보임/숨김 (생면동은 방서트랩 제외)
   document.querySelectorAll(".entry").forEach(section => {
     const cat = section.dataset.category;
     if (cat.startsWith("방서트랩") && group === "생면동") section.classList.add("hidden");
@@ -231,12 +263,13 @@ document.getElementById("group").addEventListener("change", function() {
   });
 });
 
+// 전체 삭제
 document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
   if(!confirm(`${date}의 전체 데이터를 삭제하시겠습니까?`)) return;
   
-  const loadingMsg = document.getElementById("loadingMsg");
-  loadingMsg.style.display = "block";
+  document.getElementById("loadingTxt").textContent = "데이터 삭제 중...";
+  document.getElementById("loadingMsg").style.display = "block";
   try {
     const params = new URLSearchParams();
     params.append("type", "deleteAllPest");
@@ -248,11 +281,12 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
     alert("삭제 완료");
-    location.reload();
+    checkStatus();
   } catch(e) { alert("삭제 실패"); }
-  finally { loadingMsg.style.display = "none"; }
+  finally { document.getElementById("loadingMsg").style.display = "none"; }
 });
 
+// 개별 저장 전송
 document.getElementById("trapForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const date = document.getElementById("date").value;
@@ -271,8 +305,8 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
     });
   });
 
-  const loadingMsg = document.getElementById("loadingMsg");
-  loadingMsg.style.display = "block";
+  document.getElementById("loadingTxt").textContent = "데이터 저장 중...";
+  document.getElementById("loadingMsg").style.display = "block";
 
   const params = new URLSearchParams();
   params.append("data", JSON.stringify({ date, group, entries }));
@@ -283,13 +317,12 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
       body: params,
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
-    const resultText = await response.text();
-    alert("✅ 저장 완료!\n" + resultText);
-    location.reload();
+    alert("✅ 저장 완료!");
+    checkStatus();
   } catch (err) {
     alert("❌ 전송 실패: " + err.message);
   } finally {
-    loadingMsg.style.display = "none";
+    document.getElementById("loadingMsg").style.display = "none";
   }
 });
 
