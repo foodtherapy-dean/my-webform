@@ -15,12 +15,20 @@ button { cursor:pointer; border:none; border-radius:6px; }
 label { display:block; margin-top:16px; margin-bottom:6px; font-weight:bold; }
 input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; box-sizing: border-box; }
 
-/* 상단 입고 현황 요약 */
-.status-container { margin-top: 5px; padding: 10px; background: #e3f2fd; border-radius: 8px; border: 1px solid #bbdefb; }
-.status-title { font-size: 0.9rem; color: #1976d2; font-weight: bold; margin-bottom: 5px; }
-#ingpList { color: #1976d2; font-weight: bold; font-size: 1rem; word-break: break-all; }
-
-#loadingMsg { background: #3f51b5; color: white; padding: 20px; margin-top: 20px; text-align: center; border-radius: 8px; display: none; }
+/* 입고 현황 안내판 스타일 수정 (가로 1줄 최적화) */
+.status-container { 
+  margin-top: 5px; 
+  padding: 12px; 
+  background: #e3f2fd; 
+  border-radius: 8px; 
+  border: 1px solid #bbdefb;
+  display: flex; /* 가로 배열 */
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap; /* 내용이 너무 길면 다음줄로 넘어가도록 */
+}
+.status-title { font-size: 0.95rem; color: #1976d2; font-weight: bold; white-space: nowrap; }
+#ingpList { color: #d32f2f; font-weight: bold; font-size: 0.95rem; } /* 입고된 제품은 붉은색 계열로 강조 가능 */
 
 /* 삭제 영역 (중복 시 노출) */
 #deleteArea { display: none; margin-top: 15px; background: #fff; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; }
@@ -119,25 +127,30 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
       serverData = result.data || [];
       
-      // 상단 파란색 리스트 표시
+      // ✅ [수정] 입고제품 LIST : 제품A, 제품B (가로 1줄 표시)
       if (serverData.length > 0) {
-        ingpList.textContent = serverData.map(d => d.product).join(", ");
+        const productNames = serverData.map(d => d.product.trim()).join(", ");
+        ingpList.textContent = productNames;
       } else {
-        ingpList.textContent = "없음 (모두 미입고)";
+        ingpList.textContent = "없음";
       }
 
       // 셀렉트 박스 (입고) 텍스트 업데이트
       const options = productSelect.querySelectorAll("option");
       options.forEach(opt => {
         if (opt.value === "") return;
-        const cleanName = opt.value.replace(" (입고)", "");
-        const isExist = serverData.some(d => d.product.trim() === cleanName.trim());
+        
+        // "(입고)" 등의 부가 텍스트를 제외한 순수 제품명 추출
+        const cleanName = opt.value.split(" (")[0].trim(); 
+        const isExist = serverData.some(d => d.product.trim() === cleanName);
+        
         opt.textContent = isExist ? `${cleanName} (입고)` : cleanName;
-        // 실제 value값은 정제된 이름으로 유지 (매칭용)
+        // value값은 시트와 대조하기 위해 순수 이름으로 고정
         opt.value = cleanName; 
       });
 
     } catch(e) {
+      console.error(e);
       ingpList.textContent = "로드 실패";
     } finally {
       loadingMsg.style.display = "none";
@@ -146,22 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2. 제품 선택 시 동작
   productSelect.addEventListener("change", () => {
-    const selectedProd = productSelect.value;
+    const selectedProd = productSelect.value.trim();
     if (!selectedProd) {
       detailInputs.style.display = "none";
       deleteArea.style.display = "none";
       return;
     }
 
-    const existing = serverData.find(d => d.product.trim() === selectedProd.trim());
+    // 서버 데이터에서 선택한 제품 찾기
+    const existing = serverData.find(d => d.product.trim() === selectedProd);
     detailInputs.style.display = "block";
     
-    // 초기화
+    // UI 초기화
     countInput.value = "";
     optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
 
     if (existing) {
-      // 데이터 복원
+      // 데이터가 존재하면 버튼 및 수량 복원
       countInput.value = existing.count || "";
       const states = [existing.A, existing.B, existing.C, existing.D, existing.E];
       states.forEach((val, i) => {
@@ -177,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // O/X 버튼 클릭
+  // O/X 버튼 클릭 처리
   optionsContainer.addEventListener("click", (e) => {
     if (e.target.tagName === "BUTTON") {
       const group = e.target.closest(".option-buttons");
@@ -186,31 +200,44 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 3. 삭제 실행
+  // 3. 삭제 실행 (시트 반영 강화)
   deleteBtn.addEventListener("click", async () => {
-    const prod = productSelect.value;
-    if(!confirm(`[${prod}] 기록을 삭제하시겠습니까?\n삭제 후 다시 입력할 수 있습니다.`)) return;
+    const prod = productSelect.value.trim();
+    if(!confirm(`[${prod}] 기록을 삭제하시겠습니까?`)) return;
     
     try {
       loadingMsg.style.display = "block";
+      // URLSearchParams를 사용하여 정확한 파라미터 전달
+      const params = new URLSearchParams();
+      params.append("type", "deleteInput");
+      params.append("date", dateInput.value);
+      params.append("product", prod);
+
       await fetch(scriptUrl, {
         method: "POST",
-        body: new URLSearchParams({ type: "deleteInput", date: dateInput.value, product: prod })
+        body: params
       });
+      
       alert("삭제되었습니다.");
-      loadDailyStatus();
-    } catch(e) { alert("삭제 실패"); }
+      await loadDailyStatus(); // 삭제 후 리스트 다시 로드
+    } catch(e) { 
+      alert("삭제 중 오류가 발생했습니다."); 
+    } finally {
+      loadingMsg.style.display = "none";
+    }
   });
 
   // 4. 저장 실행 (덮어쓰기 포함)
   submitBtn.addEventListener("click", async () => {
-    if (!productSelect.value) return alert("제품을 선택하세요.");
+    const prod = productSelect.value.trim();
+    if (!prod) return alert("제품을 선택하세요.");
+    
     const selectedOptions = optionsContainer.querySelectorAll("button.selected");
     if (selectedOptions.length < 5) return alert("모든 점검 항목을 선택해주세요.");
 
     const payload = {
       date: dateInput.value,
-      product: productSelect.value,
+      product: prod,
       count: countInput.value,
       A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected').textContent,
       B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected').textContent,
@@ -222,21 +249,27 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       submitBtn.disabled = true;
       submitBtn.textContent = "⏳ 저장 중...";
+      
+      const params = new URLSearchParams();
+      params.append("input", JSON.stringify(payload));
+
       await fetch(scriptUrl, {
         method: "POST",
-        body: new URLSearchParams({ input: JSON.stringify(payload) })
+        body: params
       });
+      
       alert("저장/업데이트 완료!");
-      loadDailyStatus();
-    } catch(err){ alert("저장 실패"); }
-    finally {
+      await loadDailyStatus();
+    } catch(err){ 
+      alert("저장 중 오류가 발생했습니다."); 
+    } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "💾 저장하기";
     }
   });
 
   dateInput.addEventListener("change", loadDailyStatus);
-  loadDailyStatus();
+  loadDailyStatus(); // 초기 실행
 });
 </script>
 </body>
