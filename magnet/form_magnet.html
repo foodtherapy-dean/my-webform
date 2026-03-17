@@ -90,7 +90,7 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzBomaVEDZsJhph0ipgQE0gm8N0Y_LvbYG5XWHzWCqvLFPtEVLI-mMgfHr3FpdO20E99w/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
@@ -105,24 +105,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const productInput = document.getElementById("product");
   const deleteArea = document.getElementById("deleteArea");
   const delDateText = document.getElementById("delDateText");
-  const urlParams = new URLSearchParams(window.location.search);
-  const paramDate = urlParams.get('date');
+  
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
-  if (paramDate) {
-    dateInput.value = paramDate; // URL 날짜 적용
-  } else {
-    // URL 날짜가 없으면 오늘 날짜 적용 (기존 ISOString 방식 유지)
-    dateInput.value = new Date().toISOString().split("T")[0];
-  }
+  let serverData = []; // 서버에서 받아온 상세 데이터 저장용
 
-  let serverData = [];
+  dateInput.value = new Date().toISOString().split("T")[0];
 
   // 1. 서버 데이터 호출 (최초 로드 및 날짜 변경 시)
   async function updateOptionCompletion(dateVal) {
-    const newUrl = `${window.location.pathname}?date=${dateVal}`;
-    window.history.pushState({ path: newUrl }, '', newUrl);
     loadingMsg.style.display = "block";
     mainContent.style.display = "none"; 
     subInputs.style.display = "none";
@@ -156,75 +148,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 항목 선택 시 데이터 채우기
+  // 2. 항목 선택 시 데이터 채우기 (핵심 로직)
   function handleOptionChange(opt) {
-  subInputs.style.display = "block";
-  const isBasic = ["작업전", "작업후"].includes(opt);
-  const isCheck = ["1차점검", "2차점검"].includes(opt);
-  const isFinal = opt === "최종취합";
+    subInputs.style.display = "block";
+    const isBasic = ["작업전", "작업후"].includes(opt);
+    const isCheck = ["1차점검", "2차점검"].includes(opt);
+    const isFinal = opt === "최종취합";
 
-  // UI 보임/숨김
-  document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
-  productInput.closest("label").style.display = isBasic ? "none" : "block";
-  summaryInputs.style.display = isFinal ? "block" : "none";
-  oxContainer.style.display = isFinal ? "none" : "block";
+    // UI 보임/숨김
+    document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
+    productInput.closest("label").style.display = isBasic ? "none" : "block";
+    summaryInputs.style.display = isFinal ? "block" : "none";
+    oxContainer.style.display = isFinal ? "none" : "block";
 
-  // 폼 초기화
-  document.getElementById("time").value = "";
-  productInput.value = "";
-  document.getElementById("passCount").value = "";
-  document.getElementById("detectCount").value = "";
-  oxValues = {};
+    // 폼 초기화
+    document.getElementById("time").value = "";
+    productInput.value = "";
+    document.getElementById("passCount").value = "";
+    document.getElementById("detectCount").value = "";
+    oxValues = {};
 
-  // serverData에서 선택한 옵션과 일치하는 데이터 찾기
-  const existing = serverData.find(d => String(d.option).trim() === String(opt).trim());
+    // serverData에서 해당 옵션 찾기
+    const existing = serverData.find(d => String(d.option) === String(opt));
 
-  if (existing) {
-    // 1. 시간 복원
-    if (existing.hour !== "" && existing.hour !== undefined) {
-      const hh = String(existing.hour).padStart(2, '0');
-      const mm = String(existing.minute || "0").padStart(2, '0');
-      document.getElementById("time").value = `${hh}:${mm}`;
+    if (existing) {
+      // 시간 복원
+      if (existing.hour) {
+        const hh = String(existing.hour).padStart(2, '0');
+        const mm = String(existing.minute || "0").padStart(2, '0');
+        document.getElementById("time").value = `${hh}:${hh === "" ? "" : mm}`;
+      }
+      productInput.value = existing.product || "";
+      document.getElementById("passCount").value = existing.passCount || "";
+      document.getElementById("detectCount").value = existing.detectCount || "";
+      oxValues = existing.states || {};
     }
-    
-    // 2. 제품명 복원
-    productInput.value = existing.product || "";
 
-   // 3. 통과/검출 수량 복원 (초강력 디버깅 모드)
-const passInput = document.getElementById("passCount");
-const detectInput = document.getElementById("detectCount");
-
-if (existing) {
-  // 데이터 객체에서 'detect'가 포함된 키를 모두 뒤져서 값을 찾음
-  // (대소문자나 미세한 이름 차이 해결)
-  const realPass = existing.passCount ?? existing.pass ?? "";
-  const realDetect = existing.detectCount ?? existing.detect ?? existing.detectcount ?? "";
-
-  // 통과 수량 입력
-  if (realPass !== "") {
-    passInput.value = realPass;
-  }
-
-  // 검출 수량 입력 (핵심: 0이나 "0"을 절대 놓치지 않음)
-  if (realDetect === 0 || realDetect === "0") {
-    detectInput.value = 0;
-  } else if (realDetect !== "") {
-    detectInput.value = realDetect;
-  }
-
-  // [확인용] 만약 이래도 안 나오면 브라우저 콘솔(F12)을 보세요
-  console.log(`[데이터확인] 옵션:${opt}, 가져온값:${realDetect}, 타입:${typeof realDetect}`);
-}
-    // 4. OX 상태 복원
-    oxValues = existing.states || {};
-  }
-    // OX 버튼 생성 및 상태 복원
+    // OX 버튼 생성 및 체크상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
       const div = document.createElement("div");
       div.className = "ox-set";
-      const savedVal = String(oxValues[label] || "").toUpperCase(); // O 또는 X
+      const savedVal = oxValues[label] || "";
       div.innerHTML = `<div>${label}</div><div class="ox-buttons">
         <button type="button" class="ox ${savedVal === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox ${savedVal === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
@@ -232,6 +198,7 @@ if (existing) {
       oxContainer.appendChild(div);
     });
   }
+
   // 일괄 등록 버튼
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
