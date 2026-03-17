@@ -103,7 +103,6 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </div>
 
 <script>
-// 배포한 GAS URL을 확인하세요
 const BASE_URL = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -124,11 +123,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
-  let serverData = [];
+  let serverData = []; 
 
   dateInput.value = new Date().toISOString().split("T")[0];
 
-  // 로딩 오버레이 제어 함수
+  // 로딩 오버레이 함수
   function showLoading(msg) {
     loadingText.textContent = msg;
     loadingOverlay.style.display = "flex";
@@ -138,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadingOverlay.style.display = "none";
   }
 
-  // 데이터 로드 및 중복 확인
+  // 1. 서버 데이터 호출
   async function updateOptionCompletion(dateVal) {
     showLoading("🔄 데이터 확인 중...");
     mainContent.style.display = "none"; 
@@ -150,8 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${BASE_URL}?getMagnet=${encodeURIComponent(JSON.stringify({date:dateVal}))}`);
       const result = await res.json();
       
-      serverData = result.data || [];
-      const existingOptions = result.options || [];
+      serverData = result.data || []; 
+      const existingOptions = result.options || []; 
       
       optionsList.innerHTML = "";
       optionItems.forEach(opt => {
@@ -165,21 +164,21 @@ document.addEventListener("DOMContentLoaded", () => {
       if(existingOptions.length > 0) delDateText.textContent = dateVal;
 
     } catch(e) {
-      console.error("로드 실패:", e);
+      console.error("데이터 로드 실패:", e);
     } finally {
       hideLoading();
       mainContent.style.display = "block";
     }
   }
 
-  // 옵션 선택 시 데이터 채우기 (데이터 복원 핵심)
+  // 2. 항목 선택 시 데이터 채우기 (숫자 0 해결 핵심 로직)
   function handleOptionChange(opt) {
     subInputs.style.display = "block";
     const isBasic = ["작업전", "작업후"].includes(opt);
     const isCheck = ["1차점검", "2차점검"].includes(opt);
     const isFinal = opt === "최종취합";
 
-    // UI 레이아웃 설정
+    // UI 보임/숨김
     document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
     productInput.closest("label").style.display = isBasic ? "none" : "block";
     summaryInputs.style.display = isFinal ? "block" : "none";
@@ -192,66 +191,46 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("detectCount").value = "";
     oxValues = {};
 
-    // 서버 데이터에서 옵션명으로 찾기 (공백 제거 후 매칭)
+    // serverData에서 해당 옵션 찾기
     const existing = serverData.find(d => String(d.option).trim() === String(opt).trim());
 
     if (existing) {
-      // 1. 시간 복원
+      // 시간 복원
       if (existing.hour !== undefined && existing.hour !== "") {
         const hh = String(existing.hour).padStart(2, '0');
         const mm = String(existing.minute || "0").padStart(2, '0');
         document.getElementById("time").value = `${hh}:${mm}`;
       }
-      
-      // 2. 제품명 복원
       productInput.value = existing.product || "";
       
-      // 3. 통과/검출 수량 복원 (숫자 0을 절대 놓치지 않는 로직)
-    const passInput = document.getElementById("passCount");
-    const detectInput = document.getElementById("detectCount");
+      // --- 수량 복원 (숫자 0을 살리는 조건문) ---
+      const passIn = document.getElementById("passCount");
+      const detectIn = document.getElementById("detectCount");
 
-    // 초기화 (기본적으로 비움)
-    passInput.value = "";
-    detectInput.value = "";
-
-    if (existing) {
-      // 통과 수량 처리
-      const pVal = existing.passCount ?? existing.pass;
-      if (pVal === 0 || pVal === "0") {
-        passInput.value = 0;
-      } else if (pVal) {
-        passInput.value = pVal;
+      // 통과수량
+      if (existing.passCount === 0 || existing.passCount === "0") {
+        passIn.value = 0;
+      } else {
+        passIn.value = existing.passCount || "";
       }
 
-      // 검출 수량 처리 (0인 경우를 가장 먼저 체크!)
-      const dVal = existing.detectCount ?? existing.detect;
-      if (dVal === 0 || dVal === "0") {
-        detectInput.value = 0; // 값이 0이면 강제로 숫자 0 주입
-      } else if (dVal) {
-        detectInput.value = dVal; // 그 외의 숫자가 있으면 그 숫자 주입
+      // 검출수량 (0인 경우를 명시적으로 체크하여 무시되지 않게 함)
+      if (existing.detectCount === 0 || existing.detectCount === "0") {
+        detectIn.value = 0;
+      } else {
+        detectIn.value = existing.detectCount || "";
       }
       
       oxValues = existing.states || {};
     }
-      
-      // detectCount 속성 존재 시 입력 (0 포함)
-      if ("detectCount" in existing && existing.detectCount !== "") {
-        document.getElementById("detectCount").value = existing.detectCount;
-      } else if (existing.detectCount === 0 || existing.detectCount === "0") {
-        document.getElementById("detectCount").value = 0;
-      }
 
-      // 4. OX 상태 복원
-      oxValues = existing.states || {};
-    }
-
-    // OX 버튼 렌더링 및 선택값 적용
+    // OX 버튼 생성 및 체크상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
       const div = document.createElement("div");
       div.className = "ox-set";
-      const savedVal = String(oxValues[label] || "").toUpperCase();
+      const savedVal = (oxValues[label] || "").toUpperCase();
       div.innerHTML = `<div>${label}</div><div class="ox-buttons">
         <button type="button" class="ox ${savedVal === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox ${savedVal === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
@@ -260,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 일괄 등록 버튼
+  // 일괄 등록
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
@@ -274,12 +253,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     try {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "bulk", date: dateVal, items: bulkData }) }) });
-      alert("일괄 생성이 완료되었습니다.");
+      alert("완료!");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch (e) { alert("처리 중 오류가 발생했습니다."); } finally { hideLoading(); }
+    } catch (e) { alert("실패"); } finally { hideLoading(); }
   });
 
-  // 데이터 삭제 버튼
+  // 삭제
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
@@ -288,10 +267,9 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
       alert("삭제되었습니다.");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch(e) { alert("삭제 중 오류가 발생했습니다."); } finally { hideLoading(); }
+    } catch(e) { alert("삭제 실패"); } finally { hideLoading(); }
   });
 
-  // 커스텀 옵션 리스트 토글 및 선택
   customOption.addEventListener("click", e => {
     if (e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
     if (e.target.tagName === "LI") {
@@ -302,7 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // OX 버튼 클릭 시 데이터 업데이트
   document.addEventListener("click", e => {
     if(e.target.classList.contains("ox")) {
       const { label, value } = e.target.dataset;
@@ -311,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 데이터 저장 제출
+  // 저장
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
     if(!currentOption) { alert("점검 옵션을 선택해주세요."); return; }
@@ -327,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
       alert("저장되었습니다.");
       resetForm(form, form.date.value);
-    } catch(e) { alert("저장 중 오류가 발생했습니다."); } finally { hideLoading(); }
+    } catch(e) { alert("저장 실패"); } finally { hideLoading(); }
   });
 
   function resetForm(form, keepDate) {
@@ -336,7 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateOptionCompletion(keepDate);
   }
 
-  // 날짜 변경 시 즉시 데이터 동기화
   dateInput.addEventListener("change", () => updateOptionCompletion(dateInput.value));
   updateOptionCompletion(dateInput.value);
 });
