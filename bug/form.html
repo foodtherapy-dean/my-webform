@@ -194,17 +194,23 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
     params.append("date", date);
     params.append("data", JSON.stringify(bulkData));
 
-    await fetch(scriptUrl, { method: "POST", body: params });
-    
+    const response = await fetch(scriptUrl, { 
+      method: "POST", 
+      body: params,
+      // 헤더를 명시적으로 추가하여 전송의 안정성을 높입니다.
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
+
+    const resultText = await response.text();
+    console.log("서버 응답:", resultText); // 디버깅용 로그
+
     hideLoading();
     alert("✅ 일괄 등록이 완료되었습니다!");
-
-    // 저장 완료 후 개별모드 전환 버튼을 거치지 않고 바로 상태 리프레시
     await checkStatus(); 
 
   } catch (e) {
     hideLoading();
-    alert("일괄 등록 중 오류 발생: " + e.message);
+    alert("전송 실패: " + e.message);
   }
 });
 
