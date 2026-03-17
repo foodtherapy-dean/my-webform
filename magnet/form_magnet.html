@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>금속검출점검</title>
 <style>
+/* 스타일 유지 */
 html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-container { display:flex; flex-direction:column; height:100%; }
 .app-header { flex:0 0 auto; background:#4CAF50; color:white; text-align:center; padding:16px; font-size:1.5rem; }
@@ -41,7 +42,7 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
   <form id="magnetForm" class="app-body">
     <label>날짜 <input type="date" id="date" name="date" /></label>
     
-    <div id="loadingMsg">🔄 데이터 확인 중입니다...</div>
+    <div id="loadingMsg">🔄 데이터 중복 확인 중...</div>
 
     <div id="mainContent" style="display:none;">
       <div id="deleteArea" style="display:none;">
@@ -108,27 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
-  let serverData = []; // 서버에서 가져온 해당 날짜의 상세 데이터 저장
+  let serverData = []; // 서버에서 받아온 상세 데이터 저장용
 
   dateInput.value = new Date().toISOString().split("T")[0];
 
-  // 옵션 리스트 렌더링
-  function renderOptions(existingOptions=[]) {
-    optionsList.innerHTML = "";
-    optionItems.forEach(opt => {
-      const li = document.createElement("li");
-      li.dataset.value = opt;
-      li.textContent = existingOptions.includes(opt) ? `${opt} (완료)` : opt;
-      optionsList.appendChild(li);
-    });
-    deleteArea.style.display = existingOptions.length > 0 ? "block" : "none";
-    if(existingOptions.length > 0) delDateText.textContent = dateInput.value;
-  }
-
-  // 서버에서 데이터 가져오기
+  // 1. 서버 데이터 호출 (최초 로드 및 날짜 변경 시)
   async function updateOptionCompletion(dateVal) {
     loadingMsg.style.display = "block";
-    mainContent.style.display = "none"; // 날짜 외 모든 UI 숨김
+    mainContent.style.display = "none"; 
     subInputs.style.display = "none";
     summaryInputs.style.display = "none";
     selectedDiv.textContent = "선택하세요";
@@ -137,26 +125,37 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`${BASE_URL}?getMagnet=${encodeURIComponent(JSON.stringify({date:dateVal}))}`);
       const result = await res.json();
       
-      // result.options는 ['작업전', '1차점검'] 형태의 배열
-      // result.data는 해당 날짜의 행 데이터 배열
-      serverData = result.data || []; 
-      renderOptions(result.options || []);
+      serverData = result.data || []; // 전체 상세 데이터 저장
+      const existingOptions = result.options || []; // 완료된 옵션명 배열
+      
+      // 옵션 리스트 생성
+      optionsList.innerHTML = "";
+      optionItems.forEach(opt => {
+        const li = document.createElement("li");
+        li.dataset.value = opt;
+        li.textContent = existingOptions.includes(opt) ? `${opt} (완료)` : opt;
+        optionsList.appendChild(li);
+      });
+
+      deleteArea.style.display = existingOptions.length > 0 ? "block" : "none";
+      if(existingOptions.length > 0) delDateText.textContent = dateVal;
+
     } catch(e) {
       console.error("데이터 로드 실패:", e);
     } finally {
       loadingMsg.style.display = "none";
-      mainContent.style.display = "block"; // 확인 완료 후 노출
+      mainContent.style.display = "block";
     }
   }
 
-  // 옵션 선택 시 기존 데이터 불러오기 로직
-  async function handleOptionChange(opt) {
+  // 2. 항목 선택 시 데이터 채우기 (핵심 로직)
+  function handleOptionChange(opt) {
     subInputs.style.display = "block";
     const isBasic = ["작업전", "작업후"].includes(opt);
     const isCheck = ["1차점검", "2차점검"].includes(opt);
     const isFinal = opt === "최종취합";
 
-    // UI 가시성 설정
+    // UI 보임/숨김
     document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
     productInput.closest("label").style.display = isBasic ? "none" : "block";
     summaryInputs.style.display = isFinal ? "block" : "none";
@@ -169,11 +168,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("detectCount").value = "";
     oxValues = {};
 
-    // 해당 옵션의 기존 데이터가 있다면 채워넣기
-    const existing = serverData.find(d => d.option === opt);
+    // serverData에서 해당 옵션 찾기
+    const existing = serverData.find(d => String(d.option) === String(opt));
+
     if (existing) {
-      if (existing.hour && existing.minute) {
-        document.getElementById("time").value = `${String(existing.hour).padStart(2,'0')}:${String(existing.minute).padStart(2,'0')}`;
+      // 시간 복원
+      if (existing.hour) {
+        const hh = String(existing.hour).padStart(2, '0');
+        const mm = String(existing.minute || "0").padStart(2, '0');
+        document.getElementById("time").value = `${hh}:${hh === "" ? "" : mm}`;
       }
       productInput.value = existing.product || "";
       document.getElementById("passCount").value = existing.passCount || "";
@@ -181,22 +184,22 @@ document.addEventListener("DOMContentLoaded", () => {
       oxValues = existing.states || {};
     }
 
-    // OX 버튼 생성
+    // OX 버튼 생성 및 체크상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
       const div = document.createElement("div");
       div.className = "ox-set";
-      const val = oxValues[label] || "";
+      const savedVal = oxValues[label] || "";
       div.innerHTML = `<div>${label}</div><div class="ox-buttons">
-        <button type="button" class="ox ${val === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox ${val === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
+        <button type="button" class="ox ${savedVal === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox ${savedVal === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
       </div>`;
       oxContainer.appendChild(div);
     });
   }
 
-  // (기존 일괄등록, 삭제, OX클릭, 제출 이벤트 리스너들은 동일하게 유지)
+  // 일괄 등록 버튼
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
@@ -217,14 +220,16 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) { alert("실패"); } finally { btn.disabled = false; btn.textContent = "📅 이 날짜 데이터 일괄 생성"; }
   });
 
+  // 일괄 삭제 버튼
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
-    if(!confirm(`${dateVal} 삭제?`)) return;
+    if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
     await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
-    alert("삭제됨");
+    alert("삭제되었습니다.");
     resetForm(document.getElementById("magnetForm"), dateVal);
   });
 
+  // 옵션 선택 클릭 이벤트
   customOption.addEventListener("click", e => {
     if (e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
     if (e.target.tagName === "LI") {
@@ -235,6 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // OX 버튼 클릭 이벤트
   document.addEventListener("click", e => {
     if(e.target.classList.contains("ox")) {
       const { label, value } = e.target.dataset;
@@ -243,6 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 저장
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
     const form = e.target;
