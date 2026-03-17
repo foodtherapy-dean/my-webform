@@ -223,11 +223,41 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
 });
 
 // 7. 전송
-document.getElementById("trapForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  // ... (기존 저장 로직과 동일) ...
-  // 전송 후 완료되면 checkStatus() 호출하여 UI 갱신
-});
+
+  document.getElementById("trapForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      
+      const date = document.getElementById("date").value;
+      const group = document.getElementById("group").value;
+      const entries = [];
+
+      document.querySelectorAll(".entry:not(.hidden)").forEach(div => {
+        const category = div.dataset.category;
+        div.querySelectorAll("input").forEach(input => {
+          entries.push({
+            category: category,
+            subcategory: input.dataset.sub,
+            value: parseInt(input.value) || 0
+          });
+        });
+      });
+
+      loadingMsg.style.display = "block";
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ date, group, entries }));
+
+      try {
+        const response = await fetch(scriptUrl, { method: "POST", body: formData });
+        const result = await response.text();
+        alert("✅ 저장 완료!\n" + result);
+        location.reload();
+      } catch (err) {
+        alert("❌ 전송 실패: " + err.message);
+      } finally {
+        loadingMsg.style.display = "none";
+      }
+    });
+ 
 
 document.getElementById("date").addEventListener("change", checkStatus);
 </script>
