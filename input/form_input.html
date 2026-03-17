@@ -11,18 +11,16 @@ body, html { margin:0; padding:0; font-family:sans-serif; height:100%; }
 .app-body { flex:1 1 auto; overflow-y:auto; padding:20px; background:#f9f9f9; }
 .app-footer { flex:0 0 auto; display: flex; }
 button { cursor:pointer; border:none; border-radius:6px; }
-button:disabled { opacity:0.5; cursor:not-allowed; }
 
 label { display:block; margin-top:16px; margin-bottom:6px; font-weight:bold; }
 input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; box-sizing: border-box; }
 
-/* 상태 메시지 */
 #loadingMsg { background: #3f51b5; color: white; padding: 20px; margin-top: 20px; text-align: center; border-radius: 8px; font-size: 1.2rem; display: none; }
 
 /* 삭제 영역 */
-#deleteArea { display: none; margin-top: 15px; background: #fff; padding: 10px; border: 1px solid #dc3545; border-radius: 6px; }
+#deleteArea { display: none; margin-top: 15px; background: #fff; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; }
 .btn-delete { background: #dc3545; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 6px; font-weight: bold; }
-.del-msg { color: #dc3545; font-size: 0.9rem; margin-bottom: 8px; text-align: center; }
+.del-msg { color: #dc3545; font-size: 1rem; margin-bottom: 10px; text-align: center; font-weight: bold; }
 
 .option-row { display:flex; align-items:center; margin-bottom:12px; }
 .option-label { width:120px; font-weight:normal; }
@@ -41,15 +39,15 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
     <label for="date">날짜</label>
     <input type="date" id="date" />
 
-    <div id="loadingMsg">🔄 데이터 중복 확인 중...</div>
+    <div id="loadingMsg">🔄 데이터 로드 중...</div>
 
     <div id="mainContent" style="display:none;">
       <div id="deleteArea">
-        <div class="del-msg">⚠️ [<span id="delProdName"></span>]은(는) 이미 입고된 제품입니다.</div>
-        <button type="button" id="deleteBtn" class="btn-delete">데이터 삭제하기</button>
+        <div class="del-msg">⚠️ [<span id="delProdName"></span>] 데이터가 이미 존재합니다.</div>
+        <button type="button" id="deleteBtn" class="btn-delete">기존 데이터 삭제</button>
       </div>
 
-      <label for="product">제품명</label>
+      <label for="product">제품명 (입고 여부 확인)</label>
       <select id="product">
         <option value="">선택하세요</option>
         <option value="밀가루">밀가루</option>
@@ -60,7 +58,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 
       <div id="detailInputs" style="display:none;">
         <label for="count">수량</label>
-        <input type="number" id="count" min="0" placeholder="수량을 입력하세요" />
+        <input type="number" id="count" min="0" />
 
         <div id="optionsContainer" style="margin-top:16px;">
           <div class="option-row"><div class="option-label">차량상태</div><div class="option-buttons"><button type="button">O</button><button type="button">X</button></div></div>
@@ -99,51 +97,47 @@ document.addEventListener("DOMContentLoaded", () => {
   // 초기 날짜 설정
   dateInput.valueAsDate = new Date();
 
-  // 날짜 변경 시 실행 (전체 데이터 로드)
-  async function checkDateChange() {
+  async function loadData() {
     loadingMsg.style.display = "block";
     mainContent.style.display = "none";
     deleteArea.style.display = "none";
     detailInputs.style.display = "none";
-    productSelect.value = "";
-
+    
     try {
       const res = await fetch(`${scriptUrl}?getDailyInput=true&date=${dateInput.value}`);
       const result = await res.json();
       serverData = result.data || [];
-      updateProductOptions();
-    } catch(err) {
-      serverData = [];
+      
+      // Select box 업데이트: 제품명 옆에 (입고) 표시
+      const options = productSelect.querySelectorAll("option");
+      options.forEach(opt => {
+        if (opt.value === "") return;
+        const baseName = opt.value.replace(" (입고)", "");
+        const isExist = serverData.some(d => d.product.trim() === baseName.trim());
+        opt.textContent = isExist ? `${baseName} (입고)` : baseName;
+      });
+      
+    } catch(e) {
+      console.error(e);
     } finally {
       loadingMsg.style.display = "none";
       mainContent.style.display = "block";
     }
   }
 
-  // 제품명 옵션 뒤에 (입고) 표시
-  function updateProductOptions() {
-    const options = productSelect.querySelectorAll("option");
-    options.forEach(opt => {
-      if (opt.value === "") return;
-      const baseName = opt.value.replace(" (입고)", "");
-      const isExist = serverData.some(d => d.product.trim() === baseName.trim());
-      opt.textContent = isExist ? `${baseName} (입고)` : baseName;
-    });
-  }
-
-  // 제품명 선택 시 데이터 바인딩
   productSelect.addEventListener("change", () => {
-    const selectedText = productSelect.value;
-    if (!selectedText) {
+    const selectedRaw = productSelect.value;
+    if (!selectedRaw) {
       detailInputs.style.display = "none";
       deleteArea.style.display = "none";
       return;
     }
 
-    const existing = serverData.find(d => d.product.trim() === selectedText.trim());
+    // (입고) 글자가 포함되어 있을 수 있으므로 실제 매칭은 trim과 비교
+    const baseName = selectedRaw.replace(" (입고)", "").trim();
+    const existing = serverData.find(d => d.product.trim() === baseName);
+
     detailInputs.style.display = "block";
-    
-    // 초기화
     countInput.value = "";
     optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
 
@@ -154,14 +148,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
         btns.forEach(b => { if (b.textContent === val) b.classList.add("selected"); });
       });
-      delProdName.textContent = selectedText;
+      delProdName.textContent = baseName;
       deleteArea.style.display = "block";
     } else {
       deleteArea.style.display = "none";
     }
   });
 
-  // O/X 버튼 토글
   optionsContainer.addEventListener("click", (e) => {
     if (e.target.tagName === "BUTTON") {
       const group = e.target.closest(".option-buttons");
@@ -170,29 +163,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 삭제 실행
   deleteBtn.addEventListener("click", async () => {
-    const prod = productSelect.value;
-    if(!confirm(`[${prod}] 데이터를 정말 삭제하시겠습니까?`)) return;
+    const baseName = productSelect.value.replace(" (입고)", "").trim();
+    if(!confirm(`[${baseName}] 데이터를 삭제하시겠습니까?`)) return;
+    
+    loadingMsg.style.display = "block";
     try {
       await fetch(scriptUrl, {
         method: "POST",
-        body: new URLSearchParams({ type: "deleteInput", date: dateInput.value, product: prod })
+        body: new URLSearchParams({ type: "deleteInput", date: dateInput.value, product: baseName })
       });
       alert("삭제되었습니다.");
-      checkDateChange();
+      loadData();
     } catch(e) { alert("삭제 실패"); }
   });
 
-  // 저장 실행
   submitBtn.addEventListener("click", async () => {
-    if (!productSelect.value) return alert("제품을 선택하세요.");
+    const baseName = productSelect.value.replace(" (입고)", "").trim();
+    if (!baseName) return alert("제품을 선택하세요.");
+    
     const selectedOptions = optionsContainer.querySelectorAll("button.selected");
     if (selectedOptions.length < 5) return alert("모든 점검 항목을 선택해주세요.");
 
     const payload = {
       date: dateInput.value,
-      product: productSelect.value,
+      product: baseName, // "(입고)" 없이 순수 이름만 보냄
       count: countInput.value,
       A: optionsContainer.querySelector('.option-row:nth-child(1) .option-buttons button.selected').textContent,
       B: optionsContainer.querySelector('.option-row:nth-child(2) .option-buttons button.selected').textContent,
@@ -202,17 +197,26 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "⏳ 저장 중...";
+      
       const res = await fetch(scriptUrl, {
         method: "POST",
-        body: "input=" + encodeURIComponent(JSON.stringify(payload))
+        body: new URLSearchParams({ input: JSON.stringify(payload) })
       });
-      alert("저장되었습니다.");
-      checkDateChange();
-    } catch(err){ alert("저장 실패"); }
+      const resData = await res.json();
+      alert(resData.message || "저장되었습니다.");
+      loadData();
+    } catch(err){ 
+      alert("저장 중 오류가 발생했습니다.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "💾 저장하기";
+    }
   });
 
-  dateInput.addEventListener("change", checkDateChange);
-  checkDateChange();
+  dateInput.addEventListener("change", loadData);
+  loadData();
 });
 </script>
 </body>
