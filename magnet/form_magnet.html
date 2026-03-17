@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>금속검출점검</title>
 <style>
+/* 기본 레이아웃 및 스타일 */
 html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-container { display:flex; flex-direction:column; height:100%; }
 .app-header { flex:0 0 auto; background:#4CAF50; color:white; text-align:center; padding:16px; font-size:1.5rem; }
@@ -12,10 +13,10 @@ html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-footer { flex:0 0 auto; display: flex; }
 button[type="submit"] { flex: 1; font-size: 1.4rem; padding: 18px 0; background: #28a745; color: white; border: none; cursor: pointer; }
 
-/* 중앙 안내창 스타일 */
+/* 중앙 진행 안내창(Loading Overlay) 스타일 */
 #loadingOverlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(0,0,0,0.6); color: white; 
+  background: rgba(0,0,0,0.7); color: white; 
   display: none; flex-direction: column; justify-content: center; align-items: center; 
   z-index: 9999; font-size: 1.2rem; font-weight: bold;
 }
@@ -35,6 +36,7 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 .number-row { display:flex; gap:10px; }
 .number-row > div { flex:1; }
 
+/* 커스텀 셀렉트(옵션 선택) */
 .custom-select { position:relative; width:100%; margin-top:6px; text-align:center; }
 .custom-select .selected-option { padding:12px; border:1px solid #ccc; background:#fff; cursor:pointer; }
 .custom-select ul.options { position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ccc; margin:0; padding:0; list-style:none; display:none; z-index:1000; }
@@ -101,6 +103,7 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 </div>
 
 <script>
+// 배포한 GAS URL을 확인하세요
 const BASE_URL = "https://script.google.com/macros/s/AKfycbzBomaVEDZsJhph0ipgQE0gm8N0Y_LvbYG5XWHzWCqvLFPtEVLI-mMgfHr3FpdO20E99w/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -125,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateInput.value = new Date().toISOString().split("T")[0];
 
+  // 로딩 오버레이 제어 함수
   function showLoading(msg) {
     loadingText.textContent = msg;
     loadingOverlay.style.display = "flex";
@@ -134,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadingOverlay.style.display = "none";
   }
 
+  // 데이터 로드 및 중복 확인
   async function updateOptionCompletion(dateVal) {
     showLoading("🔄 데이터 확인 중...");
     mainContent.style.display = "none"; 
@@ -167,52 +172,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 옵션 선택 시 데이터 채우기 (데이터 복원 핵심)
   function handleOptionChange(opt) {
     subInputs.style.display = "block";
     const isBasic = ["작업전", "작업후"].includes(opt);
     const isCheck = ["1차점검", "2차점검"].includes(opt);
     const isFinal = opt === "최종취합";
 
+    // UI 레이아웃 설정
     document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
     productInput.closest("label").style.display = isBasic ? "none" : "block";
     summaryInputs.style.display = isFinal ? "block" : "none";
     oxContainer.style.display = isFinal ? "none" : "block";
 
+    // 폼 초기화
     document.getElementById("time").value = "";
     productInput.value = "";
     document.getElementById("passCount").value = "";
     document.getElementById("detectCount").value = "";
     oxValues = {};
 
-    const existing = serverData.find(d => String(d.option) === String(opt));
+    // 서버 데이터에서 옵션명으로 찾기 (공백 제거 후 매칭)
+    const existing = serverData.find(d => String(d.option).trim() === String(opt).trim());
 
     if (existing) {
+      // 1. 시간 복원
       if (existing.hour !== undefined && existing.hour !== "") {
         const hh = String(existing.hour).padStart(2, '0');
         const mm = String(existing.minute || "0").padStart(2, '0');
         document.getElementById("time").value = `${hh}:${mm}`;
       }
+      
+      // 2. 제품명 복원
       productInput.value = existing.product || "";
       
-      // [수정 포인트] 숫자 0 완벽 대응 로직
-      if (existing.passCount !== undefined && existing.passCount !== "") {
+      // 3. 통과/검출 수량 복원 (숫자 0 완벽 대응)
+      // passCount 속성 존재 시 입력
+      if ("passCount" in existing && existing.passCount !== "") {
         document.getElementById("passCount").value = existing.passCount;
       }
-      if (existing.detectCount !== undefined && existing.detectCount !== "") {
+      
+      // detectCount 속성 존재 시 입력 (0 포함)
+      if ("detectCount" in existing && existing.detectCount !== "") {
         document.getElementById("detectCount").value = existing.detectCount;
       } else if (existing.detectCount === 0 || existing.detectCount === "0") {
         document.getElementById("detectCount").value = 0;
       }
 
+      // 4. OX 상태 복원
       oxValues = existing.states || {};
     }
 
+    // OX 버튼 렌더링 및 선택값 적용
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
       const div = document.createElement("div");
       div.className = "ox-set";
-      const savedVal = oxValues[label] || "";
+      const savedVal = String(oxValues[label] || "").toUpperCase();
       div.innerHTML = `<div>${label}</div><div class="ox-buttons">
         <button type="button" class="ox ${savedVal === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
         <button type="button" class="ox ${savedVal === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
@@ -221,6 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 일괄 등록 버튼
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
@@ -234,11 +252,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     try {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "bulk", date: dateVal, items: bulkData }) }) });
-      alert("완료!");
+      alert("일괄 생성이 완료되었습니다.");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch (e) { alert("실패"); } finally { hideLoading(); }
+    } catch (e) { alert("처리 중 오류가 발생했습니다."); } finally { hideLoading(); }
   });
 
+  // 데이터 삭제 버튼
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
@@ -247,9 +266,10 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
       alert("삭제되었습니다.");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch(e) { alert("삭제 실패"); } finally { hideLoading(); }
+    } catch(e) { alert("삭제 중 오류가 발생했습니다."); } finally { hideLoading(); }
   });
 
+  // 커스텀 옵션 리스트 토글 및 선택
   customOption.addEventListener("click", e => {
     if (e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
     if (e.target.tagName === "LI") {
@@ -260,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // OX 버튼 클릭 시 데이터 업데이트
   document.addEventListener("click", e => {
     if(e.target.classList.contains("ox")) {
       const { label, value } = e.target.dataset;
@@ -268,6 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 데이터 저장 제출
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
     if(!currentOption) { alert("점검 옵션을 선택해주세요."); return; }
@@ -283,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
       alert("저장되었습니다.");
       resetForm(form, form.date.value);
-    } catch(e) { alert("저장 실패"); } finally { hideLoading(); }
+    } catch(e) { alert("저장 중 오류가 발생했습니다."); } finally { hideLoading(); }
   });
 
   function resetForm(form, keepDate) {
@@ -292,6 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateOptionCompletion(keepDate);
   }
 
+  // 날짜 변경 시 즉시 데이터 동기화
   dateInput.addEventListener("change", () => updateOptionCompletion(dateInput.value));
   updateOptionCompletion(dateInput.value);
 });
