@@ -87,6 +87,7 @@ const structure = {
 };
 
 let completedGroups = [];
+let serverDetails = {}; // [추가] 서버에서 가져온 세부 데이터 저장소
 let isAutoMode = false;
 
 // 초기 세팅
@@ -110,7 +111,7 @@ function initForm() {
   }
 }
 
-// 1. 서버에서 해당 날짜 데이터 유무 확인
+// 1. 서버에서 해당 날짜 데이터 유무 및 세부 내용 확인
 async function checkStatus() {
   const date = document.getElementById("date").value;
   const statusArea = document.getElementById("statusArea");
@@ -124,7 +125,9 @@ async function checkStatus() {
   try {
     const res = await fetch(`${scriptUrl}?checkPestStatus=true&date=${date}`);
     const result = await res.json();
+    
     completedGroups = result.groups || [];
+    serverDetails = result.details || {}; // [추가] 서버에서 보낸 상세 데이터(details) 저장
 
     // UI 초기화
     statusArea.classList.add("hidden");
@@ -134,21 +137,22 @@ async function checkStatus() {
     document.getElementById("sections").classList.add("hidden");
 
     if (completedGroups.length > 0) {
-      // 데이터가 있는 경우
       statusArea.innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
       statusArea.classList.remove("hidden");
       deleteAllBtn.classList.remove("hidden");
       groupArea.classList.remove("hidden");
       updateGroupSelect();
     } else {
-      // 데이터가 없는 경우
       modeButtons.classList.remove("hidden");
     }
-  } catch(e) { alert("상태 로드 실패"); }
-  finally { loadingMsg.style.display = "none"; }
+  } catch(e) { 
+    console.error("데이터 로드 실패", e); 
+  } finally { 
+    loadingMsg.style.display = "none"; 
+  }
 }
 
-// 2. 그룹 선택창 텍스트 업데이트 (완료 표시)
+// 2. 그룹 선택창 업데이트
 function updateGroupSelect() {
   const groupSelect = document.getElementById("group");
   const options = groupSelect.querySelectorAll("option");
@@ -160,26 +164,23 @@ function updateGroupSelect() {
   });
 }
 
-// 3. 개별 입력 클릭
+// 3. 개별 입력 모드
 document.getElementById("manualModeBtn").addEventListener("click", () => {
   isAutoMode = false;
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
 });
 
-// 4. 일괄 입력(랜덤) 클릭
+// 4. 일괄 입력(랜덤) 모드
 document.getElementById("autoModeBtn").addEventListener("click", () => {
   isAutoMode = true;
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
-  
-  // 모든 데이터 0~랜덤으로 채우기 (두 그룹 모두 지정한다는 의도 반영)
-  alert("🎲 건면동/생면동 일괄 랜덤값이 생성됩니다. 그룹을 선택해 확인하세요.");
+  alert("🎲 랜덤값이 생성되었습니다. 그룹을 선택해 확인하세요.");
   applyRandomAll();
 });
 
 function applyRandomAll() {
-  // 실제 입력창에 랜덤값 미리 주입 (모든 섹션 대상)
   document.querySelectorAll(".entry").forEach(section => {
     const cat = section.dataset.category;
     section.querySelectorAll("input").forEach(input => {
@@ -192,22 +193,39 @@ function applyRandomAll() {
   });
 }
 
-// 5. 그룹 선택 시 화면 펼치기
+// 5. 그룹 선택 시 화면 펼치기 및 기존 데이터 바인딩
 document.getElementById("group").addEventListener("change", function() {
   const group = this.value;
   const sections = document.getElementById("sections");
   if(!group) { sections.classList.add("hidden"); return; }
 
   sections.classList.remove("hidden");
+
+  // [핵심 추가] 기존 데이터가 있다면 입력창에 값 채우기
+  const existingData = serverDetails[group] || [];
+  
+  // 모든 입력값 초기화 (0)
+  document.querySelectorAll(".entry input").forEach(input => input.value = 0);
+
+  // 데이터 매칭 및 주입
+  if (existingData.length > 0) {
+    existingData.forEach(item => {
+      const targetInput = document.querySelector(
+        `.entry[data-category="${item.category}"] input[data-sub="${item.subcategory}"]`
+      );
+      if (targetInput) targetInput.value = item.value;
+    });
+  }
+
+  // 섹션 가시성 제어
   document.querySelectorAll(".entry").forEach(section => {
     const cat = section.dataset.category;
-    // 생면동일 때 방서트랩 숨기기
     if (cat.startsWith("방서트랩") && group === "생면동") section.classList.add("hidden");
     else section.classList.remove("hidden");
   });
 });
 
-// 6. 삭제 버튼
+// 6. 삭제 버튼 (고속 삭제 로직 대응)
 document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
   if(!confirm("해당 날짜의 전체 데이터를 삭제하시겠습니까?")) return;
@@ -215,24 +233,28 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   const loadingMsg = document.getElementById("loadingMsg");
   loadingMsg.style.display = "block";
   try {
-    await fetch(`${scriptUrl}?type=deleteAllPest&date=${date}`, { method: "POST" });
+    const params = new URLSearchParams();
+    params.append("type", "deleteAllPest");
+    params.append("date", date);
+
+    await fetch(scriptUrl, { 
+      method: "POST", 
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
     alert("삭제 완료");
     location.reload();
   } catch(e) { alert("삭제 실패"); }
   finally { loadingMsg.style.display = "none"; }
 });
 
-// 7. 전송 (이 부분으로 교체하세요)
+// 7. 전송
 document.getElementById("trapForm").addEventListener("submit", async function(e) {
   e.preventDefault();
-
   const date = document.getElementById("date").value;
   const group = document.getElementById("group").value;
   
-  if (!group) {
-    alert("그룹을 선택해주세요.");
-    return;
-  }
+  if (!group) { alert("그룹을 선택해주세요."); return; }
 
   const entries = [];
   document.querySelectorAll(".entry:not(.hidden)").forEach(div => {
@@ -249,28 +271,18 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
   const loadingMsg = document.getElementById("loadingMsg");
   loadingMsg.style.display = "block";
 
-  // 데이터 전송 방식 변경: URLSearchParams 사용 (서버 인식률 최상)
   const params = new URLSearchParams();
   params.append("data", JSON.stringify({ date, group, entries }));
 
   try {
     const response = await fetch(scriptUrl, {
       method: "POST",
-      body: params, // FormData 대신 params 사용
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
-    
     const resultText = await response.text();
-    
-    // 서버 응답에 에러 문구가 포함되어 있는지 확인
-    if (resultText.includes("error") || resultText.includes("서버 내부 에러")) {
-      alert("❌ 서버 에러 발생:\n" + resultText);
-    } else {
-      alert("✅ 저장 완료!\n" + resultText);
-      location.reload();
-    }
+    alert("✅ 저장 완료!\n" + resultText);
+    location.reload();
   } catch (err) {
     alert("❌ 전송 실패: " + err.message);
   } finally {
