@@ -190,21 +190,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2. 제품명 복원
     productInput.value = existing.product || "";
 
-    // 3. 통과/검출 수량 복원 (숫자 0을 강제로 살리는 로직)
-    // passCount 복원
-    if (existing.passCount !== undefined && existing.passCount !== "") {
-      document.getElementById("passCount").value = Number(existing.passCount);
-    }
-    
-    // detectCount 복원 (숫자 0일 때도 0이 들어가도록!)
-    if (existing.detectCount !== undefined && existing.detectCount !== "") {
-      document.getElementById("detectCount").value = Number(existing.detectCount);
-    }
+    // 3. 통과/검출 수량 복원 (가장 강력한 체크 방식)
+
+// passCount 복원 (서버 데이터에 'passCount'라는 이름이 존재할 때만 실행)
+if ("passCount" in existing && existing.passCount !== "") {
+  document.getElementById("passCount").value = existing.passCount;
+}
+
+// detectCount 복원 (값 0을 완벽하게 살리는 핵심 로직)
+// 'detectCount'라는 속성이 존재하는지 체크 (0도 존재로 인정됨)
+if ("detectCount" in existing && existing.detectCount !== "") {
+  document.getElementById("detectCount").value = existing.detectCount;
+} else if (existing.detectCount === 0 || existing.detectCount === "0") {
+  // 만약 공백처리 로직에 걸리더라도, 값이 0이라면 강제로 0을 입력
+  document.getElementById("detectCount").value = 0;
+}
 
     // 4. OX 상태 복원
     oxValues = existing.states || {};
   }
-
     // OX 버튼 생성 및 상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
