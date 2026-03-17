@@ -42,6 +42,24 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 .option-buttons button.selected { background:#3f51b5; color:#fff; border-color: #3f51b5; }
 
 #submitBtn { flex: 1; font-size:1.4rem; padding:20px 0; background:#3f51b5; color:#fff; border-radius:0; }
+/* 로딩 메시지 화면 중앙 배치 */
+#loadingMsg { 
+  display: none; 
+  position: fixed; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%); 
+  background: rgba(63, 81, 181, 0.9); 
+  color: white; 
+  padding: 30px 50px; 
+  border-radius: 12px; 
+  z-index: 9999; 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
