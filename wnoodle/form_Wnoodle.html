@@ -119,7 +119,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const productArea = document.getElementById("productArea");
   const lotRow = document.getElementById("lotRow");
   
-  dateInput.valueAsDate = new Date();
+  const urlParams = new URLSearchParams(window.location.search);
+const paramDate = urlParams.get('date');
+
+if (paramDate) {
+  dateInput.value = paramDate; // URL에 날짜가 있으면 적용
+} else {
+  dateInput.valueAsDate = new Date(); // 없으면 오늘 날짜
+}
   let roundData = [];
 
   lotInput.innerHTML = `<option value="0">0</option>` +
