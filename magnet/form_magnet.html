@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
   summaryInputs.style.display = isFinal ? "block" : "none";
   oxContainer.style.display = isFinal ? "none" : "block";
 
-  // 폼 초기화 (기존 값 비우기)
+  // 폼 초기화
   document.getElementById("time").value = "";
   productInput.value = "";
   document.getElementById("passCount").value = "";
@@ -180,24 +180,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const existing = serverData.find(d => String(d.option).trim() === String(opt).trim());
 
   if (existing) {
-    // 1. 시간 복원 (HH:mm)
+    // 1. 시간 복원
     if (existing.hour !== "" && existing.hour !== undefined) {
       const hh = String(existing.hour).padStart(2, '0');
       const mm = String(existing.minute || "0").padStart(2, '0');
       document.getElementById("time").value = `${hh}:${mm}`;
     }
-
+    
     // 2. 제품명 복원
     productInput.value = existing.product || "";
 
-    // 3. 통과/검출 수량 복원 (숫자 0도 정상적으로 표시되도록 수정)
-    // 값이 존재할 때만(null이나 undefined가 아닐 때) 입력창에 할당
-    if (existing.passCount !== undefined && existing.passCount !== null) {
-      document.getElementById("passCount").value = existing.passCount;
+    // 3. 통과/검출 수량 복원 (숫자 0을 강제로 살리는 로직)
+    // passCount 복원
+    if (existing.passCount !== undefined && existing.passCount !== "") {
+      document.getElementById("passCount").value = Number(existing.passCount);
     }
     
-    if (existing.detectCount !== undefined && existing.detectCount !== null) {
-      document.getElementById("detectCount").value = existing.detectCount;
+    // detectCount 복원 (숫자 0일 때도 0이 들어가도록!)
+    if (existing.detectCount !== undefined && existing.detectCount !== "") {
+      document.getElementById("detectCount").value = Number(existing.detectCount);
     }
 
     // 4. OX 상태 복원
