@@ -105,16 +105,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const productInput = document.getElementById("product");
   const deleteArea = document.getElementById("deleteArea");
   const delDateText = document.getElementById("delDateText");
-  
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDate = urlParams.get('date');
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
-  let serverData = []; // 서버에서 받아온 상세 데이터 저장용
+  if (paramDate) {
+    dateInput.value = paramDate; // URL 날짜 적용
+  } else {
+    // URL 날짜가 없으면 오늘 날짜 적용 (기존 ISOString 방식 유지)
+    dateInput.value = new Date().toISOString().split("T")[0];
+  }
 
-  dateInput.value = new Date().toISOString().split("T")[0];
+  let serverData = [];
 
   // 1. 서버 데이터 호출 (최초 로드 및 날짜 변경 시)
   async function updateOptionCompletion(dateVal) {
+    const newUrl = `${window.location.pathname}?date=${dateVal}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
     loadingMsg.style.display = "block";
     mainContent.style.display = "none"; 
     subInputs.style.display = "none";
