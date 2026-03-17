@@ -96,7 +96,7 @@ const structure = {
 
 const loadingOverlay = document.getElementById("loadingOverlay");
 const loadingText = document.getElementById("loadingText");
-let serverDetails = {}; // 서버 상세 데이터를 담을 변수
+let serverDetails = {}; // 서버에서 가져온 상세 데이터를 저장할 전역 변수
 
 // 로딩 표시 함수
 function showLoading(msg) {
@@ -108,10 +108,10 @@ function hideLoading() {
   loadingOverlay.style.display = "none";
 }
 
-// 1. 상태 체크 및 UI 동기화 (가장 중요)
+// 1. 상태 체크 및 UI 동기화
 async function checkStatus() {
   const date = document.getElementById("date").value;
-  if (!date) return; // 날짜 없으면 중단
+  if (!date) return;
 
   showLoading("🔄 최신 상태 확인 중...");
   
@@ -120,34 +120,38 @@ async function checkStatus() {
     const result = await res.json();
     
     const completedGroups = result.groups || [];
-    serverDetails = result.details || {};
+    serverDetails = result.details || {}; // 서버 데이터를 전역 변수에 저장
 
-    // UI 요소들 정의
     const statusArea = document.getElementById("statusArea");
     const deleteAllBtn = document.getElementById("deleteAllBtn");
     const modeButtons = document.getElementById("modeButtons");
     const groupArea = document.getElementById("groupArea");
     const switchToManualBtn = document.getElementById("switchToManualBtn");
     const submitBtn = document.getElementById("submitBtn");
+    const sections = document.getElementById("sections");
 
-    // 초기 상태 리셋
+    // UI 초기화
     statusArea.classList.toggle("hidden", completedGroups.length === 0);
     statusArea.innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
     
     deleteAllBtn.classList.toggle("hidden", completedGroups.length === 0);
     deleteAllBtn.textContent = `🗑 ${date} 전체삭제`;
     
-    // 일괄 등록이 완료되었으면 모드 선택 버튼을 숨김
     modeButtons.classList.toggle("hidden", completedGroups.length > 0);
+    groupArea.classList.toggle("hidden", completedGroups.length === 0 && !document.getElementById("groupArea").dataset.manual);
     
-    // 완료된 데이터가 있으면 그룹 선택창을 보여줌
-    groupArea.classList.toggle("hidden", completedGroups.length === 0);
-    
-    // 일괄등록 후 남을 수 있는 특수 버튼들 초기화
     if(switchToManualBtn) switchToManualBtn.classList.add("hidden");
     if(submitBtn) submitBtn.classList.remove("hidden");
 
+    // 그룹 선택창 (완료) 표시 업데이트
     updateGroupSelect(completedGroups);
+
+    // [핵심 추가] 현재 선택된 그룹이 있다면 해당 그룹의 데이터를 다시 로드하여 펼침 유지
+    const currentGroup = document.getElementById("group").value;
+    if (currentGroup) {
+      loadGroupData(currentGroup);
+    }
+
   } catch(e) { 
     console.error("상태 확인 실패:", e); 
   } finally { 
@@ -155,7 +159,7 @@ async function checkStatus() {
   }
 }
 
-// 그룹 선택창 (완료) 표시 업데이트
+// 그룹 선택창 (완료) 텍스트 업데이트
 function updateGroupSelect(completed) {
   const groupSelect = document.getElementById("group");
   groupSelect.querySelectorAll("option").forEach(opt => {
@@ -166,7 +170,39 @@ function updateGroupSelect(completed) {
   });
 }
 
-// 2. 일괄 등록 모드 (랜덤 생성 및 전송)
+// [핵심 함수] 그룹 데이터를 화면에 뿌려주고 항목을 펼쳐주는 로직
+function loadGroupData(group) {
+  const sections = document.getElementById("sections");
+  if (!group) {
+    sections.classList.add("hidden");
+    return;
+  }
+
+  sections.classList.remove("hidden"); // 세부 내역 펼치기
+  
+  // 모든 입력값 일단 0으로 초기화
+  const inputs = document.querySelectorAll(".entry input");
+  inputs.forEach(i => i.value = 0);
+
+  // 해당 그룹의 서버 데이터가 있으면 입력창에 채우기
+  const groupData = serverDetails[group] || [];
+  groupData.forEach(item => {
+    const target = document.querySelector(`.entry[data-category="${item.category}"] input[data-sub="${item.subcategory}"]`);
+    if (target) target.value = item.value;
+  });
+
+  // 그룹별 섹션 필터링 (생면동은 방서트랩 숨김)
+  document.querySelectorAll(".entry").forEach(div => {
+    const cat = div.dataset.category;
+    if (cat.startsWith("방서트랩") && group === "생면동") {
+      div.classList.add("hidden");
+    } else {
+      div.classList.remove("hidden");
+    }
+  });
+}
+
+// 2. 일괄 등록 모드
 document.getElementById("autoModeBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
   if(!date) return alert("날짜를 먼저 선택해주세요.");
@@ -194,18 +230,16 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
     params.append("date", date);
     params.append("data", JSON.stringify(bulkData));
 
-    const response = await fetch(scriptUrl, { 
+    await fetch(scriptUrl, { 
       method: "POST", 
       body: params,
-      // 헤더를 명시적으로 추가하여 전송의 안정성을 높입니다.
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
 
-    const resultText = await response.text();
-    console.log("서버 응답:", resultText); // 디버깅용 로그
-
     hideLoading();
     alert("✅ 일괄 등록이 완료되었습니다!");
+    
+    // 즉시 상태 리프레시 (serverDetails 갱신)
     await checkStatus(); 
 
   } catch (e) {
@@ -228,7 +262,8 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
     
     hideLoading();
     alert("삭제되었습니다.");
-    await checkStatus(); // 삭제 후 상태 갱신
+    document.getElementById("group").value = ""; // 그룹 선택 초기화
+    await checkStatus();
   } catch(e) { 
     hideLoading();
     alert("삭제 실패"); 
@@ -266,24 +301,32 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
 });
 
 // 5. 기타 UI 이벤트
+// 그룹 선택창 변경 시 이벤트
+document.getElementById("group").addEventListener("change", function() {
+  loadGroupData(this.value);
+});
+
 document.getElementById("switchToManualBtn").addEventListener("click", () => {
   document.getElementById("switchToManualBtn").classList.add("hidden");
   document.getElementById("submitBtn").classList.remove("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
+  document.getElementById("groupArea").dataset.manual = "true";
 });
 
-document.getElementById("date").addEventListener("change", checkStatus);
+document.getElementById("date").addEventListener("change", () => {
+  document.getElementById("group").value = ""; // 날짜 바뀌면 그룹 선택 리셋
+  checkStatus();
+});
 
 document.getElementById("manualModeBtn").addEventListener("click", () => {
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
+  document.getElementById("groupArea").dataset.manual = "true";
 });
 
-// 6. 초기화 (오늘 날짜 자동 입력 및 시작)
+// 6. 초기화 (오늘 날짜 자동 입력)
 (function init() {
   const dateInput = document.getElementById("date");
-  
-  // 오늘 날짜를 YYYY-MM-DD 형식으로 세팅
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -301,7 +344,6 @@ document.getElementById("manualModeBtn").addEventListener("click", () => {
     container.appendChild(div);
   }
   
-  // 날짜 세팅이 끝난 후 즉시 해당 날짜의 데이터 상태 확인
   checkStatus();
 })();
 </script>
