@@ -289,30 +289,57 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 저장
+  // 1. 저장 버튼 클릭 시 이벤트
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
     if(!currentOption) { alert("점검 옵션을 선택해주세요."); return; }
+    
+    // 저장 시작 시 로딩 표시
     showLoading("📥 데이터 저장 중...");
+    
     const form = e.target;
     let [h, m] = form.time.value ? form.time.value.split(":") : ["", ""];
     const data = {
-      type: "data", date: form.date.value, option: currentOption,
-      hour: h, minute: m, product: productInput.value, states: oxValues,
-      passCount: form.passCount.value, detectCount: form.detectCount.value
+      type: "data", 
+      date: form.date.value, 
+      option: currentOption,
+      hour: h, 
+      minute: m, 
+      product: productInput.value, 
+      states: oxValues,
+      passCount: form.passCount.value, 
+      detectCount: form.detectCount.value
     };
+
     try {
-      await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
+      const response = await fetch(BASE_URL, { 
+        method: "POST", 
+        body: new URLSearchParams({ magnet: JSON.stringify(data) })
+      });
+      
+      // 저장 프로세스 종료 후 로딩 숨김 (알림창을 띄우기 위해)
+      hideLoading(); 
+      
       alert("저장되었습니다.");
+      
+      // 알림창 [확인]을 누른 후 다시 데이터를 검증하는 로딩창과 함께 리셋
       resetForm(form, form.date.value);
-    } catch(e) { alert("저장 실패"); } finally { hideLoading(); }
+      
+    } catch(e) { 
+      hideLoading();
+      alert("저장 중 오류가 발생했습니다."); 
+    }
   });
 
+  // 2. 폼 리셋 및 데이터 다시 불러오기 함수
   function resetForm(form, keepDate) {
     form.reset();
     dateInput.value = keepDate;
+    
+    // updateOptionCompletion 함수 내부에 이미 showLoading이 포함되어 있으므로
+    // 여기서 호출하면 자연스럽게 "🔄 데이터 확인 중..." 로딩이 다시 뜹니다.
     updateOptionCompletion(keepDate);
   }
-
   dateInput.addEventListener("change", () => updateOptionCompletion(dateInput.value));
   updateOptionCompletion(dateInput.value);
 });
