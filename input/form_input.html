@@ -127,11 +127,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const delProdName = document.getElementById("delProdName");
   const deleteBtn = document.getElementById("deleteBtn");
   const submitBtn = document.getElementById("submitBtn");
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDate = urlParams.get('date');
+
+  if (paramDate) {
+    dateInput.value = paramDate; // URL에 날짜가 있으면 적용
+  } else {
+    dateInput.valueAsDate = new Date(); // 없으면 오늘 날짜
+  }
 
   let serverData = [];
   dateInput.valueAsDate = new Date();
 
   async function loadDailyStatus() {
+    const currentDate = dateInput.value;
+    // [추가] 날짜 변경 시 브라우저 주소창 동기화 (다른 폼 이동 시 날짜 유지용)
+    const newUrl = `${window.location.pathname}?date=${currentDate}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
     loadingMsg.style.display = "block";
     ingpList.textContent = "확인 중...";
     deleteArea.style.display = "none";
@@ -139,7 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
     productSelect.value = "";
 
     try {
-      const res = await fetch(`${scriptUrl}?getDailyInput=true&date=${dateInput.value}`);
+      // 서버에서 데이터 호출
+      const res = await fetch(`${scriptUrl}?getDailyInput=true&date=${currentDate}`);
       const result = await res.json();
       serverData = result.data || [];
       
