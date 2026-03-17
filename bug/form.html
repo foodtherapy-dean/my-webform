@@ -222,42 +222,61 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   finally { loadingMsg.style.display = "none"; }
 });
 
-// 7. 전송
+// 7. 전송 (이 부분으로 교체하세요)
+document.getElementById("trapForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-  document.getElementById("trapForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      
-      const date = document.getElementById("date").value;
-      const group = document.getElementById("group").value;
-      const entries = [];
+  const date = document.getElementById("date").value;
+  const group = document.getElementById("group").value;
+  
+  if (!group) {
+    alert("그룹을 선택해주세요.");
+    return;
+  }
 
-      document.querySelectorAll(".entry:not(.hidden)").forEach(div => {
-        const category = div.dataset.category;
-        div.querySelectorAll("input").forEach(input => {
-          entries.push({
-            category: category,
-            subcategory: input.dataset.sub,
-            value: parseInt(input.value) || 0
-          });
-        });
+  const entries = [];
+  document.querySelectorAll(".entry:not(.hidden)").forEach(div => {
+    const category = div.dataset.category;
+    div.querySelectorAll("input").forEach(input => {
+      entries.push({
+        category: category,
+        subcategory: input.dataset.sub,
+        value: parseInt(input.value) || 0
       });
+    });
+  });
 
-      loadingMsg.style.display = "block";
-      const formData = new FormData();
-      formData.append("data", JSON.stringify({ date, group, entries }));
+  const loadingMsg = document.getElementById("loadingMsg");
+  loadingMsg.style.display = "block";
 
-      try {
-        const response = await fetch(scriptUrl, { method: "POST", body: formData });
-        const result = await response.text();
-        alert("✅ 저장 완료!\n" + result);
-        location.reload();
-      } catch (err) {
-        alert("❌ 전송 실패: " + err.message);
-      } finally {
-        loadingMsg.style.display = "none";
+  // 데이터 전송 방식 변경: URLSearchParams 사용 (서버 인식률 최상)
+  const params = new URLSearchParams();
+  params.append("data", JSON.stringify({ date, group, entries }));
+
+  try {
+    const response = await fetch(scriptUrl, {
+      method: "POST",
+      body: params, // FormData 대신 params 사용
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
       }
     });
- 
+    
+    const resultText = await response.text();
+    
+    // 서버 응답에 에러 문구가 포함되어 있는지 확인
+    if (resultText.includes("error") || resultText.includes("서버 내부 에러")) {
+      alert("❌ 서버 에러 발생:\n" + resultText);
+    } else {
+      alert("✅ 저장 완료!\n" + resultText);
+      location.reload();
+    }
+  } catch (err) {
+    alert("❌ 전송 실패: " + err.message);
+  } finally {
+    loadingMsg.style.display = "none";
+  }
+});
 
 document.getElementById("date").addEventListener("change", checkStatus);
 </script>
