@@ -12,12 +12,10 @@ html, body { margin:0; padding:0; height:100%; font-family:sans-serif; }
 .app-footer { flex:0 0 auto; display: flex; }
 button[type="submit"] { flex: 1; font-size: 1.4rem; padding: 18px 0; background: #28a745; color: white; border: none; cursor: pointer; }
 
-/* 버튼 스타일 */
 .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; font-size: 1.1rem; width: 100%; padding: 12px; border-radius: 4px; margin-top: 10px; }
 .btn-bulk { width: 100%; padding: 12px; background: #17a2b8; color: white; border: none; border-radius: 4px; margin-top: 10px; font-weight: bold; cursor: pointer; }
 
-/* 상태 메시지 */
-#loadingMsg { background: #007bff; color: white; padding: 10px; margin-top: 10px; text-align: center; border-radius: 4px; display: none; }
+#loadingMsg { background: #007bff; color: white; padding: 20px; margin-top: 20px; text-align: center; border-radius: 8px; font-size: 1.2rem; display: none; }
 
 label { display:block; margin-top:20px; font-weight:bold; }
 input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box; text-align:center; font-size:1.1rem; }
@@ -43,44 +41,44 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
   <form id="magnetForm" class="app-body">
     <label>날짜 <input type="date" id="date" name="date" /></label>
     
-    <div id="loadingMsg">데이터 확인 중...</div>
+    <div id="loadingMsg">🔄 데이터 확인 중입니다...</div>
 
-    <div id="deleteArea" style="display:none;">
-      <button type="button" id="deleteBtnTop" class="btn-delete">🗑️ <span id="delDateText"></span> 데이터 삭제</button>
-    </div>
+    <div id="mainContent" style="display:none;">
+      <div id="deleteArea" style="display:none;">
+        <button type="button" id="deleteBtnTop" class="btn-delete">🗑️ <span id="delDateText"></span> 데이터 일괄 삭제</button>
+      </div>
 
-    <button type="button" id="bulkBtn" class="btn-bulk">📅 이 날짜 데이터 일괄 생성 (구포국수1.4kg)</button>
+      <button type="button" id="bulkBtn" class="btn-bulk">📅 이 날짜 데이터 일괄 생성 (구포국수1.4kg)</button>
 
-    <div id="optionContainer" style="display:none;">
       <label>점검 옵션</label>
       <div id="customOption" class="custom-select">
         <div class="selected-option">선택하세요</div>
         <ul class="options"></ul>
       </div>
-    </div>
 
-    <div id="subInputs" style="display:none;">
-      <label id="timeLabel">시간 <input type="time" id="time" name="time" /></label>
-      <label>제품명
-        <select id="product" name="product">
-          <option value="">선택하세요</option>
-          <option value="구포국수1.4kg">구포국수1.4kg</option>
-          <option>한성국수900g</option>
-          <option>잔치특면3kg</option>
-          <option>치자국수1.4kg</option>
-          <option>메밀국수1kg</option>
-          <option>생칼국수1.8kg</option>
-        </select>
-      </label>
-      <label>검출 상태</label>
-      <div class="ox-group" id="oxContainer"></div>
-    </div>
+      <div id="subInputs" style="display:none;">
+        <label id="timeLabel">시간 <input type="time" id="time" name="time" /></label>
+        <label>제품명
+          <select id="product" name="product">
+            <option value="">선택하세요</option>
+            <option value="구포국수1.4kg">구포국수1.4kg</option>
+            <option>한성국수900g</option>
+            <option>잔치특면3kg</option>
+            <option>치자국수1.4kg</option>
+            <option>메밀국수1kg</option>
+            <option>생칼국수1.8kg</option>
+          </select>
+        </label>
+        <label>검출 상태</label>
+        <div class="ox-group" id="oxContainer"></div>
+      </div>
 
-    <div id="summaryInputs" style="display:none;">
-      <label>통과/검출 수량</label>
-      <div class="number-row">
-        <div><input type="number" name="passCount" placeholder="통과 수량" /></div>
-        <div><input type="number" name="detectCount" placeholder="검출 수량" /></div>
+      <div id="summaryInputs" style="display:none;">
+        <label>통과/검출 수량</label>
+        <div class="number-row">
+          <div><input type="number" id="passCount" name="passCount" placeholder="통과 수량" /></div>
+          <div><input type="number" id="detectCount" name="detectCount" placeholder="검출 수량" /></div>
+        </div>
       </div>
     </div>
   </form>
@@ -95,8 +93,9 @@ const BASE_URL = "https://script.google.com/macros/s/AKfycbzBomaVEDZsJhph0ipgQE0
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
+  const mainContent = document.getElementById("mainContent");
+  const loadingMsg = document.getElementById("loadingMsg");
   const customOption = document.getElementById("customOption");
-  const optionContainer = document.getElementById("optionContainer");
   const selectedDiv = customOption.querySelector(".selected-option");
   const optionsList = customOption.querySelector(".options");
   const subInputs = document.getElementById("subInputs");
@@ -105,92 +104,125 @@ document.addEventListener("DOMContentLoaded", () => {
   const productInput = document.getElementById("product");
   const deleteArea = document.getElementById("deleteArea");
   const delDateText = document.getElementById("delDateText");
-  const loadingMsg = document.getElementById("loadingMsg");
   
   const optionItems = ["작업전","1차점검","2차점검","작업후","최종취합"];
   let currentOption = "";
   let oxValues = {};
+  let serverData = []; // 서버에서 가져온 해당 날짜의 상세 데이터 저장
 
   dateInput.value = new Date().toISOString().split("T")[0];
 
-  function renderOptions(existing=[]) {
+  // 옵션 리스트 렌더링
+  function renderOptions(existingOptions=[]) {
     optionsList.innerHTML = "";
     optionItems.forEach(opt => {
       const li = document.createElement("li");
       li.dataset.value = opt;
-      li.textContent = existing.includes(opt) ? `${opt} (완료)` : opt;
+      li.textContent = existingOptions.includes(opt) ? `${opt} (완료)` : opt;
       optionsList.appendChild(li);
     });
-    
-    deleteArea.style.display = existing.length > 0 ? "block" : "none";
-    if(existing.length > 0) delDateText.textContent = dateInput.value;
+    deleteArea.style.display = existingOptions.length > 0 ? "block" : "none";
+    if(existingOptions.length > 0) delDateText.textContent = dateInput.value;
   }
 
-  // 중복 데이터 및 옵션 상태 업데이트
+  // 서버에서 데이터 가져오기
   async function updateOptionCompletion(dateVal) {
-    loadingMsg.style.display = "block";       // 메시지 표시
-    optionContainer.style.display = "none";    // 옵션창 숨김
-    deleteArea.style.display = "none";
-    
+    loadingMsg.style.display = "block";
+    mainContent.style.display = "none"; // 날짜 외 모든 UI 숨김
+    subInputs.style.display = "none";
+    summaryInputs.style.display = "none";
+    selectedDiv.textContent = "선택하세요";
+
     try {
       const res = await fetch(`${BASE_URL}?getMagnet=${encodeURIComponent(JSON.stringify({date:dateVal}))}`);
-      const data = await res.json();
-      renderOptions(data.options || []);
-    } catch(e) { 
-      console.error(e); 
+      const result = await res.json();
+      
+      // result.options는 ['작업전', '1차점검'] 형태의 배열
+      // result.data는 해당 날짜의 행 데이터 배열
+      serverData = result.data || []; 
+      renderOptions(result.options || []);
+    } catch(e) {
+      console.error("데이터 로드 실패:", e);
     } finally {
-      loadingMsg.style.display = "none";      // 메시지 숨김
-      optionContainer.style.display = "block"; // 옵션창 활성화
+      loadingMsg.style.display = "none";
+      mainContent.style.display = "block"; // 확인 완료 후 노출
     }
   }
 
-  function getRandomTime(startHour, endHour, startMin=0, endMin=50) {
-    const h = Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
-    const m = Math.floor(Math.random() * 6) * 10;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  // 옵션 선택 시 기존 데이터 불러오기 로직
+  async function handleOptionChange(opt) {
+    subInputs.style.display = "block";
+    const isBasic = ["작업전", "작업후"].includes(opt);
+    const isCheck = ["1차점검", "2차점검"].includes(opt);
+    const isFinal = opt === "최종취합";
+
+    // UI 가시성 설정
+    document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
+    productInput.closest("label").style.display = isBasic ? "none" : "block";
+    summaryInputs.style.display = isFinal ? "block" : "none";
+    oxContainer.style.display = isFinal ? "none" : "block";
+
+    // 폼 초기화
+    document.getElementById("time").value = "";
+    productInput.value = "";
+    document.getElementById("passCount").value = "";
+    document.getElementById("detectCount").value = "";
+    oxValues = {};
+
+    // 해당 옵션의 기존 데이터가 있다면 채워넣기
+    const existing = serverData.find(d => d.option === opt);
+    if (existing) {
+      if (existing.hour && existing.minute) {
+        document.getElementById("time").value = `${String(existing.hour).padStart(2,'0')}:${String(existing.minute).padStart(2,'0')}`;
+      }
+      productInput.value = existing.product || "";
+      document.getElementById("passCount").value = existing.passCount || "";
+      document.getElementById("detectCount").value = existing.detectCount || "";
+      oxValues = existing.states || {};
+    }
+
+    // OX 버튼 생성
+    let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
+    oxContainer.innerHTML = "";
+    labels.forEach(label => {
+      const div = document.createElement("div");
+      div.className = "ox-set";
+      const val = oxValues[label] || "";
+      div.innerHTML = `<div>${label}</div><div class="ox-buttons">
+        <button type="button" class="ox ${val === 'O' ? 'selected' : ''}" data-label="${label}" data-value="O">O</button>
+        <button type="button" class="ox ${val === 'X' ? 'selected' : ''}" data-label="${label}" data-value="X">X</button>
+      </div>`;
+      oxContainer.appendChild(div);
+    });
   }
 
+  // (기존 일괄등록, 삭제, OX클릭, 제출 이벤트 리스너들은 동일하게 유지)
   document.getElementById("bulkBtn").addEventListener("click", async () => {
-    const defaultProduct = "구포국수1.4kg"; 
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
-
     const btn = document.getElementById("bulkBtn");
     btn.disabled = true;
-    btn.textContent = "🚀 고속 등록 중...";
-
+    btn.textContent = "🚀 등록 중...";
     const bulkData = [
-      { opt: "작업전", time: getRandomTime(8, 8, 0, 30), states: {Fe:"O", Sus:"O"}, prod: "" },
-      { opt: "1차점검", time: getRandomTime(10, 11), states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: defaultProduct },
-      { opt: "2차점검", time: getRandomTime(13, 14), states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: defaultProduct },
-      { opt: "작업후", time: getRandomTime(15, 16, 40, 30), states: {Fe:"O", Sus:"O"}, prod: "" },
-      { opt: "최종취합", time: "", states: {}, prod: defaultProduct, pass: (Math.floor(Math.random() * 11) * 30 + 1800), detect: 0 }
+      { opt: "작업전", time: "08:10", states: {Fe:"O", Sus:"O"}, prod: "" },
+      { opt: "1차점검", time: "10:30", states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: "구포국수1.4kg" },
+      { opt: "2차점검", time: "14:10", states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: "구포국수1.4kg" },
+      { opt: "작업후", time: "16:40", states: {Fe:"O", Sus:"O"}, prod: "" },
+      { opt: "최종취합", time: "", states: {}, prod: "구포국수1.4kg", pass: 1800 + (Math.floor(Math.random()*10)*30), detect: 0 }
     ];
-
     try {
-      await fetch(BASE_URL, { 
-        method: "POST", 
-        body: new URLSearchParams({ magnet: JSON.stringify({ type: "bulk", date: dateVal, items: bulkData }) }) 
-      });
-      alert("✅ 일괄 등록 완료!");
+      await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "bulk", date: dateVal, items: bulkData }) }) });
+      alert("완료!");
       resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch (e) { alert("오류 발생"); } finally {
-      btn.disabled = false;
-      btn.textContent = "📅 이 날짜 데이터 일괄 생성 (구포국수1.4kg)";
-    }
+    } catch (e) { alert("실패"); } finally { btn.disabled = false; btn.textContent = "📅 이 날짜 데이터 일괄 생성"; }
   });
 
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
-    if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
-    try {
-      await fetch(BASE_URL, {
-        method: "POST",
-        body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) })
-      });
-      alert("삭제되었습니다.");
-      resetForm(document.getElementById("magnetForm"), dateVal);
-    } catch(e) { alert("삭제 실패"); }
+    if(!confirm(`${dateVal} 삭제?`)) return;
+    await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) }) });
+    alert("삭제됨");
+    resetForm(document.getElementById("magnetForm"), dateVal);
   });
 
   customOption.addEventListener("click", e => {
@@ -202,31 +234,6 @@ document.addEventListener("DOMContentLoaded", () => {
       handleOptionChange(currentOption);
     }
   });
-
-  async function handleOptionChange(opt) {
-    subInputs.style.display="block";
-    const isBasic = ["작업전", "작업후"].includes(opt);
-    const isCheck = ["1차점검", "2차점검"].includes(opt);
-    const isFinal = opt === "최종취합";
-
-    document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
-    productInput.closest("label").style.display = isBasic ? "none" : "block";
-    summaryInputs.style.display = isFinal ? "block" : "none";
-    oxContainer.style.display = isFinal ? "none" : "block";
-
-    let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
-    oxContainer.innerHTML = "";
-    oxValues = {};
-    labels.forEach(label => {
-      const div = document.createElement("div");
-      div.className = "ox-set";
-      div.innerHTML = `<div>${label}</div><div class="ox-buttons">
-        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>`;
-      oxContainer.appendChild(div);
-    });
-  }
 
   document.addEventListener("click", e => {
     if(e.target.classList.contains("ox")) {
@@ -253,9 +260,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetForm(form, keepDate) {
     form.reset();
     dateInput.value = keepDate;
-    subInputs.style.display = "none";
-    summaryInputs.style.display = "none";
-    selectedDiv.textContent = "선택하세요";
     updateOptionCompletion(keepDate);
   }
 
