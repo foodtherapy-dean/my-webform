@@ -5,7 +5,7 @@
   <title>모바일_방충_스마트폼</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* 기본 스타일 생략 (기존과 동일) */
+    /* 기본 스타일 */
     html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; background: #f4f7f6; }
     .app-container { display: flex; flex-direction: column; height: 100%; }
     .app-header { background: #2196F3; color: white; text-align: center; padding: 15px; font-size: 1.3rem; font-weight: bold; }
@@ -19,7 +19,9 @@
     .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
     .btn-blue { background: #2196F3; }
     .btn-green { background: #4CAF50; }
-    .btn-red { background: #f44336; margin-bottom: 15px; }
+    
+    /* 삭제 버튼: 날짜창과 동일하게 가로 꽉 차도록 수정 */
+    .btn-red { background: #f44336; width: 100%; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; }
 
     label { display: block; margin-top: 15px; font-weight: bold; }
     input[type="date"], select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
@@ -34,7 +36,7 @@
 </head>
 <body>
 
-<div id="loadingMsg">⏳ 데이터를 확인 중입니다...</div>
+<div id="loadingMsg">⏳ 데이터 확인중...</div>
 
 <div class="app-container">
   <div class="app-header">스마트 방충 관리</div>
@@ -43,9 +45,9 @@
     <label>📅 날짜 선택</label>
     <input type="date" id="date">
 
-    <div id="statusArea" class="status-msg hidden"></div>
+    <button type="button" id="deleteAllBtn" class="btn btn-red hidden"></button>
 
-    <button type="button" id="deleteAllBtn" class="btn btn-red hidden">🗑 해당날짜 전체삭제</button>
+    <div id="statusArea" class="status-msg hidden"></div>
 
     <div id="modeButtons" class="mode-btn-row hidden">
       <button type="button" id="manualModeBtn" class="btn btn-blue">📝 개별 입력</button>
@@ -87,25 +89,22 @@ const structure = {
 };
 
 let completedGroups = [];
-let serverDetails = {}; // [추가] 서버에서 가져온 세부 데이터 저장소
+let serverDetails = {};
 let isAutoMode = false;
 
-// 초기 세팅 (수정본)
 document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const paramDate = urlParams.get('date'); // URL에서 date 파라미터 추출
+  const paramDate = urlParams.get('date');
   const dateInput = document.getElementById("date");
 
   if (paramDate) {
-    // 1. URL에 날짜가 있으면 그 날짜를 넣음
     dateInput.value = paramDate;
   } else {
-    // 2. URL에 날짜가 없으면 오늘 날짜를 넣음
     dateInput.valueAsDate = new Date();
   }
 
   initForm();
-  checkStatus(); // 해당 날짜의 데이터를 서버에서 즉시 불러옴
+  checkStatus();
 });
 
 function initForm() {
@@ -122,7 +121,6 @@ function initForm() {
   }
 }
 
-// 1. 서버에서 해당 날짜 데이터 유무 및 세부 내용 확인
 async function checkStatus() {
   const date = document.getElementById("date").value;
   const statusArea = document.getElementById("statusArea");
@@ -131,6 +129,10 @@ async function checkStatus() {
   const groupArea = document.getElementById("groupArea");
   const loadingMsg = document.getElementById("loadingMsg");
 
+  // 주소창 URL 동기화
+  const newUrl = `${window.location.pathname}?date=${date}`;
+  window.history.pushState({ path: newUrl }, '', newUrl);
+
   loadingMsg.style.display = "block";
   
   try {
@@ -138,9 +140,8 @@ async function checkStatus() {
     const result = await res.json();
     
     completedGroups = result.groups || [];
-    serverDetails = result.details || {}; // [추가] 서버에서 보낸 상세 데이터(details) 저장
+    serverDetails = result.details || {};
 
-    // UI 초기화
     statusArea.classList.add("hidden");
     deleteAllBtn.classList.add("hidden");
     modeButtons.classList.add("hidden");
@@ -150,7 +151,11 @@ async function checkStatus() {
     if (completedGroups.length > 0) {
       statusArea.innerHTML = `📍 완료그룹: ${completedGroups.join(", ")}`;
       statusArea.classList.remove("hidden");
+      
+      // 삭제 버튼 텍스트 업데이트 및 표시
+      deleteAllBtn.textContent = `🗑 ${date} 전체삭제`;
       deleteAllBtn.classList.remove("hidden");
+      
       groupArea.classList.remove("hidden");
       updateGroupSelect();
     } else {
@@ -163,7 +168,6 @@ async function checkStatus() {
   }
 }
 
-// 2. 그룹 선택창 업데이트
 function updateGroupSelect() {
   const groupSelect = document.getElementById("group");
   const options = groupSelect.querySelectorAll("option");
@@ -175,14 +179,12 @@ function updateGroupSelect() {
   });
 }
 
-// 3. 개별 입력 모드
 document.getElementById("manualModeBtn").addEventListener("click", () => {
   isAutoMode = false;
   document.getElementById("modeButtons").classList.add("hidden");
   document.getElementById("groupArea").classList.remove("hidden");
 });
 
-// 4. 일괄 입력(랜덤) 모드
 document.getElementById("autoModeBtn").addEventListener("click", () => {
   isAutoMode = true;
   document.getElementById("modeButtons").classList.add("hidden");
@@ -204,21 +206,15 @@ function applyRandomAll() {
   });
 }
 
-// 5. 그룹 선택 시 화면 펼치기 및 기존 데이터 바인딩
 document.getElementById("group").addEventListener("change", function() {
   const group = this.value;
   const sections = document.getElementById("sections");
   if(!group) { sections.classList.add("hidden"); return; }
 
   sections.classList.remove("hidden");
-
-  // [핵심 추가] 기존 데이터가 있다면 입력창에 값 채우기
   const existingData = serverDetails[group] || [];
-  
-  // 모든 입력값 초기화 (0)
   document.querySelectorAll(".entry input").forEach(input => input.value = 0);
 
-  // 데이터 매칭 및 주입
   if (existingData.length > 0) {
     existingData.forEach(item => {
       const targetInput = document.querySelector(
@@ -228,7 +224,6 @@ document.getElementById("group").addEventListener("change", function() {
     });
   }
 
-  // 섹션 가시성 제어
   document.querySelectorAll(".entry").forEach(section => {
     const cat = section.dataset.category;
     if (cat.startsWith("방서트랩") && group === "생면동") section.classList.add("hidden");
@@ -236,10 +231,9 @@ document.getElementById("group").addEventListener("change", function() {
   });
 });
 
-// 6. 삭제 버튼 (고속 삭제 로직 대응)
 document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   const date = document.getElementById("date").value;
-  if(!confirm("해당 날짜의 전체 데이터를 삭제하시겠습니까?")) return;
+  if(!confirm(`${date}의 전체 데이터를 삭제하시겠습니까?`)) return;
   
   const loadingMsg = document.getElementById("loadingMsg");
   loadingMsg.style.display = "block";
@@ -259,12 +253,10 @@ document.getElementById("deleteAllBtn").addEventListener("click", async () => {
   finally { loadingMsg.style.display = "none"; }
 });
 
-// 7. 전송
 document.getElementById("trapForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const date = document.getElementById("date").value;
   const group = document.getElementById("group").value;
-  
   if (!group) { alert("그룹을 선택해주세요."); return; }
 
   const entries = [];
