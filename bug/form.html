@@ -90,11 +90,22 @@ let completedGroups = [];
 let serverDetails = {}; // [추가] 서버에서 가져온 세부 데이터 저장소
 let isAutoMode = false;
 
-// 초기 세팅
+// 초기 세팅 (수정본)
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("date").valueAsDate = new Date();
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDate = urlParams.get('date'); // URL에서 date 파라미터 추출
+  const dateInput = document.getElementById("date");
+
+  if (paramDate) {
+    // 1. URL에 날짜가 있으면 그 날짜를 넣음
+    dateInput.value = paramDate;
+  } else {
+    // 2. URL에 날짜가 없으면 오늘 날짜를 넣음
+    dateInput.valueAsDate = new Date();
+  }
+
   initForm();
-  checkStatus();
+  checkStatus(); // 해당 날짜의 데이터를 서버에서 즉시 불러옴
 });
 
 function initForm() {
