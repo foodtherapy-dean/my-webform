@@ -36,8 +36,13 @@ input, select { width:100%; padding:12px; margin-top:6px; box-sizing:border-box;
 
   <form id="magnetForm" class="app-body">
     <label>날짜 <input type="date" id="date" name="date" /></label>
-    
-    <button type="button" id="bulkBtn" class="btn-bulk">📅 이 날짜 데이터 일괄 생성</button>
+<div id="deleteArea" style="display:none; margin-top:10px;">
+  <button type="button" id="deleteBtn" class="btn-delete" style="width:100%; padding:12px; border-radius:4px;">
+    🗑️ <span id="targetDateDisplay"></span> 데이터 삭제
+  </button>
+</div>
+
+<button type="button" id="bulkBtn" class="btn-bulk">📅 이 날짜 데이터 일괄 생성 (구포국수1.4kg)</button>
 
     <label>점검 옵션</label>
     <div id="customOption" class="custom-select">
@@ -131,132 +136,82 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     // 중로딩 표시나 버튼 비활성화 권장
-    const btn = document.getElementById("bulkBtn");
-    btn.disabled = true;
-    btn.textContent = "등록 중...";
+    // 1. 일괄 등록 속도 개선 버전 (Batch 전송)
+document.getElementById("bulkBtn").addEventListener("click", async () => {
+  const defaultProduct = "구포국수1.4kg";
+  const dateVal = dateInput.value;
+  if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
 
-    try {
-      for(const item of bulkData) {
-        const [h, m] = item.time ? item.time.split(":") : ["", ""];
-        const payload = {
-          type: "data", 
-          date: dateInput.value, 
-          option: item.opt,
-          hour: h, 
-          minute: m, 
-          product: item.prod, 
-          states: item.states,
-          passCount: item.pass, 
-          detectCount: item.detect
-        };
-        
-        // POST 요청
-        await fetch(BASE_URL, { 
-          method: "POST", 
-          body: new URLSearchParams({ magnet: JSON.stringify(payload) })
-        });
-      }
-      alert("일괄 등록 완료!");
-    } catch (e) {
-      alert("등록 중 오류가 발생했습니다.");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "📅 이 날짜 데이터 일괄 생성";
-      updateOptionCompletion(dateInput.value);
-    }
-  });
+  const btn = document.getElementById("bulkBtn");
+  btn.disabled = true;
+  btn.textContent = "🚀 초고속 등록 중...";
 
-  // 삭제 버튼 로직
-  document.getElementById("deleteBtn").addEventListener("click", async () => {
-    if(!confirm(`${dateInput.value}의 모든 데이터를 삭제하시겠습니까?`)) return;
-    try {
-      const res = await fetch(BASE_URL, {
-        method: "POST",
-        body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateInput.value }) })
-      });
-      alert("삭제되었습니다.");
-      resetForm(document.getElementById("magnetForm"), dateInput.value);
-    } catch(e) { alert("삭제 실패"); }
-  });
+  // 5개 데이터를 배열 하나에 담음
+  const bulkItems = [
+    { opt: "작업전", time: getRandomTime(8, 8, 0, 30), states: {Fe:"O", Sus:"O"}, prod: "" },
+    { opt: "1차점검", time: getRandomTime(10, 11), states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: defaultProduct },
+    { opt: "2차점검", time: getRandomTime(13, 14), states: {Fe:"O", Sus:"O", "제품":"X", "제품+Fe":"O", "제품+Sus":"O"}, prod: defaultProduct },
+    { opt: "작업후", time: getRandomTime(15, 16, 40, 30), states: {Fe:"O", Sus:"O"}, prod: "" },
+    { opt: "최종취합", time: "", states: {}, prod: defaultProduct, pass: (Math.floor(Math.random() * 11) * 30 + 1800), detect: 0 }
+  ];
 
-  // 옵션 선택 처리
-  customOption.addEventListener("click", e => {
-    if (e.target.classList.contains("selected-option")) customOption.classList.toggle("open");
-    if (e.target.tagName === "LI") {
-      currentOption = e.target.dataset.value;
-      selectedDiv.textContent = e.target.textContent;
-      customOption.classList.remove("open");
-      handleOptionChange(currentOption);
-    }
-  });
-
-  async function handleOptionChange(opt) {
-    subInputs.style.display="block";
-    const isBasic = ["작업전", "작업후"].includes(opt);
-    const isCheck = ["1차점검", "2차점검"].includes(opt);
-    const isFinal = opt === "최종취합";
-
-    document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
-    productInput.closest("label").style.display = isBasic ? "none" : "block";
-    summaryInputs.style.display = isFinal ? "block" : "none";
-    oxContainer.style.display = isFinal ? "none" : "block";
-
-    let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
-    oxContainer.innerHTML = "";
-    oxValues = {};
-    labels.forEach(label => {
-      const div = document.createElement("div");
-      div.className = "ox-set";
-      div.innerHTML = `<div>${label}</div><div class="ox-buttons">
-        <button type="button" class="ox" data-label="${label}" data-value="O">O</button>
-        <button type="button" class="ox" data-label="${label}" data-value="X">X</button>
-      </div>`;
-      oxContainer.appendChild(div);
+  try {
+    const payload = { type: "bulk", date: dateVal, items: bulkItems }; // type을 bulk로 설정
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      body: new URLSearchParams({ magnet: JSON.stringify(payload) })
     });
+    alert("✅ 일괄 등록 완료!");
+    resetForm(document.getElementById("magnetForm"), dateVal);
+  } catch (e) {
+    alert("❌ 등록 실패: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "📅 이 날짜 데이터 일괄 생성 (구포국수1.4kg)";
   }
+});
 
-  // OX 버튼 클릭 이벤트 전위
-  document.addEventListener("click", e => {
-    if(e.target.classList.contains("ox")) {
-      const { label, value } = e.target.dataset;
-      oxValues[label] = value;
-      e.target.parentElement.querySelectorAll(".ox").forEach(b => b.classList.toggle("selected", b === e.target));
-    }
-  });
-
-  // 저장 제출
-  document.getElementById("magnetForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const form = e.target;
-    let [h, m] = form.time.value ? form.time.value.split(":") : ["", ""];
-    const data = {
-      type: "data", date: form.date.value, option: currentOption,
-      hour: h, minute: m, product: productInput.value, states: oxValues,
-      passCount: form.passCount.value, detectCount: form.detectCount.value
-    };
-    const res = await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) })});
-    alert("저장되었습니다.");
-    resetForm(form, form.date.value);
-  });
-
-  async function updateOptionCompletion(dateVal) {
+// 2. 삭제 버튼 및 UI 제어
+async function updateOptionCompletion(dateVal) {
+  try {
     const res = await fetch(`${BASE_URL}?getMagnet=${encodeURIComponent(JSON.stringify({date:dateVal}))}`);
     const data = await res.json();
     renderOptions(data.options || []);
-  }
 
-  function resetForm(form, keepDate) {
-    form.reset();
-    dateInput.value = keepDate;
-    subInputs.style.display = "none";
-    summaryInputs.style.display = "none";
-    selectedDiv.textContent = "선택하세요";
-    updateOptionCompletion(keepDate);
-  }
+    const deleteArea = document.getElementById("deleteArea");
+    if (data.options && data.options.length > 0) {
+      deleteArea.style.display = "block";
+      document.getElementById("targetDateDisplay").textContent = dateVal;
+    } else {
+      deleteArea.style.display = "none";
+    }
+  } catch(e) { console.error(e); }
+}
 
-  dateInput.addEventListener("change", () => updateOptionCompletion(dateInput.value));
-  updateOptionCompletion(dateInput.value);
+// 삭제 로직 (날짜 유지하며 리프레시)
+document.getElementById("deleteBtn").addEventListener("click", async () => {
+  const dateVal = dateInput.value;
+  if(!confirm(`${dateVal}의 모든 데이터를 삭제할까요?`)) return;
+  
+  await fetch(BASE_URL, {
+    method: "POST",
+    body: new URLSearchParams({ magnet: JSON.stringify({ type: "delete", date: dateVal }) })
+  });
+  alert("삭제되었습니다.");
+  resetForm(document.getElementById("magnetForm"), dateVal);
 });
+
+// 리프레시 함수 (날짜는 남기고 나머지는 싹 비움)
+function resetForm(form, keepDate) {
+  form.reset(); 
+  dateInput.value = keepDate;
+  currentOption = "";
+  oxValues = {};
+  selectedDiv.textContent = "선택하세요";
+  subInputs.style.display = "none";
+  summaryInputs.style.display = "none";
+  updateOptionCompletion(keepDate);
+}
 </script>
 </body>
 </html>
