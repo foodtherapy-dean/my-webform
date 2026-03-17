@@ -17,9 +17,12 @@ label { display:block; margin-top:16px; margin-bottom:6px; font-weight:bold; }
 input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px solid #ccc; border-radius:6px; box-sizing: border-box; }
 
 /* 상태 메시지 */
-#loadingMsg { background: #007bff; color: white; padding: 15px; margin-top: 15px; text-align: center; border-radius: 6px; display: none; }
-#deleteArea { display: none; margin-top: 15px; }
+#loadingMsg { background: #3f51b5; color: white; padding: 20px; margin-top: 20px; text-align: center; border-radius: 8px; font-size: 1.2rem; display: none; }
+
+/* 삭제 영역 */
+#deleteArea { display: none; margin-top: 15px; background: #fff; padding: 10px; border: 1px solid #dc3545; border-radius: 6px; }
 .btn-delete { background: #dc3545; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 6px; font-weight: bold; }
+.del-msg { color: #dc3545; font-size: 0.9rem; margin-bottom: 8px; text-align: center; }
 
 .option-row { display:flex; align-items:center; margin-bottom:12px; }
 .option-label { width:120px; font-weight:normal; }
@@ -40,11 +43,12 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 
     <div id="loadingMsg">🔄 데이터 중복 확인 중...</div>
 
-    <div id="deleteArea">
-      <button type="button" id="deleteBtn" class="btn-delete">🗑️ <span id="delProdName"></span> 삭제</button>
-    </div>
-
     <div id="mainContent" style="display:none;">
+      <div id="deleteArea">
+        <div class="del-msg">⚠️ [<span id="delProdName"></span>]은(는) 이미 입고된 제품입니다.</div>
+        <button type="button" id="deleteBtn" class="btn-delete">데이터 삭제하기</button>
+      </div>
+
       <label for="product">제품명</label>
       <select id="product">
         <option value="">선택하세요</option>
@@ -90,12 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteBtn = document.getElementById("deleteBtn");
   const submitBtn = document.getElementById("submitBtn");
 
-  let serverData = []; // 해당 날짜의 전체 데이터 저장
+  let serverData = [];
 
   // 초기 날짜 설정
   dateInput.valueAsDate = new Date();
 
-  // 날짜 변경 시 실행
+  // 날짜 변경 시 실행 (전체 데이터 로드)
   async function checkDateChange() {
     loadingMsg.style.display = "block";
     mainContent.style.display = "none";
@@ -104,15 +108,11 @@ document.addEventListener("DOMContentLoaded", () => {
     productSelect.value = "";
 
     try {
-      // 해당 날짜의 모든 입고 데이터를 가져오는 요청 (서버에서 구현 필요)
-      const res = await fetch(`${scriptUrl}?mode=getDailyInput&date=${dateInput.value}`);
+      const res = await fetch(`${scriptUrl}?getDailyInput=true&date=${dateInput.value}`);
       const result = await res.json();
       serverData = result.data || [];
-      
-      // 제품명 옵션 뒤에 " (입고)" 표시 업데이트
       updateProductOptions();
     } catch(err) {
-      console.error(err);
       serverData = [];
     } finally {
       loadingMsg.style.display = "none";
@@ -120,45 +120,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 제품명 뒤에 입고 여부 표시
+  // 제품명 옵션 뒤에 (입고) 표시
   function updateProductOptions() {
     const options = productSelect.querySelectorAll("option");
     options.forEach(opt => {
       if (opt.value === "") return;
-      const originalName = opt.value;
-      const isExist = serverData.some(d => d.product === originalName);
-      opt.textContent = isExist ? `${originalName} (입고)` : originalName;
+      const baseName = opt.value.replace(" (입고)", "");
+      const isExist = serverData.some(d => d.product.trim() === baseName.trim());
+      opt.textContent = isExist ? `${baseName} (입고)` : baseName;
     });
   }
 
-  // 제품명 선택 시 데이터 불러오기
+  // 제품명 선택 시 데이터 바인딩
   productSelect.addEventListener("change", () => {
-    const selectedProd = productSelect.value;
-    if (!selectedProd) {
+    const selectedText = productSelect.value;
+    if (!selectedText) {
       detailInputs.style.display = "none";
       deleteArea.style.display = "none";
       return;
     }
 
-    const existing = serverData.find(d => d.product === selectedProd);
+    const existing = serverData.find(d => d.product.trim() === selectedText.trim());
     detailInputs.style.display = "block";
     
-    // 입력창 초기화
+    // 초기화
     countInput.value = "";
     optionsContainer.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
 
     if (existing) {
-      // 기존 데이터가 있으면 채우기
       countInput.value = existing.count || "";
       const states = [existing.A, existing.B, existing.C, existing.D, existing.E];
       states.forEach((val, i) => {
         const btns = optionsContainer.querySelectorAll(`.option-row:nth-child(${i+1}) .option-buttons button`);
-        btns.forEach(b => {
-          if (b.textContent === val) b.classList.add("selected");
-        });
+        btns.forEach(b => { if (b.textContent === val) b.classList.add("selected"); });
       });
-      // 삭제 버튼 활성화
-      delProdName.textContent = selectedProd;
+      delProdName.textContent = selectedText;
       deleteArea.style.display = "block";
     } else {
       deleteArea.style.display = "none";
@@ -174,20 +170,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 삭제 버튼 클릭
+  // 삭제 실행
   deleteBtn.addEventListener("click", async () => {
-    if(!confirm(`${dateInput.value}의 ${productSelect.value} 데이터를 삭제하시겠습니까?`)) return;
+    const prod = productSelect.value;
+    if(!confirm(`[${prod}] 데이터를 정말 삭제하시겠습니까?`)) return;
     try {
       await fetch(scriptUrl, {
         method: "POST",
-        body: new URLSearchParams({ type: "deleteInput", date: dateInput.value, product: productSelect.value })
+        body: new URLSearchParams({ type: "deleteInput", date: dateInput.value, product: prod })
       });
       alert("삭제되었습니다.");
       checkDateChange();
     } catch(e) { alert("삭제 실패"); }
   });
 
-  // 저장
+  // 저장 실행
   submitBtn.addEventListener("click", async () => {
     if (!productSelect.value) return alert("제품을 선택하세요.");
     const selectedOptions = optionsContainer.querySelectorAll("button.selected");
@@ -205,17 +202,17 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      await fetch(scriptUrl, {
+      const res = await fetch(scriptUrl, {
         method: "POST",
         body: "input=" + encodeURIComponent(JSON.stringify(payload))
       });
-      alert("저장 완료!");
+      alert("저장되었습니다.");
       checkDateChange();
     } catch(err){ alert("저장 실패"); }
   });
 
   dateInput.addEventListener("change", checkDateChange);
-  checkDateChange(); // 초기 실행
+  checkDateChange();
 });
 </script>
 </body>
