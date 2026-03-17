@@ -233,6 +233,17 @@ document.addEventListener("DOMContentLoaded", () => {
       
       oxValues = existing.states || {};
     }
+      
+      // detectCount 속성 존재 시 입력 (0 포함)
+      if ("detectCount" in existing && existing.detectCount !== "") {
+        document.getElementById("detectCount").value = existing.detectCount;
+      } else if (existing.detectCount === 0 || existing.detectCount === "0") {
+        document.getElementById("detectCount").value = 0;
+      }
+
+      // 4. OX 상태 복원
+      oxValues = existing.states || {};
+    }
 
     // OX 버튼 렌더링 및 선택값 적용
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
