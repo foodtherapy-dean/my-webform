@@ -97,7 +97,28 @@ const structure = {
 const loadingOverlay = document.getElementById("loadingOverlay");
 const loadingText = document.getElementById("loadingText");
 let serverDetails = {}; // 서버에서 가져온 상세 데이터를 저장할 전역 변수
+// --- [2] URL 파라미터 날짜 적용 로직 ---
+  const params = new URLSearchParams(window.location.search);
+  const paramDate = params.get("date");
 
+  const setTargetDate = (dateValue) => {
+    if (dateInput && dateValue) {
+      dateInput.value = dateValue;
+      dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+      dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
+
+  if (paramDate) {
+    setTargetDate(paramDate);
+  } else {
+    // 파라미터가 없을 때만 오늘 날짜를 넣습니다.
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${y}-${m}-${d}`;
+  }
 // 로딩 표시 함수
 function showLoading(msg) {
   loadingText.textContent = msg;
