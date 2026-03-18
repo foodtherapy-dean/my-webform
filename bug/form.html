@@ -313,9 +313,17 @@ document.getElementById("switchToManualBtn").addEventListener("click", () => {
   document.getElementById("groupArea").dataset.manual = "true";
 });
 
-document.getElementById("date").addEventListener("change", () => {
-  document.getElementById("group").value = ""; // 날짜 바뀌면 그룹 선택 리셋
-  checkStatus();
+document.getElementById("date").addEventListener("change", (e) => {
+  const newDate = e.target.value;
+  
+  // 1. 주소창의 URL 파라미터 업데이트 (새로고침 없음)
+  const url = new URL(window.location);
+  url.searchParams.set('date', newDate);
+  window.history.replaceState({}, '', url); // 주소창 문자열만 교체
+
+  // 2. 기존 로직 수행
+  document.getElementById("group").value = ""; // 그룹 선택 리셋
+  checkStatus(); // 해당 날짜 데이터 불러오기
 });
 
 document.getElementById("manualModeBtn").addEventListener("click", () => {
