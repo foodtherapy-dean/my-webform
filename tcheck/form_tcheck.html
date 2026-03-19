@@ -4,215 +4,149 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 취합 (월별)</title>
-  <!-- 홈화면/바로가기용 아이콘 지정 -->
-<link rel="icon" type="image/png" sizes="192x192" href="Ttotal.png">
-<link rel="apple-touch-icon" href="Ttotal.png">
-<meta name="theme-color" content="#4CAF50">
-
-<!-- PWA (홈화면 설치시 아이콘 및 이름 지정) -->
-<link rel="manifest" href="manifest.json">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-body { font-family: Arial, sans-serif; margin:16px; }
-h2 { text-align:center; margin-bottom:8px; }
-
-/* ===== 컨트롤 영역 한 줄로 배치 ===== */
-.controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-.controls button { padding:6px 10px; border-radius:6px; border:1px solid #888; background:#fff; cursor:pointer; }
-.controls button.active { background:#4caf50; color:#fff; border-color:#4caf50; }
-.controls input[type="month"] { padding:6px 10px; border-radius:6px; border:1px solid #888; }
-
-/* ===== 테이블 스타일 ===== */
-table { width:100%; border-collapse: collapse; margin-top:12px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:#f5f5f5; }
-td.clickable { cursor: pointer; text-decoration: underline; font-size: 20px; font-weight: bold; }
-td.sunday, tr.sunday td { background:#ffecec; } /* 일요일 전체 행 */
-td.saturday, tr.saturday td { background:#e9f2ff; } /* 토요일 전체 행 */
-.small { font-size:12px; color:#666; }
-#note { text-align:center; margin-top:8px; color:#444; }
-
-/* ===== 모바일 대응 ===== */
-@media (max-width:800px){ 
-  .controls{flex-direction:row; flex-wrap:wrap; justify-content:center;} 
-  table{font-size:12px} 
-  td.clickable{font-size:16px} 
-}
+<style>
+  body { font-family: 'Pretendard', sans-serif; margin:16px; background: #f9f9f9; }
+  h2 { text-align:center; color: #333; }
+  .controls { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:15px; }
+  .controls button { padding:8px 12px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer; font-weight: bold; }
+  .controls button:active { background: #eee; }
+  .controls input[type="month"] { padding:7px; border-radius:6px; border:1px solid #ddd; font-size: 16px; }
+  
+  table { width:100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  th, td { border:1px solid #eee; padding:10px 5px; text-align:center; }
+  th { background:#f4f4f4; color: #555; font-size: 14px; }
+  td.clickable { cursor: pointer; font-size: 22px; transition: background 0.2s; }
+  td.clickable:hover { background: #f0f0f0; }
+  
+  tr.sunday { background:#fff5f5; color: #d9534f; }
+  tr.saturday { background:#f7faff; color: #337ab7; }
+  .small { font-size:12px; color:#888; text-align: center; margin-top: 15px; }
+  
+  /* 로딩 표시 */
+  #loader { display: none; text-align: center; padding: 20px; font-weight: bold; color: #4caf50; }
 </style>
 </head>
 <body>
 
-<h2>정기검증 취합 (월별)</h2>
+<h2>📅 정기검증 월별 취합</h2>
 
-<!-- ===== 컨트롤 영역 (한 줄) ===== -->
 <div class="controls">
   <button id="prevMonth">&lt;</button>
   <input type="month" id="monthInput" />
   <button id="nextMonth">&gt;</button>
-  <button id="openMonthBtn">월별</button>
+  <button id="openMonthBtn" style="background: #4caf50; color: white; border: none;">월별 리포트</button>
 </div>
+
+<div id="loader">🚀 데이터를 광속으로 가져오는 중...</div>
 
 <table id="statusTable">
   <thead id="tableHead"></thead>
-  <tbody></tbody>
+  <tbody id="tableBody"></tbody>
 </table>
 
-<div id="note" class="small">● = 완료, ○ = 미완료. 클릭 시 입력폼 새창 열림</div>
+<div id="note" class="small">● 완료 | ○ 미완료 | 클릭 시 입력폼 이동</div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxO1M_Xi1qreMUPgWTyVOThmFI6ddfFdvnVRERZQ89YUyM5OxUakwlj9r0-7HVPSiZHng/exec";
+const BASE_URL = "https://script.google.com/macros/s/코드주소/exec"; // 본인의 URL로 교체
 
-const CELL_MAP_DAY = [
-  { period: "주간", item: "방재점검" },
-  { period: "주간", item: "용수관리" },
-  { period: "월간", item: "CCP검증" },
-  { period: "월간", item: "위생교육" }
+const CELL_MAP = [
+  { p: "주간", i: "방재점검" }, { p: "주간", i: "용수관리" },
+  { p: "월간", i: "CCP검증" }, { p: "월간", i: "위생교육" }
 ];
 const WEEKDAYS = ["일","월","화","수","목","금","토"];
-const tbody = document.querySelector("#statusTable tbody");
-const tableHead = document.querySelector("#tableHead");
 const monthInput = document.getElementById("monthInput");
-const prevBtn = document.getElementById("prevMonth");
-const nextBtn = document.getElementById("nextMonth");
-const openMonthBtn = document.getElementById("openMonthBtn");
+const tableBody = document.getElementById("tableBody");
+const loader = document.getElementById("loader");
 
-let currentYear, currentMonth;
-let lastLoadedData = null;
+let dataCache = {}; // [핵심] 클라이언트 캐시 저장소
 
-// 날짜 포맷
-function formatDate(d){
-  const year = d.getFullYear();
-  const month = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${year}-${month}-${day}`;
-}
+async function loadData() {
+  const [year, month] = monthInput.value.split("-");
+  const cacheKey = `${year}-${month}`;
 
-// 월별 날짜 배열
-function getMonthDates(year, month){
-  const dates=[];
-  const first=new Date(year, month-1, 1);
-  const last=new Date(year, month, 0);
-  for(let d=new Date(first); d<=last; d.setDate(d.getDate()+1)){
-    dates.push(new Date(d.getTime()));
+  // 캐시된 데이터가 있으면 서버 호출 없이 즉시 실행
+  if (dataCache[cacheKey]) {
+    renderTable(dataCache[cacheKey], year, month);
+    return;
   }
-  return dates;
-}
 
-// 상태 변환
-function convertStatus(s){
-  if(!s) return "";
-  if(s==="완료") return "●";
-  if(s==="미완료") return "○";
-  return "";
-}
+  tableBody.innerHTML = "";
+  loader.style.display = "block";
 
-// 테이블 헤더 (1행: 그룹, 2행: 항목)
-function buildHead(){
-  tableHead.innerHTML="";
-  const tr1=document.createElement("tr");
-  tr1.innerHTML=`<th rowspan="2">날짜</th><th rowspan="2">요일</th><th colspan="2">주간</th><th colspan="2">월간</th>`;
-  const tr2=document.createElement("tr");
-  tr2.innerHTML=`<th>방재점검</th><th>용수관리</th><th>CCP검증</th><th>위생교육</th>`;
-  tableHead.appendChild(tr1);
-  tableHead.appendChild(tr2);
-}
-
-// 데이터 로드
-async function loadData(year, month){
-  tbody.innerHTML=`<tr><td colspan="6">불러오는 중...</td></tr>`;
-  try{
-    const url=`${BASE_URL}?mode=data&year=${year}&month=${month}`;
-    const resp=await fetch(url);
-    const json=await resp.json();
-    if(!json.success) throw new Error(json.message||"데이터 로드 실패");
-    lastLoadedData=json.data;
-    renderTable(json.data);
-  }catch(err){
-    tbody.innerHTML=`<tr><td colspan="6">오류: ${err.message}</td></tr>`;
+  try {
+    const resp = await fetch(`${BASE_URL}?mode=data&year=${year}&month=${month}`);
+    const json = await resp.json();
+    if(json.success) {
+      dataCache[cacheKey] = json.data; // 서버 데이터를 캐시에 저장
+      renderTable(json.data, year, month);
+    }
+  } catch(err) {
+    tableBody.innerHTML = `<tr><td colspan="6">데이터 로드 실패</td></tr>`;
+  } finally {
+    loader.style.display = "none";
   }
 }
 
-// 테이블 렌더링
-function renderTable(data){
-  buildHead();
-  tbody.innerHTML="";
-  const monthDates=getMonthDates(currentYear, currentMonth);
-  monthDates.forEach(d=>{
-    const dateStr=formatDate(d);
-    const tr=document.createElement("tr");
-    const wday=WEEKDAYS[d.getDay()];
+function renderTable(data, year, month) {
+  // 헤더 생성 (생략 방지를 위해 고정 생성)
+  document.getElementById("tableHead").innerHTML = `
+    <tr><th rowspan="2">날짜</th><th rowspan="2">요일</th><th colspan="2">주간</th><th colspan="2">월간</th></tr>
+    <tr><th>방재점검</th><th>용수관리</th><th>CCP검증</th><th>위생교육</th></tr>`;
 
-    // 토/일 전체 행 색 적용
-    if(wday==="일") tr.classList.add("sunday");
-    if(wday==="토") tr.classList.add("saturday");
+  tableBody.innerHTML = "";
+  const lastDay = new Date(year, month, 0).getDate();
 
-    tr.innerHTML=`<td>${d.getDate()}</td><td>${wday}</td>`;
-    CELL_MAP_DAY.forEach(cell=>{
-      const td=document.createElement("td");
-      td.classList.add("clickable");
-      const record = data.find(r=> r.date===dateStr && Array.isArray(r.statusArray) && r.statusArray.some(s=>s.period===cell.period && s.item===cell.item));
-      if(record){
-        const s=record.statusArray.find(s=>s.period===cell.period && s.item===cell.item);
-        td.textContent=convertStatus(s && s.status);
-      }
+  for (let d = 1; d <= lastDay; d++) {
+    const dateObj = new Date(year, month - 1, d);
+    const dateStr = `${year}-${month}-${String(d).padStart(2,"0")}`;
+    const wday = WEEKDAYS[dateObj.getDay()];
+    
+    const tr = document.createElement("tr");
+    if(dateObj.getDay() === 0) tr.className = "sunday";
+    if(dateObj.getDay() === 6) tr.className = "saturday";
+
+    tr.innerHTML = `<td>${d}</td><td>${wday}</td>`;
+
+    CELL_MAP.forEach(cell => {
+      const td = document.createElement("td");
+      td.className = "clickable";
+      
+      // 해당 날짜의 데이터 찾기 (이미 가공된 statusArray 사용)
+      const dayData = data.find(r => r.date === dateStr);
+      const record = dayData ? dayData.statusArray.find(s => s.period === cell.p && s.item === cell.i) : null;
+      
+      const status = record ? record.status : "";
+      td.textContent = status === "완료" ? "●" : (status === "미완료" ? "○" : "");
+      
       td.onclick = () => {
-        const statusObj = record?.statusArray?.find(
-          s => s.period === cell.period && s.item === cell.item
-        );
-        const status = statusObj?.status || "미완료";
-        openForm(dateStr, cell.period, cell.item, status);
+        const url = `https://foodtherapy-dean.github.io/my-webform/check/form_check.html?date=${dateStr}&period=${cell.p}&item=${cell.i}&status=${status || '미완료'}`;
+        window.open(url, "_blank");
       };
       tr.appendChild(td);
     });
-    tbody.appendChild(tr);
-  });
+    tableBody.appendChild(tr);
+  }
 }
 
-// 폼 열기
-function openForm(dateStr, period, item, status){
-  const url =
-    `https://foodtherapy-dean.github.io/my-webform/check/form_check.html` +
-    `?date=${encodeURIComponent(dateStr)}` +
-    `&period=${encodeURIComponent(period)}` +
-    `&item=${encodeURIComponent(item)}` +
-    `&status=${encodeURIComponent(status)}`;
-  window.open(url,"_blank");
-}
+// 이벤트 리스너들
+document.getElementById("prevMonth").onclick = () => {
+  const d = new Date(monthInput.value + "-01");
+  d.setMonth(d.getMonth() - 1);
+  monthInput.value = d.toISOString().slice(0, 7);
+  loadData();
+};
+document.getElementById("nextMonth").onclick = () => {
+  const d = new Date(monthInput.value + "-01");
+  d.setMonth(d.getMonth() + 1);
+  monthInput.value = d.toISOString().slice(0, 7);
+  loadData();
+};
+monthInput.onchange = loadData;
 
-// 월 변경
-function changeMonth(delta){
-  let newMonth=currentMonth+delta;
-  let newYear=currentYear;
-  if(newMonth<1){ newMonth=12; newYear-=1; }
-  if(newMonth>12){ newMonth=1; newYear+=1; }
-  currentYear=newYear;
-  currentMonth=newMonth;
-  monthInput.value=`${currentYear}-${String(currentMonth).padStart(2,"0")}`;
-  loadData(currentYear,currentMonth);
-}
-
-// 초기화
-function init(){
-  const today=new Date();
-  currentYear=today.getFullYear();
-  currentMonth=today.getMonth()+1;
-  monthInput.value=`${currentYear}-${String(currentMonth).padStart(2,"0")}`;
-
-  prevBtn.addEventListener("click",()=>changeMonth(-1));
-  nextBtn.addEventListener("click",()=>changeMonth(1));
-  monthInput.addEventListener("change",()=>{
-    const [y,m]=monthInput.value.split("-").map(Number);
-    currentYear=y; currentMonth=m;
-    loadData(currentYear,currentMonth);
-  });
-  openMonthBtn.addEventListener("click",()=>{
-    const url=`https://foodtherapy-dean.github.io/my-webform/mcheck/form_mcheck.html?year=${currentYear}`;
-    window.open(url,"_blank");
-  });
-  loadData(currentYear,currentMonth);
-}
-window.onload=init;
+window.onload = () => {
+  monthInput.value = new Date().toISOString().slice(0, 7);
+  loadData();
+};
 </script>
-
 </body>
 </html>
