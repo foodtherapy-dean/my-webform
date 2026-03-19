@@ -231,4 +231,27 @@ saveBtn.onclick = async () => {
   const date = dateInput.value;
   const period = periodSelect.value;
   const item = itemSelect.value;
-  if(!date || !period || !item) return alert("
+  if(!date || !period || !item) return alert("항목을 모두 선택하세요.");
+
+  const modeText = selectedStatus === "" ? "데이터 삭제 중..." : "데이터 저장 중...";
+  showLoading(modeText);
+
+  const payload = { mode: "write", date, period, item, status: selectedStatus };
+  
+  try {
+    const res = await fetch(BASE_URL, { method: "POST", body: JSON.stringify(payload) });
+    const json = await res.json();
+    alert(json.message);
+    await fetchDailyStatus(); 
+  } catch(e) { alert("오류가 발생했습니다."); }
+  finally { hideLoading(); }
+};
+
+window.onload = () => {
+  const now = new Date();
+  dateInput.value = now.toISOString().split('T')[0];
+  fetchDailyStatus();
+};
+</script>
+</body>
+</html>
