@@ -125,7 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let oxValues = {};
   let serverData = []; 
 
-  dateInput.value = new Date().toISOString().split("T")[0];
+  // [수정] 초기 날짜 설정 로직: URL 파라미터 확인 후 없으면 오늘 날짜
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlDate = urlParams.get('date');
+  
+  if (urlDate) {
+    dateInput.value = urlDate;
+  } else {
+    dateInput.value = new Date().toISOString().split("T")[0];
+  }
 
   // 로딩 오버레이 함수
   function showLoading(msg) {
@@ -171,31 +179,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 2. 항목 선택 시 데이터 채우기 (숫자 0 해결 핵심 로직)
+  // [수정] 날짜 변경 시 주소창 URL 업데이트 로직 추가
+  dateInput.addEventListener("change", () => {
+    const newDate = dateInput.value;
+    
+    // 주소창 URL 파라미터 교체 (페이지 새로고침 없음)
+    const url = new URL(window.location);
+    url.searchParams.set('date', newDate);
+    window.history.replaceState({}, '', url);
+
+    updateOptionCompletion(newDate);
+  });
+
+  // 2. 항목 선택 시 데이터 채우기 (기존 로직 유지)
   function handleOptionChange(opt) {
     subInputs.style.display = "block";
     const isBasic = ["작업전", "작업후"].includes(opt);
     const isCheck = ["1차점검", "2차점검"].includes(opt);
     const isFinal = opt === "최종취합";
 
-    // UI 보임/숨김
     document.getElementById("timeLabel").style.display = isFinal ? "none" : "block";
     productInput.closest("label").style.display = isBasic ? "none" : "block";
     summaryInputs.style.display = isFinal ? "block" : "none";
     oxContainer.style.display = isFinal ? "none" : "block";
 
-    // 폼 초기화
     document.getElementById("time").value = "";
     productInput.value = "";
     document.getElementById("passCount").value = "";
     document.getElementById("detectCount").value = "";
     oxValues = {};
 
-    // serverData에서 해당 옵션 찾기
     const existing = serverData.find(d => String(d.option).trim() === String(opt).trim());
 
     if (existing) {
-      // 시간 복원
       if (existing.hour !== undefined && existing.hour !== "") {
         const hh = String(existing.hour).padStart(2, '0');
         const mm = String(existing.minute || "0").padStart(2, '0');
@@ -203,18 +219,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       productInput.value = existing.product || "";
       
-      // --- 수량 복원 (숫자 0을 살리는 조건문) ---
       const passIn = document.getElementById("passCount");
       const detectIn = document.getElementById("detectCount");
 
-      // 통과수량
       if (existing.passCount === 0 || existing.passCount === "0") {
         passIn.value = 0;
       } else {
         passIn.value = existing.passCount || "";
       }
 
-      // 검출수량 (0인 경우를 명시적으로 체크하여 무시되지 않게 함)
       if (existing.detectCount === 0 || existing.detectCount === "0") {
         detectIn.value = 0;
       } else {
@@ -224,7 +237,6 @@ document.addEventListener("DOMContentLoaded", () => {
       oxValues = existing.states || {};
     }
 
-    // OX 버튼 생성 및 체크상태 복원
     let labels = isBasic ? ["Fe", "Sus"] : (isCheck ? ["Fe", "Sus", "제품", "제품+Fe", "제품+Sus"] : []);
     oxContainer.innerHTML = "";
     labels.forEach(label => {
@@ -239,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 일괄 등록
+  // 일괄 등록/삭제/저장 로직 (기존과 동일)
   document.getElementById("bulkBtn").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal} 데이터를 일괄 생성하시겠습니까?`)) return;
@@ -258,7 +270,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) { alert("실패"); } finally { hideLoading(); }
   });
 
-  // 삭제
   document.getElementById("deleteBtnTop").addEventListener("click", async () => {
     const dateVal = dateInput.value;
     if(!confirm(`${dateVal}의 모든 데이터를 삭제하시겠습니까?`)) return;
@@ -288,59 +299,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 저장
-  // 1. 저장 버튼 클릭 시 이벤트
   document.getElementById("magnetForm").addEventListener("submit", async e => {
     e.preventDefault();
     if(!currentOption) { alert("점검 옵션을 선택해주세요."); return; }
-    
-    // 저장 시작 시 로딩 표시
     showLoading("📥 데이터 저장 중...");
-    
     const form = e.target;
     let [h, m] = form.time.value ? form.time.value.split(":") : ["", ""];
     const data = {
-      type: "data", 
-      date: form.date.value, 
-      option: currentOption,
-      hour: h, 
-      minute: m, 
-      product: productInput.value, 
-      states: oxValues,
-      passCount: form.passCount.value, 
-      detectCount: form.detectCount.value
+      type: "data", date: form.date.value, option: currentOption,
+      hour: h, minute: m, product: productInput.value, states: oxValues,
+      passCount: form.passCount.value, detectCount: form.detectCount.value
     };
-
     try {
-      const response = await fetch(BASE_URL, { 
-        method: "POST", 
-        body: new URLSearchParams({ magnet: JSON.stringify(data) })
-      });
-      
-      // 저장 프로세스 종료 후 로딩 숨김 (알림창을 띄우기 위해)
+      await fetch(BASE_URL, { method: "POST", body: new URLSearchParams({ magnet: JSON.stringify(data) }) });
       hideLoading(); 
-      
       alert("저장되었습니다.");
-      
-      // 알림창 [확인]을 누른 후 다시 데이터를 검증하는 로딩창과 함께 리셋
       resetForm(form, form.date.value);
-      
     } catch(e) { 
       hideLoading();
       alert("저장 중 오류가 발생했습니다."); 
     }
   });
 
-  // 2. 폼 리셋 및 데이터 다시 불러오기 함수
   function resetForm(form, keepDate) {
     form.reset();
     dateInput.value = keepDate;
-    
-    // updateOptionCompletion 함수 내부에 이미 showLoading이 포함되어 있으므로
-    // 여기서 호출하면 자연스럽게 "🔄 데이터 확인 중..." 로딩이 다시 뜹니다.
     updateOptionCompletion(keepDate);
   }
-  dateInput.addEventListener("change", () => updateOptionCompletion(dateInput.value));
+
+  // 초기 실행
   updateOptionCompletion(dateInput.value);
 });
 </script>
