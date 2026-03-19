@@ -5,42 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼</title>
 <style>
-/* 기존 스타일 유지 + 추가 스타일 */
+/* 기존 스타일 유지 및 개선 */
 body { margin:0; font-family: 'Pretendard', sans-serif; background:#f5f5f5; padding-bottom: 100px; }
 .header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff; padding:16px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
 .footer { position: fixed; bottom:0; left:0; right:0; background:#fff; padding:10px; border-top:1px solid #ccc; z-index:100; text-align:center; }
-#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px; background:#4caf50; color:#fff; cursor:pointer; }
+#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px; background:#4caf50; color:#fff; cursor:pointer; font-weight:bold; }
 .content { padding:80px 16px 20px; }
 .input-box { background:white; padding:14px; margin-top:10px; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 label { font-size:16px; font-weight: bold; display:block; margin-bottom:8px; color: #333; }
 select, input[type="date"] { width:100%; padding:12px; font-size:16px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 
-/* 중복 알림창 스타일 */
-.msg-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 14px; line-height: 1.6; }
+/* 중복 알림창 스타일 (날짜 입력창 바로 아래 배치용) */
+.msg-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; border-radius: 8px; margin-top: 5px; font-size: 14px; line-height: 1.6; }
 .msg-title { font-weight: bold; border-bottom: 1px solid #ffeeba; margin-bottom: 5px; padding-bottom: 3px; }
+
+/* 로딩 오버레이 스타일 */
+#loadingOverlay {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5); color:white;
+  display:none; flex-direction:column; justify-content:center; align-items:center;
+  z-index:2000; font-size: 18px; font-weight: bold;
+}
+.spinner {
+  width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3);
+  border-radius: 50%; border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite; margin-bottom: 15px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #ddd; cursor:pointer; text-align:center; background:#fff; color:#333; }
 .toggle-row { display:flex; gap:8px; margin-top:10px; }
 .toggle-btn.active { background:#4caf50 !important; color:white !important; border-color: #4caf50; }
 .hidden { display:none; }
-.check-mark { color: #4caf50; font-weight: bold; margin-left: 5px; }
+#deleteGuide { margin-top:10px; font-size:12px; color:#f44336; font-weight: bold; }
 </style>
 </head>
 <body>
 
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div id="loadingText">처리 중...</div>
+</div>
+
 <div class="header">정기검증 입력폼</div>
 
 <div class="content">
-  <div id="duplicateAlert" class="input-box hidden">
-    <div class="msg-box">
-      <div class="msg-title">⚠️ 오늘 등록된 중복 데이터</div>
-      <div id="duplicateList"></div>
-    </div>
-  </div>
-
   <div class="input-box">
     <label>날짜</label>
     <input type="date" id="dateInput">
+    
+    <div id="duplicateAlert" class="hidden" style="margin-top:15px;">
+      <div class="msg-box">
+        <div class="msg-title">⚠️ 오늘 등록된 데이터 현황</div>
+        <div id="duplicateList"></div>
+      </div>
+    </div>
   </div>
 
   <div class="input-box">
@@ -68,7 +87,7 @@ select, input[type="date"] { width:100%; padding:12px; font-size:16px; border: 1
       <div id="btnDone" class="toggle-btn">완료</div>
       <div id="btnNot" class="toggle-btn">미완료</div>
     </div>
-    <div id="deleteGuide" style="margin-top:10px; font-size:12px; color:red;" class="hidden">* 현재 저장된 값입니다. 해제 후 저장하면 삭제됩니다.</div>
+    <div id="deleteGuide" class="hidden">* 기존 데이터가 존재합니다. 해제 후 저장 시 삭제됩니다.</div>
   </div>
 </div>
 
@@ -87,10 +106,9 @@ const itemsMap = {
   "연간": ["지하수검사","검교정","유효성평가"]
 };
 
-let registeredData = []; // 오늘 날짜의 등록 데이터들
+let registeredData = [];
 let selectedStatus = "";
 
-// UI 요소
 const dateInput = document.getElementById("dateInput");
 const periodSelect = document.getElementById("periodSelect");
 const itemBox = document.getElementById("itemBox");
@@ -101,13 +119,24 @@ const btnNot = document.getElementById("btnNot");
 const saveBtn = document.getElementById("saveBtn");
 const duplicateAlert = document.getElementById("duplicateAlert");
 const duplicateList = document.getElementById("duplicateList");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const loadingText = document.getElementById("loadingText");
 
-// 1. 초기 로드 및 날짜 변경 시 현황 가져오기
+// 로딩 표시/숨기기 함수
+function showLoading(msg) {
+  loadingText.textContent = msg;
+  loadingOverlay.style.display = "flex";
+}
+function hideLoading() {
+  loadingOverlay.style.display = "none";
+}
+
+// 1. 날짜 현황 가져오기 (로딩 적용)
 async function fetchDailyStatus() {
   const date = dateInput.value;
   if(!date) return;
   
-  // 리프레시
+  showLoading("데이터 확인 중...");
   duplicateAlert.classList.add("hidden");
   registeredData = [];
   resetPeriodAndItems();
@@ -120,15 +149,12 @@ async function fetchDailyStatus() {
       updateUIWithStatus();
     }
   } catch(e) { console.error(e); }
+  finally { hideLoading(); }
 }
 
-// 2. 주기/항목 선택 UI에 체크 표시 반영
 function updateUIWithStatus() {
-  const periods = ["주간", "월간", "분기", "반기", "연간"];
   const summary = {};
-  
-  // 알림창 텍스트 생성
-  periods.forEach(p => {
+  ["주간", "월간", "분기", "반기", "연간"].forEach(p => {
     const items = registeredData.filter(d => d.period === p).map(d => d.item);
     if(items.length > 0) summary[p] = items;
   });
@@ -140,12 +166,10 @@ function updateUIWithStatus() {
       .join("<br>");
   }
 
-  // 주기 선택 창에 체크 표시
   Array.from(periodSelect.options).forEach(opt => {
     const p = opt.value;
     if(!p) return;
-    const isDup = registeredData.some(d => d.period === p);
-    opt.textContent = isDup ? `${p} (✔)` : p;
+    opt.textContent = registeredData.some(d => d.period === p) ? `${p} (✔)` : p;
   });
 }
 
@@ -156,14 +180,12 @@ function resetPeriodAndItems() {
   statusBox.classList.add("hidden");
 }
 
-// 3. 이벤트 리스너
 dateInput.addEventListener("change", fetchDailyStatus);
 
 periodSelect.addEventListener("change", () => {
   const p = periodSelect.value;
   statusBox.classList.add("hidden");
   itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  
   if(!p) { itemBox.classList.add("hidden"); return; }
 
   itemsMap[p].forEach(item => {
@@ -182,24 +204,21 @@ itemSelect.addEventListener("change", () => {
   if(!i) { statusBox.classList.add("hidden"); return; }
 
   const existing = registeredData.find(d => d.period === p && d.item === i);
-  
   if(existing) {
-    selectedStatus = existing.status; // 중복 있으면 해당 상태로
+    selectedStatus = existing.status;
     document.getElementById("deleteGuide").classList.remove("hidden");
     saveBtn.textContent = "데이터 수정/삭제";
     saveBtn.style.background = "#f44336";
   } else {
-    selectedStatus = "미완료"; // [요구사항] 중복 없으면 기본 '미완료'
+    selectedStatus = "미완료";
     document.getElementById("deleteGuide").classList.add("hidden");
     saveBtn.textContent = "신규 데이터 저장";
     saveBtn.style.background = "#4caf50";
   }
-  
   statusBox.classList.remove("hidden");
   updateStatusUI();
 });
 
-// 상태 버튼 로직
 function updateStatusUI() {
   btnDone.classList.toggle("active", selectedStatus === "완료");
   btnNot.classList.toggle("active", selectedStatus === "미완료");
@@ -208,33 +227,8 @@ function updateStatusUI() {
 btnDone.onclick = () => { selectedStatus = (selectedStatus === "완료") ? "" : "완료"; updateStatusUI(); };
 btnNot.onclick = () => { selectedStatus = (selectedStatus === "미완료") ? "" : "미완료"; updateStatusUI(); };
 
-// 저장
 saveBtn.onclick = async () => {
   const date = dateInput.value;
   const period = periodSelect.value;
   const item = itemSelect.value;
-  
-  if(!date || !period || !item) return alert("항목을 모두 선택하세요.");
-
-  const payload = { mode: "write", date, period, item, status: selectedStatus };
-  
-  saveBtn.disabled = true;
-  saveBtn.textContent = "처리 중...";
-
-  try {
-    const res = await fetch(BASE_URL, { method: "POST", body: JSON.stringify(payload) });
-    const json = await res.json();
-    alert(json.message);
-    fetchDailyStatus(); // 저장 후 목록 리프레시
-  } catch(e) { alert("오류 발생"); }
-  finally { saveBtn.disabled = false; }
-};
-
-// 초기화
-window.onload = () => {
-  dateInput.value = new Date().toISOString().split('T')[0];
-  fetchDailyStatus();
-};
-</script>
-</body>
-</html>
+  if(!date || !period || !item) return alert("
