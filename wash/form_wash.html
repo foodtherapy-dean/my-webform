@@ -94,7 +94,7 @@ window.addEventListener("DOMContentLoaded", async function () {
   const duplicateText = document.getElementById("duplicateText");
   const loadingMsg = document.getElementById("loadingMsg");
 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzBomaVEDZsJhph0ipgQE0gm8N0Y_LvbYG5XWHzWCqvLFPtEVLI-mMgfHr3FpdO20E99w/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycby4Vh7qLiF_o9gehmwqApFfi4bZMCk_0kf5jm7po4BaaElKch181WbwNFVNR9UY58pB9A/exec";
   
   let oxValues = {};
 
@@ -105,60 +105,73 @@ window.addEventListener("DOMContentLoaded", async function () {
     "수시점검": ["입고검수 - 원부재료 입고검수 준수여부"]
   };
 
-  const paramDate = new URLSearchParams(location.search).get("date");
-  if (paramDate) dateInput.value = paramDate;
-  else dateInput.valueAsDate = new Date();
+  // [수정] 1. 초기 날짜 설정 (URL 우선 -> 없으면 오늘)
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDate = urlParams.get('date');
 
-  // [개선] 날짜별 상태 로드 최적화
+  if (paramDate) {
+    dateInput.value = paramDate; 
+  } else {
+    // 한국 시간 기준으로 오늘 날짜 YYYY-MM-DD 생성
+    const offset = new Date().getTimezoneOffset() * 60000;
+    const localISOTime = new Date(Date.now() - offset).toISOString().split('T')[0];
+    dateInput.value = localISOTime;
+  }
+
+  // [개선] 날짜별 상태 로드 및 URL 동기화
   async function loadOptionStatus() {
-  if (!dateInput.value) return;
-  
-  // 로딩 시작 시 사용자에게 시각적 피드백 제공
-  optionSelect.innerHTML = `<option value="">데이터 확인 중...</option>`;
-  // 로딩 중에는 버튼들이 보이지 않도록 다시 한번 보장 (안전장치)
+    if (!dateInput.value) return;
+
+    // [추가] 날짜 변경 시 브라우저 주소창 동기화 (replaceState 사용)
+    const url = new URL(window.location);
+    url.searchParams.set('date', dateInput.value);
+    window.history.replaceState({}, '', url);
+    
+    optionSelect.innerHTML = `<option value="">데이터 확인 중...</option>`;
     bulkDeleteSection.style.display = "none";
     bulkOkBtn.style.display = "none";
-  try {
-    const allOptions = Object.keys(itemsMap);
-    const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
-    
-    // 캐시 방지를 위해 타임스탬프 추가 (선택사항)
-    const res = await fetch(`${GAS_URL}?checkAllWash=${query}&t=${Date.now()}`);
-    const result = await res.json();
 
-    optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
-    let hasAnyData = false;
+    try {
+      const allOptions = Object.keys(itemsMap);
+      const query = encodeURIComponent(JSON.stringify({ date: dateInput.value, allOptions }));
+      const res = await fetch(`${GAS_URL}?checkAllWash=${query}&t=${Date.now()}`);
+      const result = await res.json();
 
-    allOptions.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      if (result[name]) {
-        opt.textContent = `${name} (완료)`;
-        hasAnyData = true;
-      } else {
-        opt.textContent = name;
-      }
-      optionSelect.appendChild(opt);
-    });
+      optionSelect.innerHTML = `<option value="">점검 단계 선택</option>`;
+      let hasAnyData = false;
 
-    bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
-    bulkOkBtn.style.display = hasAnyData ? "none" : "block";
+      allOptions.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        if (result[name]) {
+          opt.textContent = `${name} (완료)`;
+          hasAnyData = true;
+        } else {
+          opt.textContent = name;
+        }
+        optionSelect.appendChild(opt);
+      });
 
-  } catch (err) { 
-    console.error("로딩 에러:", err);
-    optionSelect.innerHTML = `<option value="">로딩 실패 (재시도 필요)</option>`;
+      bulkDeleteSection.style.display = hasAnyData ? "block" : "none";
+      bulkOkBtn.style.display = hasAnyData ? "none" : "block";
+
+    } catch (err) { 
+      console.error("로딩 에러:", err);
+      optionSelect.innerHTML = `<option value="">로딩 실패 (재시도 필요)</option>`;
+    }
   }
-}
 
+  // 날짜 변경 이벤트
   dateInput.addEventListener("change", async () => {
     optionSelect.value = "";
     oxContainer.innerHTML = "";
     duplicateMsg.style.display = "none";
-    bulkDeleteSection.style.display = "none"; // 날짜 바꾸자마자 삭제 섹션 즉시 숨김
-    bulkOkBtn.style.display = "none";        // 등록 버튼도 일단 숨김 (로딩 후 판단)
+    bulkDeleteSection.style.display = "none";
+    bulkOkBtn.style.display = "none";
     await loadOptionStatus();
   });
 
+  // 점검 단계 변경 이벤트 (기존 유지)
   optionSelect.addEventListener("change", async (e) => {
     const opt = e.target.value;
     oxContainer.innerHTML = "";
@@ -197,6 +210,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (err) { loadingMsg.style.display = "none"; }
   });
 
+  // 버튼 클릭 및 폼 제출 로직 (기존 유지)
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("ox")) {
       const btn = e.target;
@@ -206,13 +220,10 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
   });
 
-  // ⭐ [초고속 개선] 일괄 등록: 한 번의 통신으로 묶어 보내기
   bulkOkBtn.addEventListener("click", async () => {
     if (!confirm(`${dateInput.value} 날짜의 모든 항목을 'O'로 일괄 등록하시겠습니까?`)) return;
-
     bulkOkBtn.disabled = true;
     bulkOkBtn.innerText = "⏳ 초고속 등록 중...";
-
     try {
       const allOptions = Object.keys(itemsMap);
       const batchData = allOptions.map(opt => ({
@@ -220,10 +231,8 @@ window.addEventListener("DOMContentLoaded", async function () {
         option: opt,
         states: itemsMap[opt].map(() => "O")
       }));
-
       const fd = new FormData();
       fd.append("bulkInspect", JSON.stringify(batchData)); 
-      
       const response = await fetch(GAS_URL, { method: "POST", body: fd });
       alert(await response.text());
       location.reload();
@@ -237,10 +246,8 @@ window.addEventListener("DOMContentLoaded", async function () {
   bulkDeleteBtn.addEventListener("click", async () => {
     const dt = dateInput.value;
     if (!confirm(`⚠️ [${dt}] 날짜의 모든 위생 점검 데이터를 삭제하시겠습니까?`)) return;
-
     bulkDeleteBtn.disabled = true;
     bulkDeleteBtn.innerText = "⏳ 전체 삭제 중...";
-
     try {
       const fd = new FormData();
       fd.append("deleteAllWash", JSON.stringify({ date: dt }));
@@ -258,14 +265,11 @@ window.addEventListener("DOMContentLoaded", async function () {
     e.preventDefault();
     const opt = optionSelect.value;
     if (!opt) return alert("옵션을 선택하세요.");
-
     const states = itemsMap[opt].map(lbl => oxValues[lbl]);
     if (states.includes("")) return alert("모든 항목을 선택해주세요.");
-
     const data = { date: dateInput.value, option: opt, states: states };
     const fd = new FormData();
     fd.append("inspect", JSON.stringify(data));
-
     try {
       const response = await fetch(GAS_URL, { method: "POST", body: fd });
       alert(await response.text());
@@ -277,6 +281,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     duplicateMsg.style.display = "none";
   });
 
+  // 초기 실행
   await loadOptionStatus();
 });
 </script>
