@@ -135,7 +135,13 @@ function hideLoading() {
 async function fetchDailyStatus() {
   const date = dateInput.value;
   if(!date) return;
-  
+
+  // [추가] 주소창(URL) 파라미터 실시간 업데이트
+  // 페이지 새로고침 없이 URL만 슬쩍 바꿉니다.
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.set('date', date);
+  window.history.replaceState({}, '', newUrl);
+
   showLoading("데이터 확인 중...");
   duplicateAlert.classList.add("hidden");
   registeredData = [];
