@@ -108,23 +108,19 @@ function resetUIForCheck() {
  * 2. 체크 결과에 따른 화면 복구
  */
 function activateForm(exists, currentOption) {
-  // 어떤 경우든 점검 구분창은 노출
   optionArea.style.display = "block";
   optionSelect.value = currentOption;
   deleteBtn.innerText = (currentOption === "정기점검") ? "정기점검 데이터 삭제" : "검침 데이터 삭제";
 
   if (exists) {
-    // [데이터 있음] 수정/삭제 대기 상태
     document.getElementById("dupMsgText").innerText = `⚠️ 해당 날짜에 [${currentOption}] 데이터가 존재합니다.`;
     actionBtns.style.display = "flex";
-    
     dupBox.style.display = "block";
     checklistDiv.style.display = "none";
     valueBox.style.display = "none";
     saveBtn.style.display = "none";
     bulkBtn.style.display = "none";
   } else {
-    // [데이터 없음] 즉시 입력 모드
     dupBox.style.display = "none";
     saveBtn.style.display = "block";
     
@@ -138,13 +134,22 @@ function activateForm(exists, currentOption) {
       valueBox.style.display = "block";
       valueInput.value = "";
     }
-    // 버튼 상태 초기화
     document.querySelectorAll(".ox-btn").forEach(b => b.classList.remove("active"));
   }
 }
 
-// 3. 초기 세팅 (날짜 및 체크리스트 생성)
-dateInput.value = new URLSearchParams(window.location.search).get("date") || new Date().toISOString().split('T')[0];
+// [수정] 3. 초기 세팅 (날짜 설정 로직 보강)
+const urlParams = new URLSearchParams(window.location.search);
+const paramDate = urlParams.get("date");
+
+if (paramDate) {
+  dateInput.value = paramDate;
+} else {
+  // 한국 시간 기준 오늘 날짜 세팅
+  const offset = new Date().getTimezoneOffset() * 60000;
+  const localISOTime = new Date(Date.now() - offset).toISOString().split('T')[0];
+  dateInput.value = localISOTime;
+}
 
 checkItems.forEach((item, idx) => {
   const div = document.createElement("div");
@@ -166,10 +171,18 @@ document.addEventListener("click", function(e) {
 });
 
 /**
- * 4. 서버 통신 (초기 날짜 변경 시 정기점검 우선 체크)
+ * 4. 서버 통신 및 주소창 동기화
  */
 async function runInitialCheck() {
   if (!dateInput.value) return;
+
+  // [추가] 주소창 URL 파라미터 업데이트
+  const urlObj = new URL(window.location);
+  if (urlObj.searchParams.get('date') !== dateInput.value) {
+    urlObj.searchParams.set('date', dateInput.value);
+    window.history.replaceState({}, '', urlObj);
+  }
+
   resetUIForCheck();
 
   try {
@@ -183,7 +196,7 @@ async function runInitialCheck() {
 }
 
 /**
- * 5. 데이터 불러오기 (데이터 수정 버튼 클릭 시 실행)
+ * 5. 데이터 불러오기
  */
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const btn = document.getElementById("loadBtn");
@@ -221,9 +234,7 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
   finally { btn.innerText = "데이터 수정"; }
 });
 
-/**
- * 6. 삭제 로직
- */
+// 6. 삭제, 7. 저장, 8. 일괄등록 로직 (원본 동일)
 document.getElementById("deleteBtn").addEventListener("click", async () => {
   const currentOption = optionSelect.value;
   if (!confirm(`해당 날짜의 [${currentOption}] 데이터를 삭제하시겠습니까?`)) return;
@@ -234,9 +245,6 @@ document.getElementById("deleteBtn").addEventListener("click", async () => {
   location.reload();
 });
 
-/**
- * 7. 저장 로직
- */
 saveBtn.addEventListener("click", async () => {
   const currentOption = optionSelect.value;
   const states = {};
@@ -253,9 +261,6 @@ saveBtn.addEventListener("click", async () => {
   location.reload();
 });
 
-/**
- * 8. 일괄등록 로직
- */
 bulkBtn.addEventListener("click", async () => {
   if (!confirm("모든 항목을 'O'로 일괄 등록하시겠습니까?")) return;
   const states = {};
@@ -283,6 +288,8 @@ optionSelect.addEventListener("change", async () => {
 });
 
 dateInput.addEventListener("change", runInitialCheck);
+
+// 초기 실행
 runInitialCheck();
 </script>
 </body>
