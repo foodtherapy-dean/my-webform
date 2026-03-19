@@ -313,9 +313,17 @@ document.getElementById("switchToManualBtn").addEventListener("click", () => {
   document.getElementById("groupArea").dataset.manual = "true";
 });
 
-document.getElementById("date").addEventListener("change", () => {
-  document.getElementById("group").value = ""; // 날짜 바뀌면 그룹 선택 리셋
-  checkStatus();
+document.getElementById("date").addEventListener("change", (e) => {
+  const newDate = e.target.value;
+  
+  // 1. 주소창의 URL 파라미터 업데이트 (새로고침 없음)
+  const url = new URL(window.location);
+  url.searchParams.set('date', newDate);
+  window.history.replaceState({}, '', url); // 주소창 문자열만 교체
+
+  // 2. 기존 로직 수행
+  document.getElementById("group").value = ""; // 그룹 선택 리셋
+  checkStatus(); // 해당 날짜 데이터 불러오기
 });
 
 document.getElementById("manualModeBtn").addEventListener("click", () => {
@@ -324,15 +332,27 @@ document.getElementById("manualModeBtn").addEventListener("click", () => {
   document.getElementById("groupArea").dataset.manual = "true";
 });
 
-// 6. 초기화 (오늘 날짜 자동 입력)
+// 6. 초기화 (URL 파라미터 확인 후 날짜 설정)
 (function init() {
   const dateInput = document.getElementById("date");
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  dateInput.value = `${year}-${month}-${day}`;
+  
+  // 1. URL에서 date 파라미터 추출 (?date=2026-03-19 형식)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlDate = urlParams.get('date');
 
+  if (urlDate) {
+    // URL에 날짜가 있으면 그 값을 입력
+    dateInput.value = urlDate;
+  } else {
+    // 2. URL에 날짜가 없으면 오늘 날짜 입력
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    dateInput.value = `${year}-${month}-${day}`;
+  }
+
+  // 구조 생성 로직 (기존과 동일)
   const container = document.getElementById("sections");
   for (const [cat, subs] of Object.entries(structure)) {
     const div = document.createElement("div");
@@ -344,6 +364,7 @@ document.getElementById("manualModeBtn").addEventListener("click", () => {
     container.appendChild(div);
   }
   
+  // 날짜 설정 후 상태 체크 호출
   checkStatus();
 })();
 </script>
