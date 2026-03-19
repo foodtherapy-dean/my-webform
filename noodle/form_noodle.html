@@ -167,7 +167,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", async function () {
-  // --- [1] 변수 선언 ---
+  // --- [1] 변수 선언 (원본 그대로) ---
   const dateInput = document.getElementById("date");
   const groupSelect = document.getElementById("group");
   const bulkSection = document.getElementById("bulkSection");
@@ -187,14 +187,13 @@ window.addEventListener("DOMContentLoaded", async function () {
   let currentCompletedList = []; 
   let confirmDone = false; 
 
-  // --- [2] 기존 URL 파라미터 및 날짜 설정 로직 (복구) ---
+  // --- [2] URL 파라미터 날짜 적용 로직 (원본 그대로 복구) ---
   const params = new URLSearchParams(window.location.search);
   const paramDate = params.get("date");
 
   const setTargetDate = (dateValue) => {
     if (dateInput && dateValue) {
       dateInput.value = dateValue;
-      // 기존 로직: 이벤트를 수동으로 발생시켜서 연쇄 동작 유도
       dateInput.dispatchEvent(new Event('input', { bubbles: true }));
       dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
@@ -203,6 +202,7 @@ window.addEventListener("DOMContentLoaded", async function () {
   if (paramDate) {
     setTargetDate(paramDate);
   } else {
+    // 파라미터가 없을 때만 오늘 날짜를 넣습니다.
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -210,14 +210,14 @@ window.addEventListener("DOMContentLoaded", async function () {
     dateInput.value = `${y}-${m}-${d}`;
   }
 
-  // 기존 로직: 코드 충돌 방지용 타임아웃 유지
+  // --- [3] 코드 충돌 방지 (원본 0.2초 타임아웃 유지) ---
   setTimeout(() => {
     if (paramDate && dateInput && dateInput.value !== paramDate) {
       dateInput.value = paramDate;
     }
   }, 200);
 
-  // --- [3] 기능 함수들 ---
+  // --- [4] 시간 옵션 설정 (원본 그대로) ---
   function fillOptions(hEl, mEl) {
     hEl.innerHTML = '<option value="">시</option>';
     for (let h = 1; h <= 24; h++) hEl.innerHTML += `<option value="${h.toString().padStart(2,"0")}">${h.toString().padStart(2,"0")}</option>`;
@@ -227,15 +227,16 @@ window.addEventListener("DOMContentLoaded", async function () {
   fillOptions(document.getElementById("hour"), document.getElementById("minute"));
   fillOptions(document.getElementById("bulkHour"), document.getElementById("bulkMinute"));
 
+  // --- [5] 서버 데이터 로드 로직 ---
   async function updateCompletionStatus() {
     const dateVal = dateInput.value;
     if (!dateVal) return;
 
-    // [추가된 유일한 로직]: 주소창 동기화
-    const url = new URL(window.location);
-    if (url.searchParams.get('date') !== dateVal) {
-      url.searchParams.set('date', dateVal);
-      window.history.replaceState({}, '', url);
+    // ✅ [추가 로직] 날짜 변경 시 주소창 URL만 조용히 업데이트 (기존 로직 방해 금지)
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.get('date') !== dateVal) {
+      currentUrl.searchParams.set('date', dateVal);
+      window.history.replaceState({}, '', currentUrl);
     }
 
     resetAllStates(); 
@@ -266,7 +267,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     } catch (e) { console.error(e); } finally { loadingMsg.style.display = "none"; }
   }
 
-  // --- 이후 모든 기존 이벤트 리스너 및 함수 로직 (복구됨) ---
+  // --- [6] 중복 체크 및 나머지 로직 (원본 100% 동일) ---
   async function checkDuplicate(group) {
     const date = dateInput.value;
     if (!date || !group) return;
