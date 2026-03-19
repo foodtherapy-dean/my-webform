@@ -109,6 +109,7 @@ function hideLoading() {
 }
 
 // 1. 상태 체크 및 UI 동기화
+// 1. 상태 체크 및 UI 동기화 (수정됨)
 async function checkStatus() {
   const date = document.getElementById("date").value;
   if (!date) return;
@@ -120,7 +121,7 @@ async function checkStatus() {
     const result = await res.json();
     
     const completedGroups = result.groups || [];
-    serverDetails = result.details || {}; // 서버 데이터를 전역 변수에 저장
+    serverDetails = result.details || {}; 
 
     const statusArea = document.getElementById("statusArea");
     const deleteAllBtn = document.getElementById("deleteAllBtn");
@@ -138,18 +139,23 @@ async function checkStatus() {
     deleteAllBtn.textContent = `🗑 ${date} 전체삭제`;
     
     modeButtons.classList.toggle("hidden", completedGroups.length > 0);
-    groupArea.classList.toggle("hidden", completedGroups.length === 0 && !document.getElementById("groupArea").dataset.manual);
+    
+    // [수정] 날짜 변경 시 수동 입력 모드가 아니라면 그룹 선택창도 숨김 처리 유지
+    if (!groupArea.dataset.manual) {
+        groupArea.classList.toggle("hidden", completedGroups.length === 0);
+    }
     
     if(switchToManualBtn) switchToManualBtn.classList.add("hidden");
     if(submitBtn) submitBtn.classList.remove("hidden");
 
-    // 그룹 선택창 (완료) 표시 업데이트
     updateGroupSelect(completedGroups);
 
-    // [핵심 추가] 현재 선택된 그룹이 있다면 해당 그룹의 데이터를 다시 로드하여 펼침 유지
+    // [수정] 현재 선택된 그룹이 있을 때만 데이터를 로드하고, 없으면 섹션을 숨깁니다.
     const currentGroup = document.getElementById("group").value;
     if (currentGroup) {
       loadGroupData(currentGroup);
+    } else {
+      sections.classList.add("hidden"); // 그룹 선택이 없으면 세부항목 숨김
     }
 
   } catch(e) { 
@@ -300,29 +306,30 @@ document.getElementById("trapForm").addEventListener("submit", async function(e)
   }
 });
 
-// 5. 기타 UI 이벤트
-// 그룹 선택창 변경 시 이벤트
+// 5. 기타 UI 이벤트 (수정됨)
 document.getElementById("group").addEventListener("change", function() {
   loadGroupData(this.value);
-});
-
-document.getElementById("switchToManualBtn").addEventListener("click", () => {
-  document.getElementById("switchToManualBtn").classList.add("hidden");
-  document.getElementById("submitBtn").classList.remove("hidden");
-  document.getElementById("groupArea").classList.remove("hidden");
-  document.getElementById("groupArea").dataset.manual = "true";
 });
 
 document.getElementById("date").addEventListener("change", (e) => {
   const newDate = e.target.value;
   
-  // 1. 주소창의 URL 파라미터 업데이트 (새로고침 없음)
+  // 1. 주소창의 URL 파라미터 업데이트
   const url = new URL(window.location);
   url.searchParams.set('date', newDate);
-  window.history.replaceState({}, '', url); // 주소창 문자열만 교체
+  window.history.replaceState({}, '', url);
 
   // 2. 기존 로직 수행
-  document.getElementById("group").value = ""; // 그룹 선택 리셋
+  const groupSelect = document.getElementById("group");
+  groupSelect.value = ""; // 그룹 선택 리셋
+  
+  // [추가] 그룹 선택이 리셋되었으므로 세부 입력창(sections)도 즉시 숨김
+  const sections = document.getElementById("sections");
+  if (sections) sections.classList.add("hidden");
+  
+  // [추가] 수동 모드 상태도 해제 (필요 시)
+  document.getElementById("groupArea").dataset.manual = "";
+  
   checkStatus(); // 해당 날짜 데이터 불러오기
 });
 
