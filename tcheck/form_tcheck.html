@@ -144,8 +144,43 @@ document.getElementById("nextMonth").onclick = () => {
 monthInput.onchange = loadData;
 
 window.onload = () => {
-  monthInput.value = new Date().toISOString().slice(0, 7);
-  loadData();
+  // 1. 주소창의 파라미터(URLSearchParams) 읽기
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDate = urlParams.get('date');
+  const paramPeriod = urlParams.get('period');
+  const paramItem = urlParams.get('item');
+  const paramStatus = urlParams.get('status');
+
+  // 2. 날짜 설정 (주소창에 날짜가 있으면 그 날짜로, 없으면 오늘로)
+  if (paramDate) {
+    dateInput.value = paramDate;
+  } else {
+    const now = new Date();
+    dateInput.value = now.toISOString().split('T')[0];
+  }
+
+  // 3. 데이터 불러오기 (중복 체크 및 UI 업데이트)
+  // 이 함수가 실행되면서 registeredData를 채우고 (✔) 표시를 합니다.
+  fetchDailyStatus().then(() => {
+    // 4. 주소창에 주기와 항목이 넘어왔다면 자동으로 선택하기
+    if (paramPeriod) {
+      periodSelect.value = paramPeriod;
+      // 주기 선택 이벤트 강제 발생 (항목 리스트를 만들기 위함)
+      periodSelect.dispatchEvent(new Event('change'));
+      
+      if (paramItem) {
+        itemSelect.value = paramItem;
+        // 항목 선택 이벤트 강제 발생 (상태 버튼과 삭제 가이드를 보이기 위함)
+        itemSelect.dispatchEvent(new Event('change'));
+        
+        // 5. 상태값 반영
+        if (paramStatus) {
+          selectedStatus = paramStatus;
+          updateStatusUI();
+        }
+      }
+    }
+  });
 };
 </script>
 </body>
