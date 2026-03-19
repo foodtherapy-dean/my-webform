@@ -5,32 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정기검증 입력폼</title>
 <style>
-body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
-.header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff;
-  padding:16px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
-.footer { position: fixed; bottom:0; left:0; right:0; background:#fff; padding:10px;
-  border-top:1px solid #ccc; z-index:100; text-align:center; }
-#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px;
-  background:#4caf50; color:#fff; cursor:pointer; }
-.content { padding:100px 16px 90px; }
-.input-box { background:white; padding:14px; margin-top:10px; border-radius:12px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-label { font-size:18px; display:block; margin-bottom:6px; }
-select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
+/* 기존 스타일 유지 + 추가 스타일 */
+body { margin:0; font-family: 'Pretendard', sans-serif; background:#f5f5f5; padding-bottom: 100px; }
+.header { position: fixed; top:0; left:0; right:0; background:#4caf50; color:#fff; padding:16px; font-size:20px; font-weight:bold; text-align:center; z-index:100; }
+.footer { position: fixed; bottom:0; left:0; right:0; background:#fff; padding:10px; border-top:1px solid #ccc; z-index:100; text-align:center; }
+#saveBtn { width:100%; padding:16px; font-size:18px; border:none; border-radius:8px; background:#4caf50; color:#fff; cursor:pointer; }
+.content { padding:80px 16px 20px; }
+.input-box { background:white; padding:14px; margin-top:10px; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+label { font-size:16px; font-weight: bold; display:block; margin-bottom:8px; color: #333; }
+select, input[type="date"] { width:100%; padding:12px; font-size:16px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 
-.toggle-btn { 
-  flex:1; padding:14px 0; font-size:17px; border-radius:12px; 
-  border:1px solid #333; cursor:pointer; text-align:center;
-  background:#fff; color:#333;
-}
+/* 중복 알림창 스타일 */
+.msg-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 14px; line-height: 1.6; }
+.msg-title { font-weight: bold; border-bottom: 1px solid #ffeeba; margin-bottom: 5px; padding-bottom: 3px; }
+
+.toggle-btn { flex:1; padding:14px 0; font-size:17px; border-radius:12px; border:1px solid #ddd; cursor:pointer; text-align:center; background:#fff; color:#333; }
 .toggle-row { display:flex; gap:8px; margin-top:10px; }
-
-.toggle-btn.active { 
-  background:#4caf50 !important; 
-  color:white !important; 
-}
-
+.toggle-btn.active { background:#4caf50 !important; color:white !important; border-color: #4caf50; }
 .hidden { display:none; }
+.check-mark { color: #4caf50; font-weight: bold; margin-left: 5px; }
 </style>
 </head>
 <body>
@@ -38,6 +31,13 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
 <div class="header">정기검증 입력폼</div>
 
 <div class="content">
+  <div id="duplicateAlert" class="input-box hidden">
+    <div class="msg-box">
+      <div class="msg-title">⚠️ 오늘 등록된 중복 데이터</div>
+      <div id="duplicateList"></div>
+    </div>
+  </div>
+
   <div class="input-box">
     <label>날짜</label>
     <input type="date" id="dateInput">
@@ -63,16 +63,17 @@ select, input[type="date"] { width:100%; padding:10px; font-size:16px; }
   </div>
 
   <div class="input-box hidden" id="statusBox">
-    <label>점검상태</label>
+    <label id="statusLabel">점검상태</label>
     <div class="toggle-row">
       <div id="btnDone" class="toggle-btn">완료</div>
-      <div id="btnNot" class="toggle-btn active">미완료</div>
+      <div id="btnNot" class="toggle-btn">미완료</div>
     </div>
+    <div id="deleteGuide" style="margin-top:10px; font-size:12px; color:red;" class="hidden">* 현재 저장된 값입니다. 해제 후 저장하면 삭제됩니다.</div>
   </div>
 </div>
 
 <div class="footer">
-  <button id="saveBtn">저장</button>
+  <button id="saveBtn">데이터 저장/수정</button>
 </div>
 
 <script>
@@ -86,198 +87,154 @@ const itemsMap = {
   "연간": ["지하수검사","검교정","유효성평가"]
 };
 
-const dateInput    = document.getElementById("dateInput");
+let registeredData = []; // 오늘 날짜의 등록 데이터들
+let selectedStatus = "";
+
+// UI 요소
+const dateInput = document.getElementById("dateInput");
 const periodSelect = document.getElementById("periodSelect");
-const itemBox      = document.getElementById("itemBox");
-const itemSelect   = document.getElementById("itemSelect");
-const statusBox    = document.getElementById("statusBox");
-const btnDone      = document.getElementById("btnDone");
-const btnNot       = document.getElementById("btnNot");
-const saveBtn      = document.getElementById("saveBtn");
+const itemBox = document.getElementById("itemBox");
+const itemSelect = document.getElementById("itemSelect");
+const statusBox = document.getElementById("statusBox");
+const btnDone = document.getElementById("btnDone");
+const btnNot = document.getElementById("btnNot");
+const saveBtn = document.getElementById("saveBtn");
+const duplicateAlert = document.getElementById("duplicateAlert");
+const duplicateList = document.getElementById("duplicateList");
 
-let selectedStatus = "";   // ★ 변경됨: 기본 상태 없음
+// 1. 초기 로드 및 날짜 변경 시 현황 가져오기
+async function fetchDailyStatus() {
+  const date = dateInput.value;
+  if(!date) return;
+  
+  // 리프레시
+  duplicateAlert.classList.add("hidden");
+  registeredData = [];
+  resetPeriodAndItems();
 
-// ==============================
-// 상태 버튼 UI 갱신
-// ==============================
+  try {
+    const res = await fetch(`${BASE_URL}?mode=checkAll&date=${date}`);
+    const json = await res.json();
+    if(json.success) {
+      registeredData = json.data;
+      updateUIWithStatus();
+    }
+  } catch(e) { console.error(e); }
+}
+
+// 2. 주기/항목 선택 UI에 체크 표시 반영
+function updateUIWithStatus() {
+  const periods = ["주간", "월간", "분기", "반기", "연간"];
+  const summary = {};
+  
+  // 알림창 텍스트 생성
+  periods.forEach(p => {
+    const items = registeredData.filter(d => d.period === p).map(d => d.item);
+    if(items.length > 0) summary[p] = items;
+  });
+
+  if(Object.keys(summary).length > 0) {
+    duplicateAlert.classList.remove("hidden");
+    duplicateList.innerHTML = Object.entries(summary)
+      .map(([p, items]) => `<b>${p}✔</b>: ${items.join(", ")}`)
+      .join("<br>");
+  }
+
+  // 주기 선택 창에 체크 표시
+  Array.from(periodSelect.options).forEach(opt => {
+    const p = opt.value;
+    if(!p) return;
+    const isDup = registeredData.some(d => d.period === p);
+    opt.textContent = isDup ? `${p} (✔)` : p;
+  });
+}
+
+function resetPeriodAndItems() {
+  periodSelect.value = "";
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+  itemBox.classList.add("hidden");
+  statusBox.classList.add("hidden");
+}
+
+// 3. 이벤트 리스너
+dateInput.addEventListener("change", fetchDailyStatus);
+
+periodSelect.addEventListener("change", () => {
+  const p = periodSelect.value;
+  statusBox.classList.add("hidden");
+  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+  
+  if(!p) { itemBox.classList.add("hidden"); return; }
+
+  itemsMap[p].forEach(item => {
+    const opt = document.createElement("option");
+    const isDup = registeredData.some(d => d.period === p && d.item === item);
+    opt.value = item;
+    opt.textContent = isDup ? `${item} (✔)` : item;
+    itemSelect.appendChild(opt);
+  });
+  itemBox.classList.remove("hidden");
+});
+
+itemSelect.addEventListener("change", () => {
+  const p = periodSelect.value;
+  const i = itemSelect.value;
+  if(!i) { statusBox.classList.add("hidden"); return; }
+
+  const existing = registeredData.find(d => d.period === p && d.item === i);
+  
+  if(existing) {
+    selectedStatus = existing.status; // 중복 있으면 해당 상태로
+    document.getElementById("deleteGuide").classList.remove("hidden");
+    saveBtn.textContent = "데이터 수정/삭제";
+    saveBtn.style.background = "#f44336";
+  } else {
+    selectedStatus = "미완료"; // [요구사항] 중복 없으면 기본 '미완료'
+    document.getElementById("deleteGuide").classList.add("hidden");
+    saveBtn.textContent = "신규 데이터 저장";
+    saveBtn.style.background = "#4caf50";
+  }
+  
+  statusBox.classList.remove("hidden");
+  updateStatusUI();
+});
+
+// 상태 버튼 로직
 function updateStatusUI() {
   btnDone.classList.toggle("active", selectedStatus === "완료");
   btnNot.classList.toggle("active", selectedStatus === "미완료");
 }
 
-// ==============================
-// 상태 버튼 클릭 (토글 + 해제기능)
-// ==============================
-btnDone.onclick = () => {
-  if (selectedStatus === "완료") {
-    selectedStatus = "";             // ★ 다시 클릭 → 해제
-  } else {
-    selectedStatus = "완료";
-  }
-  updateStatusUI();
-};
+btnDone.onclick = () => { selectedStatus = (selectedStatus === "완료") ? "" : "완료"; updateStatusUI(); };
+btnNot.onclick = () => { selectedStatus = (selectedStatus === "미완료") ? "" : "미완료"; updateStatusUI(); };
 
-btnNot.onclick = () => {
-  if (selectedStatus === "미완료") {
-    selectedStatus = "";             // ★ 다시 클릭 → 해제
-  } else {
-    selectedStatus = "미완료";
-  }
-  updateStatusUI();
-};
-
-// ==============================
-// 폼 리셋 (날짜 제외)
-// ==============================
-function resetForm(excludeDate = false){
-  if(!excludeDate) dateInput.value = getToday();
-
-  periodSelect.value = "";
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  itemBox.classList.add("hidden");
-  statusBox.classList.add("hidden");
-
-  selectedStatus = "";   // ★ 초기값도 선택 없음
-  updateStatusUI();
-}
-
-// 오늘 날짜
-function getToday(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-
-// 날짜 변경 → 리셋
-dateInput.addEventListener("change", () => resetForm(true));
-
-// 주기 선택 시
-periodSelect.addEventListener("change", () => {
+// 저장
+saveBtn.onclick = async () => {
+  const date = dateInput.value;
   const period = periodSelect.value;
-  itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-  statusBox.classList.add("hidden");
+  const item = itemSelect.value;
+  
+  if(!date || !period || !item) return alert("항목을 모두 선택하세요.");
 
-  if(!period){
-    itemBox.classList.add("hidden");
-    return;
-  }
+  const payload = { mode: "write", date, period, item, status: selectedStatus };
+  
+  saveBtn.disabled = true;
+  saveBtn.textContent = "처리 중...";
 
-  itemsMap[period].forEach(item => {
-    const op = document.createElement("option");
-    op.value = item;
-    op.textContent = item;
-    itemSelect.appendChild(op);
-  });
-
-  itemBox.classList.remove("hidden");
-});
-
-// 항목 선택 시
-itemSelect.addEventListener("change", () => {
-  if(!itemSelect.value){
-    statusBox.classList.add("hidden");
-    selectedStatus = "";
-    updateStatusUI();
-    return;
-  }
-
-  statusBox.classList.add("hidden");
-  selectedStatus = "";  // ★ 기본값 없음
-
-  checkDuplicate();
-});
-
-// ==============================
-// 서버 중복 체크
-// ==============================
-function checkDuplicate(){
-  if(!dateInput.value || !periodSelect.value || !itemSelect.value) return;
-
-  const url = `${BASE_URL}?mode=read&date=${dateInput.value}&period=${periodSelect.value}&item=${itemSelect.value}`;
-  fetch(url)
-    .then(r => r.json())
-    .then(d => {
-      if(d.success && (d.data === "완료" || d.data === "미완료")){
-        selectedStatus = d.data;
-      } else {
-        selectedStatus = "";
-      }
-
-      statusBox.classList.remove("hidden");
-      updateStatusUI();
-    })
-    .catch(err => {
-      console.error("중복 체크 오류:", err);
-      statusBox.classList.remove("hidden");
-      selectedStatus = "";
-      updateStatusUI();
-    });
-}
-
-// ==============================
-// 저장 (상태 미선택 시 = 행 삭제)
-// ==============================
-saveBtn.onclick = () => {
-  if(!dateInput.value){ alert("날짜 선택 필요"); return; }
-  if(!periodSelect.value){ alert("주기 선택 필요"); return; }
-  if(!itemSelect.value){ alert("항목 선택 필요"); return; }
-
-  // ★ selectedStatus = "" 이면 Apps Script에서 해당 행 삭제하도록 처리됨
-  const payload = {
-    mode: "write",
-    date: dateInput.value,
-    period: periodSelect.value,
-    item: itemSelect.value,
-    status: selectedStatus   // "" → 삭제
-  };
-
-  fetch(BASE_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(d => {
-    alert(d.message);
-    resetForm(); // 저장 후 초기화
-  })
-  .catch(err => console.error("저장 오류:", err));
+  try {
+    const res = await fetch(BASE_URL, { method: "POST", body: JSON.stringify(payload) });
+    const json = await res.json();
+    alert(json.message);
+    fetchDailyStatus(); // 저장 후 목록 리프레시
+  } catch(e) { alert("오류 발생"); }
+  finally { saveBtn.disabled = false; }
 };
 
-// ==============================
-// URL 파라미터 자동 세팅
-// ==============================
+// 초기화
 window.onload = () => {
-  const params = new URLSearchParams(location.search);
-
-  const date   = params.get("date");
-  const period = params.get("period");
-  const item   = params.get("item");
-  const status = params.get("status");
-
-  if(date) dateInput.value = date;
-  else dateInput.value = getToday();
-
-  if(period){
-    periodSelect.value = period;
-    itemSelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-    itemsMap[period].forEach(i=>{
-      const op = document.createElement("option");
-      op.value = i;
-      op.textContent = i;
-      itemSelect.appendChild(op);
-    });
-    itemBox.classList.remove("hidden");
-  }
-
-  if(item){
-    itemSelect.value = item;
-  }
-
-  if(item){
-    checkDuplicate();
-  }
+  dateInput.value = new Date().toISOString().split('T')[0];
+  fetchDailyStatus();
 };
 </script>
-
-
 </body>
 </html>
