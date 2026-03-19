@@ -113,7 +113,7 @@ input, select { width:100%; padding:12px 14px; font-size:1.1rem; border:1px soli
 </div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbyXDgR9f1iXIu3mOTUR6TNGaH5xjLyFay1jCXjkrU0ictIwtf7NRiwbd6Vm4Gak6zJSnw/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycby4Vh7qLiF_o9gehmwqApFfi4bZMCk_0kf5jm7po4BaaElKch181WbwNFVNR9UY58pB9A/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateInput = document.getElementById("date");
@@ -127,23 +127,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const delProdName = document.getElementById("delProdName");
   const deleteBtn = document.getElementById("deleteBtn");
   const submitBtn = document.getElementById("submitBtn");
+
+  // [수정] 1. 초기 날짜 설정 (URL 우선 -> 없으면 오늘)
   const urlParams = new URLSearchParams(window.location.search);
   const paramDate = urlParams.get('date');
 
   if (paramDate) {
-    dateInput.value = paramDate; // URL에 날짜가 있으면 적용
+    dateInput.value = paramDate; 
   } else {
-    dateInput.valueAsDate = new Date(); // 없으면 오늘 날짜
+    // 날짜 형식을 YYYY-MM-DD로 맞추기 위해 8시간(KST) 고려한 변환
+    const offset = new Date().getTimezoneOffset() * 60000;
+    const localISOTime = new Date(Date.now() - offset).toISOString().split('T')[0];
+    dateInput.value = localISOTime;
   }
 
   let serverData = [];
-  dateInput.valueAsDate = new Date();
+  // (기존에 중복되었던 dateInput.valueAsDate = new Date(); 코드는 삭제했습니다.)
 
+  // 2. 상태 로드 및 URL 동기화 함수
   async function loadDailyStatus() {
     const currentDate = dateInput.value;
-    // [추가] 날짜 변경 시 브라우저 주소창 동기화 (다른 폼 이동 시 날짜 유지용)
-    const newUrl = `${window.location.pathname}?date=${currentDate}`;
-    window.history.pushState({ path: newUrl }, '', newUrl);
+    
+    // [수정] 날짜 변경 시 브라우저 주소창 동기화 (replaceState 사용)
+    const url = new URL(window.location);
+    url.searchParams.set('date', currentDate);
+    window.history.replaceState({}, '', url);
+
     loadingMsg.style.display = "block";
     ingpList.textContent = "확인 중...";
     deleteArea.style.display = "none";
@@ -151,7 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
     productSelect.value = "";
 
     try {
-      // 서버에서 데이터 호출
       const res = await fetch(`${scriptUrl}?getDailyInput=true&date=${currentDate}`);
       const result = await res.json();
       serverData = result.data || [];
@@ -177,6 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 제품 선택 이벤트 (기존 유지)
   productSelect.addEventListener("change", () => {
     const selectedProd = productSelect.value.trim();
     if (!selectedProd) {
@@ -212,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ✅ 삭제 로직 핵심 수정
+  // 삭제 로직 (기존 유지)
   deleteBtn.addEventListener("click", async () => {
     const prod = productSelect.value.trim();
     if(!confirm(`[${prod}] 기록을 삭제하시겠습니까?`)) return;
@@ -220,14 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
     loadingMsg.style.display = "block";
     try {
       const params = new URLSearchParams();
-      params.append("type", "deleteInput"); // GAS의 doPost에서 구분할 키값
+      params.append("type", "deleteInput");
       params.append("date", dateInput.value);
       params.append("product", prod);
 
-      const res = await fetch(scriptUrl, {
-        method: "POST",
-        body: params
-      });
+      const res = await fetch(scriptUrl, { method: "POST", body: params });
       const resJson = await res.json();
       
       if(resJson.success) {
@@ -243,6 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 저장 로직 (기존 유지)
   submitBtn.addEventListener("click", async () => {
     const prod = productSelect.value.trim();
     if (!prod) return alert("제품을 선택하세요.");
@@ -276,6 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   dateInput.addEventListener("change", loadDailyStatus);
+  
+  // 초기 로드 실행
   loadDailyStatus();
 });
 </script>
