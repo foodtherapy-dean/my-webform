@@ -223,7 +223,7 @@ document.getElementById("autoModeBtn").addEventListener("click", async () => {
       subs.forEach(s => {
         let val = 0;
         if (cat.includes("포충등") && (s === "하루살이" || s === "기타")) val = Math.floor(Math.random()*6);
-        else if (cat.includes("보행트랩") && s === "기타1") val = Math.floor(Math.random()*2);
+        else if (cat.includes("보행트랩") && s === "기타1") val = Math.floor(Math.random()*3);
         entries.push({ category: cat, subcategory: s, value: val });
       });
     }
