@@ -396,7 +396,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     try {
       const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
       const time1 = getRandTime(h, m, 1);
-      const time2 = getRandTime(time1.h, time1.m, 15);
+      const time2 = getRandTime(time1.h, time1.m, 16);
       const timeOff = getRandTime(time2.h, time2.m, 1);
       const allEntries = [
         { group: "생산제품", entries: [{ product: prod, count: cnt }] },
